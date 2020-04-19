@@ -1,0 +1,14 @@
+{
+  "files": [
+    "./src/compile-docs.ts",
+  ],
+  "compilerOptions": {
+    "outDir": "./bin",
+    "target": "ES5",
+    "lib": [
+      "ES6",
+      "DOM"
+    ],
+    "strict": true,
+  },
+}
