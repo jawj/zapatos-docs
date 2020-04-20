@@ -124,11 +124,11 @@ import { JSDOM } from 'jsdom';
         import * as xyz from './zapatos/src';
         xyz.setConfig({
           queryListener: (x: any) => {
-            console.log('<<<text>>>' + x.text + ';');
-            if (x.values.length) console.log('<<<values>>>' + JSON.stringify(x.values, null, 2));
+            console.log('%%text%:' + x.text + '%%');
+            if (x.values.length) console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');
           },
           resultListener: (x: any) => {
-            console.log('<<<result>>>' + JSON.stringify(x, null, 2));
+            if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
           }
         });
         /* original script begins */
@@ -163,11 +163,11 @@ import { JSDOM } from 'jsdom';
     const
       stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
         { cwd: './build-src', encoding: 'utf8' }),
-      parts = stdout.split('<<<');
+      parts = stdout.split(/%{2,}/);
 
     let output = '<div class="sqlstuff">\n';
     for (const part of parts) {
-      const [type, str] = part.split('>>>');
+      const [type, str] = part.split('%:');
 
       if (type === 'text') {
         const
@@ -185,6 +185,11 @@ import { JSDOM } from 'jsdom';
         const highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
 
         output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
+
+      } else {  // console output
+        const logs = type.trim();
+
+        if (logs) output += `<pre class="console"><code>${logs}</code></pre>\n`;
       }
     }
     output += '</div>'

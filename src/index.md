@@ -9,7 +9,7 @@ To achieve that, it does these five things:
 
 * **Typescript schema** &nbsp; A command-line tool speaks to your Postgres database and writes up a TypeScript schema of detailed types for every table. This enables the following three things. [Show me »](#typescript-schema)
 
-* **Arbitrary SQL** &nbsp; Simple building blocks help you write arbitrary SQL and manually apply the right types to what goes in and what comes back. [Show me »](#arbitrary-sql)
+* **Arbitrary SQL** &nbsp; Simple building blocks help you write arbitrary SQL using [tagged templates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates), and manually apply the right types to what goes in and what comes back. [Show me »](#arbitrary-sql)
 
 * **Everyday CRUD** &nbsp; Shortcut functions produce your everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries with no fuss and no surprises, fully and automatically typed. [Show me »](#everyday-crud)
 
@@ -22,7 +22,7 @@ To achieve that, it does these five things:
 
 It is a truth universally acknowledged that [ORMs aren't very good](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). 
 
-I like SQL, and Postgres especially. In my experience, abstractions that obscure how SQL works, or that prioritise ease of switching to another database tomorrow over effective use of _this_ database _today_, are a source of misery.
+I like SQL, and Postgres especially. In my experience, abstractions that obscure the underlying SQL, or that prioritise ease of switching to another database tomorrow over effective use of _this_ database _today_, are a source of misery.
 
 I've also come to love strongly typed languages, and TypeScript in particular. VS Code's type checking and autocomplete speed development, prevent bugs, and simplify refactoring. Especially when they _just happen_, they bring joy.
 
@@ -68,7 +68,7 @@ export namespace authors {
 
 The types are, I hope, pretty self-explanatory. `authors.Selectable` is what I'll get back from a `SELECT` query on this table. `authors.Insertable` is what I can `INSERT`: similar to the `Selectable`, but any fields that are `NULL`able and/or have `DEFAULT` values are allowed to be missing, `NULL` or `DEFAULT`. `authors.Updatable` is what I can `UPDATE` the table with: like what I can `INSERT`, but all columns are optional: it's a simple `Partial<authors.Insertable>`. `authors.Whereable`, finally, is what I can use in a `WHERE` condition 
 
-`schema.ts` includes a few other types that get used internally, including some handy type mappings, like this one:
+`schema.ts` includes a few other types that get used internally, including some handy type mappings, such as this one:
 
 ```typescript
 export type SelectableForTable<T extends Table> = {
@@ -83,7 +83,7 @@ export type SelectableForTable<T extends Table> = {
 
 #### Arbitrary SQL
 
-**Simple building blocks help you write arbitrary SQL and manually apply the right types to what goes in and what comes back.**
+**Simple building blocks help you write arbitrary SQL using [tagged templates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates), and manually apply the right types to what goes in and what comes back.**
 
 Let's insert something into that `authors` table for which we just generated the types. We'll write the SQL query ourselves, to show that we can (we'll see an easier way [in the next section](#everyday-crud)):
 
@@ -194,6 +194,56 @@ We can of course extend this to deeper nesting (e.g. query each author, with the
 
 
 #### Transactions
+
+**A transaction function helps with managing and retrying transactions.**
+
+Transactions are where I've found traditional ORMs like TypeORM and Sequelize probably most footgun-prone. Zapatos is always explicit about what client or pool is running your query — hence the `pool` argument in all our examples so far. 
+
+Zapatos also offers a simple `transaction` helper function that handles issuing a `ROLLBACK` on error, releasing the database client in a `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. It looks like this:
+
+```typescript
+const result = db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+  /* queries here use txnClient instead of pool */
+});
+```
+
+For example, take this `accounts` table:
+
+```sql
+CREATE TABLE accounts (
+  id SERIAL PRIMARY KEY,
+  balance INTEGER NOT NULL DEFAULT 0 CHECK (balance > 0)
+);
+```
+
+We can use the `transaction` helper like so:
+
+```typescript
+import * as db from './zapatos/src';
+import { pool } from './pgPool';
+
+const [accountA, accountB] = await db.insert('accounts', 
+  [{ balance: 50 }, { balance: 50 }]).run(pool);
+
+const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
+  db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
+    db.update('accounts',
+      { balance: db.sql<db.SQL>`${db.self} - ${db.param(amount)}` },
+      { id: sendingAccountId }).run(txnClient),
+    db.update('accounts',
+      { balance: db.sql<db.SQL>`${db.self} + ${db.param(amount)}` },
+      { id: receivingAccountId }).run(txnClient),
+  ]));
+
+try {
+  const [updatedAccountA, updatedAccountB] = await transferMoney(accountA.id, accountB.id, 60);
+} catch(err) {
+  console.log(err.message, '/', err.detail);
+}
+```
+
+Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
+
 
 ...
 

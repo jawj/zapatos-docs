@@ -106,7 +106,7 @@ var jsdom_1 = require("jsdom");
         runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
             .filter(function (ts) { var _a; return (_a = ts.textContent) === null || _a === void 0 ? void 0 : _a.match(/^\s*import\b/m); });
         runnableTags.forEach(function (runnableTag, i) {
-            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('<<<text>>>' + x.text + ';');\n            if (x.values.length) console.log('<<<values>>>' + JSON.stringify(x.values, null, 2));\n          },\n          resultListener: (x: any) => {\n            console.log('<<<result>>>' + JSON.stringify(x, null, 2));\n          }\n        });\n        /* original script begins */\n\n        " + ts + "\n\n        /* original script ends */\n        pool.end();\n      ";
+            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');\n          },\n          resultListener: (x: any) => {\n            if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n          }\n        });\n        /* original script begins */\n\n        " + ts + "\n\n        /* original script ends */\n        pool.end();\n      ";
             fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
         });
         console.info('Compiling TypeScript script blocks ..');
@@ -124,11 +124,11 @@ var jsdom_1 = require("jsdom");
         };
         runnableTags.forEach(function (runnableTag, i) {
             console.info("Running script block " + i + " ..");
-            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8' }), parts = stdout.split('<<<');
+            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8' }), parts = stdout.split(/%{2,}/);
             var output = '<div class="sqlstuff">\n';
             for (var _i = 0, parts_1 = parts; _i < parts_1.length; _i++) {
                 var part = parts_1[_i];
-                var _a = part.split('>>>'), type = _a[0], str = _a[1];
+                var _a = part.split('%:'), type = _a[0], str = _a[1];
                 if (type === 'text') {
                     var fmtSql = formatSQL(str), highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
                     output += "<pre class=\"sqltext\"><code>" + highlightSql + "</code></pre>\n";
@@ -140,6 +140,11 @@ var jsdom_1 = require("jsdom");
                 else if (type === 'result') {
                     var highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
                     output += "<pre class=\"sqlresult\"><code>" + highlightResult + "</code></pre>\n";
+                }
+                else { // console output
+                    var logs = type.trim();
+                    if (logs)
+                        output += "<pre class=\"console\"><code>" + logs + "</code></pre>\n";
                 }
             }
             output += '</div>';

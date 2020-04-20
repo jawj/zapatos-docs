@@ -6,12 +6,41 @@ tocbot.init({
   headingSelector: 'h1, h2, h3, h4',
 });
 
+// SQL/result sections
+
+var
+  sqlstuff = document.getElementsByClassName('sqlstuff'),
+  showMsg = '▸ Show SQL, results',
+  hideMsg = '▾ Hide SQL, results';
+
+Array.prototype.slice.call(sqlstuff).forEach(function (s) {
+  s.style.display = 'none';
+  s.insertAdjacentHTML('beforebegin', `<p><a class="sqltoggle" href="#">${showMsg}</a></p>`);
+});
+
+document.addEventListener('click', function (e) {
+  var target = e.target;
+
+  if (target.className === 'sqltoggle') {
+    e.preventDefault();
+    var sqlstuff = target.parentElement.nextElementSibling;
+
+    if (sqlstuff.style.display === 'block') {
+      sqlstuff.style.display = 'none';
+      target.innerText = showMsg;
+
+    } else {
+      sqlstuff.style.display = 'block';
+      target.innerText = hideMsg;
+    }
+  }
+});
 
 // monaco
 
 require.config({ paths: { 'vs': './monaco/vs' } });
 require(['vs/editor/editor.main'], function () {
-
+  return;
   var
     ts = monaco.languages.typescript,
     tsDefs = ts.typescriptDefaults;

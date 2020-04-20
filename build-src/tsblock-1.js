@@ -1,12 +1,13 @@
 import * as xyz from './zapatos/src';
 xyz.setConfig({
     queryListener: (x) => {
-        console.log('<<<text>>>' + x.text + ';');
+        console.log('%%text%:' + x.text + '%%');
         if (x.values.length)
-            console.log('<<<values>>>' + JSON.stringify(x.values, null, 2));
+            console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');
     },
     resultListener: (x) => {
-        console.log('<<<result>>>' + JSON.stringify(x, null, 2));
+        if (x.length)
+            console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
     }
 });
 /* original script begins */

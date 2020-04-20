@@ -36,11 +36,15 @@ pre {
   margin: 15px 0 20px;
   white-space: pre-wrap;
 }
-.sqltext, .sqlvalues, .sqlresult {
+.sqlstuff {
+  border: 1px solid #eee;
+  padding: 5px;
+}
+.sqltext, .sqlvalues, .sqlresult, .console {
   position: relative;
   margin: 0;
 }
-.sqltext::before, .sqlvalues::before, .sqlresult::before {
+.sqltext::before, .sqlvalues::before, .sqlresult::before, .console::before {
   background: #444;
   color: #fff;
   position: absolute;
@@ -51,7 +55,7 @@ pre {
   display: inline-block;
   padding: 0 3px;
 }
-.sqltext code, .sqlvalues code, .sqlresult code {
+.sqltext code, .sqlvalues code, .sqlresult code, .console code {
   background: transparent;
 }
 .sqltext {
@@ -73,6 +77,12 @@ pre {
 }
 .sqlresult::before {
   content: '⟶ result';
+}
+.console {
+  margin: 15px 0 20px;
+}
+.console::before {
+  content: 'Console';
 }
 code {
   display: inline-block;
