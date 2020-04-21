@@ -3,14 +3,15 @@
         xyz.setConfig({
           queryListener: (x: any) => {
             console.log('%%text%:' + x.text + '%%');
-            if (x.values.length) console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');
+            if (x.values.length) console.log('%%values%:[' + 
+              x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');
           },
           resultListener: (x: any) => {
             if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
           }
         });
-        /* original script begins */
 
+        /* original script begins */
         import * as db from './zapatos/src';
 import * as s from './zapatos/schema';
 import { pool } from './pgPool';
@@ -25,9 +26,7 @@ const
       VALUES(${db.vals(author)}) RETURNING *`
     .run(pool);
 
-console.log(insertedAuthor.id);
-
-
         /* original script ends */
+
         pool.end();
       

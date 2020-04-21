@@ -106,7 +106,7 @@ var jsdom_1 = require("jsdom");
         runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
             .filter(function (ts) { var _a; return (_a = ts.textContent) === null || _a === void 0 ? void 0 : _a.match(/^\s*import\b/m); });
         runnableTags.forEach(function (runnableTag, i) {
-            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');\n          },\n          resultListener: (x: any) => {\n            if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n          }\n        });\n        /* original script begins */\n\n        " + ts + "\n\n        /* original script ends */\n        pool.end();\n      ";
+            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) console.log('%%values%:[' + \n              x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n          },\n          resultListener: (x: any) => {\n            if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n          }\n        });\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        pool.end();\n      ";
             fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
         });
         console.info('Compiling TypeScript script blocks ..');
@@ -115,6 +115,7 @@ var jsdom_1 = require("jsdom");
         }
         catch (err) {
             console.error(err);
+            process.exit(1);
         }
         pgFmtArgs = '--spaces 2 --wrap-after 30 --format text --keyword-case 0 --type-case 0', formatSQL = function (sql) {
             return child_process_1.execSync("perl ./lib/pgFormatter/pg_format " + pgFmtArgs, {

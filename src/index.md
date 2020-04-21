@@ -11,7 +11,7 @@ To achieve that, it does these five things:
 
 * **Arbitrary SQL** &nbsp; Simple building blocks help you write arbitrary SQL using [tagged templates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates), and manually apply the right types to what goes in and what comes back. [Show me »](#arbitrary-sql)
 
-* **Everyday CRUD** &nbsp; Shortcut functions produce your everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries with no fuss and no surprises, fully and automatically typed. [Show me »](#everyday-crud)
+* **Everyday CRUD** &nbsp; Shortcut functions produce everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries with no fuss and no surprises, fully and automatically typed. [Show me »](#everyday-crud)
 
 * **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
 
@@ -85,7 +85,7 @@ export type SelectableForTable<T extends Table> = {
 
 **Simple building blocks help you write arbitrary SQL using [tagged templates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates), and manually apply the right types to what goes in and what comes back.**
 
-Let's insert something into that `authors` table for which we just generated the types. We'll write the SQL query ourselves, to show that we can (we'll see an easier way [in the next section](#everyday-crud)):
+Let's insert something into that `authors` table for which we just generated the types. We'll write the SQL query ourselves, to show how that works (though we'll see an easier way [in the next section](#everyday-crud)):
 
 ```typescript
 import * as db from './zapatos/src';
@@ -101,20 +101,18 @@ const
       INSERT INTO ${"authors"} (${db.cols(author)})
       VALUES(${db.vals(author)}) RETURNING *`
     .run(pool);
-
-console.log(insertedAuthor.id);
 ```
 
 We've applied the appropriate type to the object we're trying to insert (`s.authors.Insertable`), giving us type-checking and autocompletion on that object. And we've specified both which types are allowed as interpolated values in the template string (`s.authors.SQL`) and what type is going to be returned (`s.authors.Selectable[]`) when the query runs.
 
-_The above code snippet is an embedded Monaco (VS Code) editor, so you can check those typings for yourself._ 
+_You can click 'Explore types' above to open the code in an embedded Monaco (VS Code) editor, so you can check those typings for yourself._ 
 
 [Tell me more about writing arbitrary SQL »](#detail2)
 
 
 #### Everyday CRUD
 
-**Shortcut functions produce your everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries with no fuss and no surprises, fully and automatically typed.**
+**Shortcut functions produce everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries with no fuss and no surprises, fully and automatically typed.**
 
 So — writing SQL with Zapatos is nicer than constructing a query and all its input and output types from scratch. But for a totally bog-standard CRUD query like the `INSERT` above, it still involves quite a lot of boilerplate.
 
@@ -130,13 +128,11 @@ const [doug, janey] = await db.insert('authors', [
   { name: 'Douglas Adams', isLiving: false },
   { name: 'Jane Austen', isLiving: false},
 ]).run(pool);
-
-console.log(doug.id, janey.id);
 ```
 
 The `insert` shortcut accepts a single `Insertable` or an `Insertable[]` array, and correspondingly returns a single `Selectable` or a `Selectable[]` array. Since we specified `'authors'` as the first argument here, and an array as the second, input and output will be checked and auto-completed as `authors.Insertable[]` and `authors.Selectable[]` respectively.
 
-_Again, that code is in a Monaco (VS Code) editor, so you can play around with it and check those typings._ 
+_Again, click 'Explore types' to play around and check those typings._ 
 
 In addition to `insert`, there are shortcuts for `select`, `selectOne` and `count`, and for `update`, `upsert`, `delete` and `truncate`. 
 
@@ -245,14 +241,11 @@ try {
 Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
 
 
-...
-
-
 ### What doesn't it do?
 
-Zapatos doesn't handle schema migrations. Other tools can help you with this:  check out [dbmate](https://github.com/amacneil/dbmate), for instance.
+Zapatos doesn't handle schema migrations. Other tools can help you with this: check out [dbmate](https://github.com/amacneil/dbmate), for instance.
 
-It also won't tell you how to structure your code. Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [Plain Old JavaScript Objects](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
+It also won't tell you how to structure your code. Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
 
 
 ## How do I use it?
@@ -350,13 +343,57 @@ This is likely most useful for the database connection details. For example, on 
 
 ## Full documentation
 
-### `sql` template strings and their interpolation types
+### `sql<Interpolations, RunResult>` template strings
+
+Arbitrary queries are written using the tagged template function `sql`, which returns [`SQLFragment`](#sqlfragment) class instances.
+
+The `sql` function is [generic](https://www.typescriptlang.org/docs/handbook/generics.html), having two type variables. For example: 
+
+```typescript
+const authorQuery = db.sql<s.authors.SQL, s.authors.Selectable[]>`
+  SELECT * FROM ${"authors"}`;
+```
+
+The first type variable, `Interpolations`, defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
+
+The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, so if you have multiple interpolation types you will need to specify a value explicitly (either `db.SQL` or something more precise).
+
+The second type variable, `RunResult`, describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral) query options. Its default value if not specified is `any[]`.
+
+As another example of these type variables, try this:
+
+```typescript
+const [{ random }] = await db.sql<never, [{ random: number }]>`
+  SELECT random()`.run(pool);
+```
+
+`Interpolations` is `never` because nothing needs to be interpolated in this query, and the `RunResult` type says that the query will return one row comprising one numeric column, named `random`. The `random` TypeScript variable we initialize will of course be of type `number`. 
+
+If you're happy to have your types tied down a little looser, you can also fully omit the type variables in this query (falling back on their defaults):
+
+```typescript
+const [{ random }] = await db.sql`SELECT random()`.run(pool);
+```
+
+In this case, the `random` variable is of type `any`.
+
+
+### `SQLFragment`
+
+#### `run()`
+
+#### `compile()`
+
+#### `runResultTransform()`
+
+
+### `sql` template interpolation types
 
 #### `String`s
 
 #### `Array`s
 
-#### `sql` template strings (`SQLFragment`)
+#### Other `sql` template strings
 
 #### `cols` (`ColumnNames`) and `vals` (`ColumnValues`)
 
@@ -385,12 +422,21 @@ This is likely most useful for the database connection details. For example, on 
 
 #### select
 
+##### extras
+
+##### lateral
+
+
+
 #### selectOne
 
 #### count
 
 
 ### Transactions
+
+
+### Run-time configuration
 
 
 ## Licence

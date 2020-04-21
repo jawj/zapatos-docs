@@ -125,17 +125,18 @@ import { JSDOM } from 'jsdom';
         xyz.setConfig({
           queryListener: (x: any) => {
             console.log('%%text%:' + x.text + '%%');
-            if (x.values.length) console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');
+            if (x.values.length) console.log('%%values%:[' + 
+              x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');
           },
           resultListener: (x: any) => {
             if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
           }
         });
+
         /* original script begins */
-
         ${ts}
-
         /* original script ends */
+
         pool.end();
       `;
 
@@ -147,6 +148,7 @@ import { JSDOM } from 'jsdom';
     execSync('tsc', { cwd: './build-src', encoding: 'utf8' });
   } catch (err) {
     console.error(err);
+    process.exit(1);
   }
 
   const
@@ -173,22 +175,18 @@ import { JSDOM } from 'jsdom';
         const
           fmtSql = formatSQL(str),
           highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
-
         output += `<pre class="sqltext"><code>${highlightSql}</code></pre>\n`;
 
       } else if (type === 'values') {
         const highlightValues = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
-
         output += `<pre class="sqlvalues"><code>${highlightValues}</code></pre>\n`;
 
       } else if (type === 'result') {
         const highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
-
         output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
 
       } else {  // console output
         const logs = type.trim();
-
         if (logs) output += `<pre class="console"><code>${logs}</code></pre>\n`;
       }
     }

@@ -36,6 +36,37 @@ pre {
   margin: 15px 0 20px;
   white-space: pre-wrap;
 }
+#monaco-overlay {
+  position: fixed;
+  background: rgba(0,0,0,0.667);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: none;
+}
+#ts-editor {
+  position: fixed;
+  top: 10%;
+  right: 10%;
+  bottom: 10%;
+  left: 10%;
+  background: #fff;
+}
+#closemonaco {
+  display: block;
+  position: fixed;
+  color: #fff;
+  font: 50px source-code-pro;
+  top: 10%;
+  left: 90%;
+  line-height: 0.45;
+  padding-left: 5px;
+}
+.runnable {
+  position: relative;
+}
 .sqlstuff {
   border: 1px solid #eee;
   padding: 5px;
@@ -44,7 +75,7 @@ pre {
   position: relative;
   margin: 0;
 }
-.sqltext::before, .sqlvalues::before, .sqlresult::before, .console::before {
+.sqltext::before, .sqlvalues::before, .sqlresult::before, .console::before, .openmonaco {
   background: #444;
   color: #fff;
   position: absolute;
@@ -55,6 +86,10 @@ pre {
   display: inline-block;
   padding: 0 3px;
 }
+.openmonaco {
+  color: #fff;
+  background: #3366ee;
+}
 .sqltext code, .sqlvalues code, .sqlresult code, .console code {
   background: transparent;
 }
@@ -62,7 +97,7 @@ pre {
   background: #eeeeff;
 }
 .sqltext::before {
-  content: '⟶ SQL';
+  content: 'SQL';
 }
 .sqlvalues {
   background: #ffeeff;

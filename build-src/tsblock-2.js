@@ -3,7 +3,8 @@ xyz.setConfig({
     queryListener: (x) => {
         console.log('%%text%:' + x.text + '%%');
         if (x.values.length)
-            console.log('%%values%:' + JSON.stringify(x.values, null, 2) + '%%');
+            console.log('%%values%:[' +
+                x.values.map((v) => JSON.stringify(v)).join(', ') + ']%%');
     },
     resultListener: (x) => {
         if (x.length)

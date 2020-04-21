@@ -9,11 +9,11 @@ tocbot.init({
 // SQL/result sections
 
 var
-  sqlstuff = document.getElementsByClassName('sqlstuff'),
-  showMsg = '▸ Show SQL, results',
-  hideMsg = '▾ Hide SQL, results';
+  sqlstuff = Array.prototype.slice.call(document.getElementsByClassName('sqlstuff')),
+  showMsg = '▸ Show generated SQL, results',
+  hideMsg = '▾ Hide generated SQL, results';
 
-Array.prototype.slice.call(sqlstuff).forEach(function (s) {
+sqlstuff.forEach(function (s) {
   s.style.display = 'none';
   s.insertAdjacentHTML('beforebegin', `<p><a class="sqltoggle" href="#">${showMsg}</a></p>`);
 });
@@ -36,45 +36,74 @@ document.addEventListener('click', function (e) {
   }
 });
 
-// monaco
+// TS sections / monaco
 
 require.config({ paths: { 'vs': './monaco/vs' } });
-require(['vs/editor/editor.main'], function () {
-  return;
-  var
-    ts = monaco.languages.typescript,
-    tsDefs = ts.typescriptDefaults;
 
-  tsDefs.setCompilerOptions({
-    strict: true,
-    target: ts.ScriptTarget.ES2017,
-  });
-  for (var file in zapatosBundle) tsDefs.addExtraLib(zapatosBundle[file], `file:///${file}`);
+var
+  runnables = Array.prototype.slice.call(document.getElementsByClassName('runnable'));
 
-  const
-    commonOpts = {
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      scrollbar: {
-        vertical: 'hidden',
-        horizontal: 'hidden',
-      },
-      fontFamily: 'source-code-pro',
-      fontSize: 15,
-      lineNumbers: 'off',
-    },
-    runnables = document.getElementsByClassName('runnable');
+runnables.forEach(function (runnable) {
+  runnable.insertAdjacentHTML('afterbegin',
+    '<a class="openmonaco" href="#" title="See this in embedded VS Code">★ Explore types</a>');
+});
 
-  let i = 1;
-  for (var runnable of runnables) {
+document.body.insertAdjacentHTML('afterbegin',
+  '<div id="monaco-overlay"><div id="ts-editor"></div><a id="closemonaco" href="#">×</a></div>');
+
+document.addEventListener('click', function (e) {
+  var target = e.target;
+
+  if (target.className === 'openmonaco') {
+    e.preventDefault();
     var
-      uri = monaco.Uri.parse(`file:///main.${i++}.ts`),
-      js = runnable.innerText.trim(),
-      model = monaco.editor.createModel(js, 'typescript', uri),
-      opts = { model, ...commonOpts };
+      codeElement = target.nextElementSibling,
+      code = codeElement.innerText.trim();
 
-    runnable.innerText = '';
-    runnable.style.height = String(js.split('\n').length * 24) + 'px';
-    monaco.editor.create(runnable, opts);
+    if (!window.monaco) require(['vs/editor/editor.main'], function () {
+      var
+        ts = monaco.languages.typescript,
+        tsDefs = ts.typescriptDefaults;
+
+      tsDefs.setCompilerOptions({
+        strict: true,
+        target: ts.ScriptTarget.ES2017,
+      });
+      for (var file in zapatosBundle) tsDefs.addExtraLib(zapatosBundle[file], `file:///${file}`);
+
+      var
+        editor = document.getElementById('ts-editor'),
+        commonOpts = {
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          fontFamily: 'source-code-pro',
+          fontSize: 15,
+          theme: 'vs-dark',
+          automaticLayout: true,  // resize with host <div>
+        },
+        uri = monaco.Uri.parse(`file:///main.ts`),
+        model = monaco.editor.createModel('/* nothing */', 'typescript', uri),
+        opts = Object.assign({ model: model }, commonOpts);
+
+      window.activeMonacoEditor = monaco.editor.create(editor, opts);
+      openMonaco(code);
+    });
+    else openMonaco(code);
+
+  } else if (target.id === 'closemonaco') {
+    e.preventDefault();
+
+    var overlay = document.getElementById('monaco-overlay');
+    overlay.style.display = 'none';
   }
 });
+
+function openMonaco(code) {
+  var
+    overlay = document.getElementById('monaco-overlay'),
+    editor = window.activeMonacoEditor;
+
+  overlay.style.display = 'block';
+  editor.setValue(code);
+  editor.layout();
+}
