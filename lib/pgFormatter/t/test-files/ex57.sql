@@ -37,4 +37,9 @@ DECLARE
     foobar4 INT;
 BEGIN
     NULL;
-END;
+END
+$procedure$;
+
+SELECT format($$ A %I B %s C %L %% D $$, 'pg_user', 22, NULL);
+
+create role admin with connection limit 3;

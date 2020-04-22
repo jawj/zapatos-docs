@@ -222,6 +222,12 @@ sub query
     $self->{ 'query' } =~ s/''/PGFESCQ/sg;
 
     my $i = 0;
+
+    # Hide content of format() function when the code separator is not a single quote */
+    while ($self->{ 'query' } =~ s/\bformat\((\$(?:.*)?\$\s*)([,\)])/format\(CODEPARTB${i}CODEPARTB$2/i) {
+        push(@{ $self->{ 'placeholder_values' } }, $1);
+        $i++;
+    }
     my %temp_placeholder = ();
     my @temp_content = split(/(CREATE(?:\s+OR\s+REPLACE)?\s+(?:FUNCTION|PROCEDURE)\s+)/i, $self->{ 'query' });
     if ($#temp_content > 0) {
@@ -1347,14 +1353,17 @@ sub beautify
 
         elsif ( $token eq ')' )
 	{
-	    my $next = quotemeta($self->_next_token) || 'SELECT';
-            if (!$self->{ '_parenthesis_level' } and defined $self->_next_token
+            if (defined $self->_next_token)
+	    {
+		my $next = quotemeta($self->_next_token) || 'SELECT';
+		if (!$self->{ '_parenthesis_level' } and defined $self->_next_token
 			    and $self->_is_keyword($self->_next_token) or (
 				!grep(/^$next$/, %{$self->{ 'dict' }->{ 'symbols' }})
 			)
 		)
-	    {
-		$self->{ '_is_in_where' } = 0;
+		{
+		    $self->{ '_is_in_where' } = 0;
+		}
 	    }
 	    if ($self->{ '_is_in_constraint' } and defined $self->_next_token
 			    and ($self->_next_token eq ',' or $self->_next_token eq ')')) {
@@ -1902,7 +1911,10 @@ sub beautify
 	    if (uc($token) ne 'EXCEPTION' or not defined $last or uc($last) ne 'RAISE')
 	    {
 		# Excluding CREATE/DROP GROUP
-                $self->_new_line($token,$last) if (!$self->{ '_is_in_function' } and (not defined $last or $last !~ /^(CREATE|DROP)$/));
+	        if (uc($token) ne 'LIMIT' or !$self->{ '_is_in_create' })
+		{
+                    $self->_new_line($token,$last) if (!$self->{ '_is_in_function' } and (not defined $last or $last !~ /^(CREATE|DROP)$/));
+		}
             }
             # Store current indent position to print END at the right level
             if (uc($last) ne 'RAISE' and $token =~ /^EXCEPTION$/i)
@@ -1925,7 +1937,7 @@ sub beautify
 	    }
         }
 
-        elsif ( $token =~ /^(?:BY)$/i and $last !~ /^(?:INCREMENT|OWNED|PARTITION)$/i)
+        elsif ( $token =~ /^(?:BY)$/i and $last !~ /^(?:INCREMENT|OWNED|PARTITION|GENERATED)$/i)
 	{
             $self->_add_token( $token );
 	    $self->{ '_col_count' } = 0 if (defined $last && $last =~ /^(?:GROUP|ORDER)/i);
