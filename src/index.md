@@ -363,7 +363,7 @@ const authorQuery = db.sql<s.authors.SQL, s.authors.Selectable[]>`
 
 The first type variable, `Interpolations`, defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
 
-The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, so if you have multiple interpolated values of different types you need to specify a value explicitly (either `db.SQL` or something more precise).
+The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, and if you have multiple interpolated values of different types then you may need to specify a value explicitly (either `db.SQL` or something more precise).
 
 The second type variable, `RunResult`, describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral) query options. Its default value if not specified is `any[]`.
 
@@ -464,7 +464,7 @@ So, for example, write —
 
 ```typescript:noresult
 const title = await db.sql`
-  SELECT ${"titles"} FROM ${"books"} LIMIT 1`.run(pool);
+  SELECT ${"title"} FROM ${"books"} LIMIT 1`.run(pool);
 ```
 
 — rather than —

@@ -107,7 +107,7 @@ export class SQLFragment {
          * `(qr) => qr.rows` — but some shortcut functions alter this in order to match their
          * declared `RunResult` type.
          */
-        this.runResultTransform = (qr) => qr.rows;
+        this.runResultTransform = qr => qr.rows;
         this.parentTable = undefined; // used for nested shortcut select queries
     }
     /**
