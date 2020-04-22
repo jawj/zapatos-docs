@@ -75,10 +75,11 @@ var jsdom_1 = require("jsdom");
             html: true,
             linkify: true,
             typographer: true,
-            highlight: function (str, lang) {
+            highlight: function (str, langPlusOptions) {
+                var _a = langPlusOptions.split(':'), lang = _a[0], options = _a.slice(1);
                 if (lang && hljs.getLanguage(lang)) {
                     try {
-                        return "<pre class=\"language-" + lang + "\"><code>" + hljs.highlight(lang, str).value + "</code></pre>";
+                        return "<pre class=\"language-" + lang + options.map(function (o) { return ' ' + o; }) + "\"><code>" + hljs.highlight(lang, str).value + "</code></pre>";
                     }
                     catch (err) {
                         console.log('Highlighting error', err);
@@ -104,9 +105,9 @@ var jsdom_1 = require("jsdom");
         });
         console.info('Collecting TypeScript scripts ..');
         runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
-            .filter(function (ts) { var _a; return (_a = ts.textContent) === null || _a === void 0 ? void 0 : _a.match(/^\s*import\b/m); });
+            .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
         runnableTags.forEach(function (runnableTag, i) {
-            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) console.log('%%values%:[' + \n              x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n          },\n          resultListener: (x: any) => {\n            if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n          }\n        });\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        pool.end();\n      ";
+            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          }\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import { pool } from './pgPool';\n        ") + "\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        pool.end();\n      ";
             fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
         });
         console.info('Compiling TypeScript script blocks ..');
@@ -118,39 +119,48 @@ var jsdom_1 = require("jsdom");
             process.exit(1);
         }
         pgFmtArgs = '--spaces 2 --wrap-after 30 --format text --keyword-case 0 --type-case 0', formatSQL = function (sql) {
-            return child_process_1.execSync("perl ./lib/pgFormatter/pg_format " + pgFmtArgs, {
-                encoding: 'utf8',
-                input: sql,
-            });
+            try {
+                return child_process_1.execSync("perl ./lib/pgFormatter/pg_format " + pgFmtArgs, {
+                    encoding: 'utf8',
+                    input: sql,
+                });
+            }
+            catch (err) { // https://github.com/darold/pgFormatter/issues/183
+                return sql.trim();
+            }
         };
         runnableTags.forEach(function (runnableTag, i) {
             console.info("Running script block " + i + " ..");
-            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8' }), parts = stdout.split(/%{2,}/);
-            var output = '<div class="sqlstuff">\n';
-            for (var _i = 0, parts_1 = parts; _i < parts_1.length; _i++) {
-                var part = parts_1[_i];
-                var _a = part.split('%:'), type = _a[0], str = _a[1];
-                if (type === 'text') {
-                    var fmtSql = formatSQL(str), highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
-                    output += "<pre class=\"sqltext\"><code>" + highlightSql + "</code></pre>\n";
+            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8' });
+            // console.log(stdout);
+            var parts = stdout.split(/%{2,}/);
+            if (!runnableTag.className.match(/\bnoresult\b/)) {
+                var output = '<div class="sqlstuff">\n';
+                for (var _i = 0, parts_1 = parts; _i < parts_1.length; _i++) {
+                    var part = parts_1[_i];
+                    var _a = part.split('%:'), type = _a[0], str = _a[1];
+                    if (type === 'text') {
+                        var fmtSql = formatSQL(str), highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
+                        output += "<pre class=\"sqltext\"><code>" + highlightSql + "</code></pre>\n";
+                    }
+                    else if (type === 'values') {
+                        var highlightValues = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
+                        output += "<pre class=\"sqlvalues\"><code>" + highlightValues + "</code></pre>\n";
+                    }
+                    else if (type === 'result') {
+                        var highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
+                        output += "<pre class=\"sqlresult\"><code>" + highlightResult + "</code></pre>\n";
+                    }
+                    else { // console output
+                        var logs = type.trim();
+                        if (logs)
+                            output += "<pre class=\"console\"><code>" + logs + "</code></pre>\n";
+                    }
                 }
-                else if (type === 'values') {
-                    var highlightValues = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
-                    output += "<pre class=\"sqlvalues\"><code>" + highlightValues + "</code></pre>\n";
-                }
-                else if (type === 'result') {
-                    var highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
-                    output += "<pre class=\"sqlresult\"><code>" + highlightResult + "</code></pre>\n";
-                }
-                else { // console output
-                    var logs = type.trim();
-                    if (logs)
-                        output += "<pre class=\"console\"><code>" + logs + "</code></pre>\n";
-                }
+                output += '</div>';
+                runnableTag.insertAdjacentHTML('afterend', output);
             }
-            output += '</div>';
             runnableTag.className += ' runnable';
-            runnableTag.insertAdjacentHTML('afterend', output);
         });
         fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
         return [2 /*return*/];

@@ -36,6 +36,9 @@ pre {
   margin: 15px 0 20px;
   white-space: pre-wrap;
 }
+pre code {
+  background: transparent;
+}
 #monaco-overlay {
   position: fixed;
   background: rgba(0,0,0,0.667);
@@ -90,10 +93,7 @@ pre {
   color: #fff;
   background: #3366ee;
 }
-.sqltext code, .sqlvalues code, .sqlresult code, .console code {
-  background: transparent;
-}
-.sqltext {
+.sqltext, .language-sql {
   background: #eeeeff;
 }
 .sqltext::before {

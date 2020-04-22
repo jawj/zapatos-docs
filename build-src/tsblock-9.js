@@ -15,8 +15,11 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const result = db.transaction(pool, db.Isolation.Serializable, async (txnClient) => {
-    /* queries here use txnClient instead of pool */
-});
+function dbNowQuery() {
+    const query = db.sql `SELECT now()`;
+    query.runResultTransform = qr => qr.rows[0].now;
+    return query;
+}
+const dbNow = await dbNowQuery().run(pool);
 /* original script ends */
 pool.end();

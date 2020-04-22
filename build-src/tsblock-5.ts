@@ -14,21 +14,14 @@
           }
         });
         
+          import * as db from './zapatos/src';
+          import * as s from './zapatos/schema';
+          import { pool } from './pgPool';
+        
 
         /* original script begins */
-        import * as db from './zapatos/src';
-import * as s from './zapatos/schema';
-import { pool } from './pgPool';
-
-const
-  author: s.authors.Insertable = {
-    name: 'Gabriel Garcia Marquez',
-    isLiving: false,
-  },
-  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
-      INSERT INTO ${"authors"} (${db.cols(author)})
-      VALUES(${db.vals(author)}) RETURNING *`
-    .run(pool);
+        const authorQuery = db.sql<s.authors.SQL, s.authors.Selectable[]>`
+  SELECT * FROM ${"authors"}`;
 
         /* original script ends */
 

@@ -46,7 +46,7 @@ CREATE TABLE "authors"
 
 We run `npx zapatos` to generate a file named `schema.ts`, including table definitions like this one:
 
-```typescript
+```typescript:norun
 export namespace authors {
   /* ... */
   export interface Selectable {
@@ -70,7 +70,7 @@ The types are, I hope, pretty self-explanatory. `authors.Selectable` is what I'l
 
 `schema.ts` includes a few other types that get used internally, including some handy type mappings, such as this one:
 
-```typescript
+```typescript:norun
 export type SelectableForTable<T extends Table> = {
   authors: authors.Selectable,
   books: books.Selectable,
@@ -197,7 +197,7 @@ Transactions are where I've found traditional ORMs like TypeORM and Sequelize pr
 
 Zapatos also offers a simple `transaction` helper function that handles issuing a `ROLLBACK` on error, releasing the database client in a `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. It looks like this:
 
-```typescript
+```typescript:noresult
 const result = db.transaction(pool, db.Isolation.Serializable, async txnClient => {
   /* queries here use txnClient instead of pool */
 });
@@ -245,7 +245,14 @@ Finally, it provides a set of hierarchical isolation types so that, for example,
 
 Zapatos doesn't handle schema migrations. Other tools can help you with this: check out [dbmate](https://github.com/amacneil/dbmate), for instance.
 
-It also won't tell you how to structure your code. Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
+It doesn't manage the `pg` connection pool for you, as some ORMs do — mainly because this is so trivially easy. For example, my `pgPool.ts` looks something like this:
+
+```typescript:norun
+import pg from 'pg';
+export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+```
+
+Finally, it won't tell you how to structure your code. Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
 
 
 ## How do I use it?
@@ -343,48 +350,105 @@ This is likely most useful for the database connection details. For example, on 
 
 ## Full documentation
 
-### `sql<Interpolations, RunResult>` template strings
+### `sql` tagged template strings
 
 Arbitrary queries are written using the tagged template function `sql`, which returns [`SQLFragment`](#sqlfragment) class instances.
 
 The `sql` function is [generic](https://www.typescriptlang.org/docs/handbook/generics.html), having two type variables. For example: 
 
-```typescript
+```typescript:noresult
 const authorQuery = db.sql<s.authors.SQL, s.authors.Selectable[]>`
   SELECT * FROM ${"authors"}`;
 ```
 
 The first type variable, `Interpolations`, defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
 
-The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, so if you have multiple interpolation types you will need to specify a value explicitly (either `db.SQL` or something more precise).
+The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, so if you have multiple interpolated values of different types you need to specify a value explicitly (either `db.SQL` or something more precise).
 
 The second type variable, `RunResult`, describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral) query options. Its default value if not specified is `any[]`.
 
-As another example of these type variables, try this:
+Take another example of these type variables:
 
-```typescript
+```typescript:noresult
 const [{ random }] = await db.sql<never, [{ random: number }]>`
   SELECT random()`.run(pool);
 ```
 
-`Interpolations` is `never` because nothing needs to be interpolated in this query, and the `RunResult` type says that the query will return one row comprising one numeric column, named `random`. The `random` TypeScript variable we initialize will of course be of type `number`. 
+`Interpolations` is `never` because nothing needs to be interpolated in this query, and the `RunResult` type says that the query will return one row comprising one numeric column, named `random`. The `random` TypeScript variable we initialize will of course be typed as a `number`. 
 
-If you're happy to have your types tied down a little looser, you can also fully omit the type variables in this query (falling back on their defaults):
+If you're happy to have your types tied down a little less tightly, it's also fine to wholly omit the type variables in this query, falling back on their defaults:
 
-```typescript
+```typescript:noresult
 const [{ random }] = await db.sql`SELECT random()`.run(pool);
 ```
 
-In this case, the `random` variable is of type `any`.
+In this case, the `random` variable is of course still a `number`, but it is typed as `any`.
 
 
 ### `SQLFragment`
 
-#### `run()`
+`SQLFragment` class instances are returned by the `sql` tagged template function (you're unlikely ever to contruct them directly with `new`). They take on the `RunResult` type variable from the `sql`  function.
 
-#### `compile()`
+You can [interpolate them](#other-sql-template-strings) in other `sql` tagged template strings, or access/call the following properties on them:
 
-#### `runResultTransform()`
+
+#### `async run(queryable: Queryable): Promise<RunResult>`
+
+The `run` function compiles, executes, and returns the transformed result of the query represented by this `SQLFragment`. Taking that one step at a a time:
+
+1. First, the `compile` function is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module.
+
+2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as either a `pg.Pool` instance or a subtype of `pg.PoolClient` (`TxnClient`) as provided by the [`transaction` helper function](#transactions).
+
+3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform) function, whose default implementation simply returns the `rows` property of the result.
+
+The unwrapped return value is typed according to the `RunResult` type variable of this `SQLFragment`.
+
+Examples of the `run` function are scattered throughout this documentation.
+
+
+#### `compile(): SQLQuery`
+
+The `compile` function recursively transforms this `SQLFragment` and its interpolated values into a `SQLQuery` object (`{ text: string; values: any[]; }`) that can be passed straight to the `pg` module. It is called without arguments (the arguments it can take are for internal use).
+
+For example:
+
+```typescript
+const 
+  authorId = 12,  // from some untrusted source
+  query = db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{authorId}}`,
+  compiled = query.compile();
+
+console.log(compiled);
+```
+
+You may never need this function. Use it if and when you want to see the SQL that would be executed by the `run` function, without in fact executing it. 
+
+
+#### `runResultTransform: (qr: pg.QueryResult) => any`
+
+When calling `run`, the function stored in this property is applied to the result object returned by `pg` in order to produce the result that is ultimately returned.
+
+By default, the `rows` array is returned: the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral) supply their own implementations in order to match their declared `RunResult` types.
+
+Generally you will not need to call this function directly, but there may be cases where you want to assign a new function to replace the default implementation.
+
+For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp as a `Date`. We could do so like this:
+
+```typescript
+function dbNowQuery() {
+  const query = db.sql<never, Date>`SELECT now()`;
+  query.runResultTransform = qr => qr.rows[0].now;
+  return query;
+}
+
+const dbNow = await dbNowQuery().run(pool);
+```
+
+Note that the `RunResult` type variable reflects the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
+
+If a `SQLFragment` does not have `run` called on it directly — for example, if it is instead interpolated into another `SQLFragment`, or given as the value of the `lateral` option — then the `runResultTransform` property remains unused.
 
 
 ### `sql` template interpolation types

@@ -103,6 +103,9 @@ function openMonaco(code) {
     overlay = document.getElementById('monaco-overlay'),
     editor = window.activeMonacoEditor;
 
+  if (!code.match(/^\s*import\b/m)) code =
+    `import * as db from './zapatos/src';\nimport * as s from './zapatos/schema';\nimport { pool } from './pgPool';\n\n` + code;
+
   overlay.style.display = 'block';
   editor.setValue(code);
   editor.layout();

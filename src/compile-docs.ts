@@ -51,10 +51,11 @@ import { JSDOM } from 'jsdom';
       html: true,
       linkify: true,
       typographer: true,
-      highlight: (str: string, lang: string) => {
+      highlight: (str: string, langPlusOptions: string) => {
+        const [lang, ...options] = langPlusOptions.split(':');
         if (lang && hljs.getLanguage(lang)) {
           try {
-            return `<pre class="language-${lang}"><code>${hljs.highlight(lang, str).value}</code></pre>`;
+            return `<pre class="language-${lang}${options.map(o => ' ' + o)}"><code>${hljs.highlight(lang, str).value}</code></pre>`;
           } catch (err) {
             console.log('Highlighting error', err);
           }
@@ -115,7 +116,7 @@ import { JSDOM } from 'jsdom';
   console.info('Collecting TypeScript scripts ..');
 
   const runnableTags = Array.from(content!.querySelectorAll('.language-typescript'))
-    .filter(ts => ts.textContent?.match(/^\s*import\b/m));
+    .filter(ts => !ts.className.match(/\bnorun\b/));
 
   runnableTags.forEach((runnableTag, i) => {
     const
@@ -125,13 +126,21 @@ import { JSDOM } from 'jsdom';
         xyz.setConfig({
           queryListener: (x: any) => {
             console.log('%%text%:' + x.text + '%%');
-            if (x.values.length) console.log('%%values%:[' + 
-              x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');
+            if (x.values.length) {
+              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');
+            }
           },
           resultListener: (x: any) => {
-            if (x.length) console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
+            if (x && !(Array.isArray(x) && x.length === 0)) {
+              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
+            }
           }
         });
+        ${ts?.match(/^\s*import\b/m) ? '' : `
+          import * as db from './zapatos/src';
+          import * as s from './zapatos/schema';
+          import { pool } from './pgPool';
+        `}
 
         /* original script begins */
         ${ts}
@@ -153,47 +162,55 @@ import { JSDOM } from 'jsdom';
 
   const
     pgFmtArgs = '--spaces 2 --wrap-after 30 --format text --keyword-case 0 --type-case 0',
-    formatSQL = (sql: string) =>
-      execSync(`perl ./lib/pgFormatter/pg_format ${pgFmtArgs}`, {
-        encoding: 'utf8',
-        input: sql,
-      });
+    formatSQL = (sql: string) => {
+      try {
+        return execSync(`perl ./lib/pgFormatter/pg_format ${pgFmtArgs}`, {
+          encoding: 'utf8',
+          input: sql,
+        });
+      } catch (err) {  // https://github.com/darold/pgFormatter/issues/183
+        return sql.trim();
+      }
+    }
 
   runnableTags.forEach((runnableTag, i) => {
     console.info(`Running script block ${i} ..`);
 
-    const
-      stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
-        { cwd: './build-src', encoding: 'utf8' }),
-      parts = stdout.split(/%{2,}/);
+    const stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
+      { cwd: './build-src', encoding: 'utf8' });
+    // console.log(stdout);
 
-    let output = '<div class="sqlstuff">\n';
-    for (const part of parts) {
-      const [type, str] = part.split('%:');
+    const parts = stdout.split(/%{2,}/);
 
-      if (type === 'text') {
-        const
-          fmtSql = formatSQL(str),
-          highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
-        output += `<pre class="sqltext"><code>${highlightSql}</code></pre>\n`;
+    if (!runnableTag.className.match(/\bnoresult\b/)) {
+      let output = '<div class="sqlstuff">\n';
+      for (const part of parts) {
+        const [type, str] = part.split('%:');
 
-      } else if (type === 'values') {
-        const highlightValues = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
-        output += `<pre class="sqlvalues"><code>${highlightValues}</code></pre>\n`;
+        if (type === 'text') {
+          const
+            fmtSql = formatSQL(str),
+            highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
+          output += `<pre class="sqltext"><code>${highlightSql}</code></pre>\n`;
 
-      } else if (type === 'result') {
-        const highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
-        output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
+        } else if (type === 'values') {
+          const highlightValues = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
+          output += `<pre class="sqlvalues"><code>${highlightValues}</code></pre>\n`;
 
-      } else {  // console output
-        const logs = type.trim();
-        if (logs) output += `<pre class="console"><code>${logs}</code></pre>\n`;
+        } else if (type === 'result') {
+          const highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
+          output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
+
+        } else {  // console output
+          const logs = type.trim();
+          if (logs) output += `<pre class="console"><code>${logs}</code></pre>\n`;
+        }
       }
+      output += '</div>'
+      runnableTag.insertAdjacentHTML('afterend', output);
     }
-    output += '</div>'
 
     runnableTag.className += ' runnable';
-    runnableTag.insertAdjacentHTML('afterend', output);
   });
 
   fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });

@@ -15,8 +15,7 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const result = db.transaction(pool, db.Isolation.Serializable, async (txnClient) => {
-    /* queries here use txnClient instead of pool */
-});
+const authorQuery = db.sql `
+  SELECT * FROM ${"authors"}`;
 /* original script ends */
 pool.end();
