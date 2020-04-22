@@ -376,7 +376,7 @@ const [{ random }] = await db.sql<never, [{ random: number }]>`
 
 `Interpolations` is `never` because nothing needs to be interpolated in this query, and the `RunResult` type says that the query will return one row comprising one numeric column, named `random`. The `random` TypeScript variable we initialize will of course be typed as a `number`. 
 
-If you're happy to have your types tied down a little less tightly, it's also fine to wholly omit the type variables in this query, falling back on their defaults:
+If you're happy to have your types tied down a little less tightly, it also works to wholly omit the type variables in this query, falling back on their defaults:
 
 ```typescript:noresult
 const [{ random }] = await db.sql`SELECT random()`.run(pool);
@@ -387,9 +387,9 @@ In this case, the `random` variable is of course still a `number`, but it is typ
 
 ### `SQLFragment`
 
-`SQLFragment<RunResult>` class instances are returned by the `sql` tagged template function (you're unlikely ever to contruct them directly with `new`). They take on the `RunResult` type variable from the `sql`  function.
+`SQLFragment<RunResult>` class instances are what is returned by the `sql` tagged template function — you're unlikely ever to contruct them directly with `new`. They take on the `RunResult` type variable from the `sql` template function that constructs them.
 
-You can [interpolate them](#other-sql-template-strings) in other `sql` tagged template strings, or call/access the following properties on them:
+You can [interpolate them](#other-sql-template-strings) into other `sql` tagged template strings, or call/access the following properties on them:
 
 
 #### `async run(queryable: Queryable): Promise<RunResult>`
@@ -454,44 +454,98 @@ If a `SQLFragment` does not have `run` called on it directly — for example, i
 
 ### `sql` template interpolation types
 
-#### `String`s
+#### Strings
 
 The strings that can be directly interpolated into a `sql` template string are defined by its `Interpolations` type variable, [as noted above](#sql-tagged-template-strings). Typically, this will limit them to the names of tables and columns.
 
-Interpolated strings are passed through double-quoted but otherwise unchanged. It's preferable to use interpolated string literals rather than just including the strings in the query itself, in order to benefit from auto-completion and (ongoing) type-checking.
+Interpolated strings are passed through to the raw SQL query double-quoted, to preserve capitalisation and neutralise SQL keywords, but otherwise unchanged. 
 
-So, for example, write —
+It's highly preferable to use interpolated string literals for table and column names rather than just writing those values in the query itself, in order to benefit from auto-completion and (ongoing) type-checking.
+
+So, for example, do write:
 
 ```typescript:noresult
 const title = await db.sql`
   SELECT ${"title"} FROM ${"books"} LIMIT 1`.run(pool);
 ```
 
-— rather than —
+But **don't** write
 
 ```typescript:noresult
 const title = await db.sql`
   SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this!
 ```
 
-— even though they produce identical results right now.
+— even though the two produce the same result right now.
 
 
-#### `Array`s
+#### `cols(): ColumnNames` and `vals(): ColumnValues`
 
-#### Other `sql` template strings
+The `cols` and `vals` wrapper functions (which return `ColumnNames` and `ColumnValues` class instances respectively) are designed primarily to help with `INSERT` queries.
 
-#### `cols` (`ColumnNames`) and `vals` (`ColumnValues`)
+Pass them each the same `Insertable` object: the `cols` are compiled to a comma-separated list of the column names, and the `vals` are compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values in matching order. To return to an earlier example:
+
+```typescript
+const
+  author: s.authors.Insertable = {
+    name: 'Gabriel Garcia Marquez',
+    isLiving: false,
+  },
+  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
+      INSERT INTO ${"authors"} (${db.cols(author)})
+      VALUES(${db.vals(author)}) RETURNING *`
+    .run(pool);
+```
+
+A second use for the `cols` function is in selecting only a subset of columns, in conjunction with the `OnlyCols` type. Pass an array of column names to `cols`, and they're compiled appropriately, as seen in this example:
+
+```typescript
+// the <const> prevents generalization to string[]
+const bookCols = <const>['id', 'title'];
+type BookDatum = s.books.OnlyCols<typeof bookCols>;
+
+const
+  bookData = await db.sql<s.books.SQL, BookDatum[]>`
+    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
+```
+
+#### `sql` template strings
+
+
+
+
+#### Arrays
+
+Items in an interpolated array are treated just the same as if they had been interpolated directly. This can be useful in building queries programmatically. As a slightly contrived example:
+
+```typescript
+async function getBooksWhereAll(...conditions: db.SQLFragment[]) {
+  for (let i = conditions.length - 1; i > 0; i--) {
+    conditions.splice(i, 0, db.sql` AND `);
+  }
+  return db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${conditions}`.run(pool);
+}
+
+const books = await getBooksWhereAll(
+  db.sql<s.books.SQL>`(${"title"} LIKE 'One%')`,
+  db.sql<s.books.SQL>`(${"authorId"} = 12)`
+);
+```
 
 #### `Whereable`
 
 #### `self`
 
-#### `param` (`Parameter`)
+#### `param(value: any): Parameter`
 
 #### `default`
 
-#### `parent('columnName')` (`ParentColumn`)
+#### `raw(value: string): DangerousRawString`
+
+#### `parent(columnName: string): ParentColumn`
+
+#### 
 
 
 ### Shortcut functions and lateral joins
