@@ -387,22 +387,22 @@ In this case, the `random` variable is of course still a `number`, but it is typ
 
 ### `SQLFragment`
 
-`SQLFragment` class instances are returned by the `sql` tagged template function (you're unlikely ever to contruct them directly with `new`). They take on the `RunResult` type variable from the `sql`  function.
+`SQLFragment<RunResult>` class instances are returned by the `sql` tagged template function (you're unlikely ever to contruct them directly with `new`). They take on the `RunResult` type variable from the `sql`  function.
 
-You can [interpolate them](#other-sql-template-strings) in other `sql` tagged template strings, or access/call the following properties on them:
+You can [interpolate them](#other-sql-template-strings) in other `sql` tagged template strings, or call/access the following properties on them:
 
 
 #### `async run(queryable: Queryable): Promise<RunResult>`
 
-The `run` function compiles, executes, and returns the transformed result of the query represented by this `SQLFragment`. Taking that one step at a a time:
+The `run` function compiles, executes, and returns the transformed result of the query represented by this `SQLFragment`. The `awaited` return value is typed according to the `SQLFragment`'s `RunResult` type variable.
 
-1. First, the `compile` function is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module.
+Taking that one step at a a time:
+
+1. First, the `compile` function is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
 
 2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as either a `pg.Pool` instance or a subtype of `pg.PoolClient` (`TxnClient`) as provided by the [`transaction` helper function](#transactions).
 
-3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform) function, whose default implementation simply returns the `rows` property of the result.
-
-The unwrapped return value is typed according to the `RunResult` type variable of this `SQLFragment`.
+3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform) function, whose default implementation simply returns the `rows` property of the result. If a `resultListener` function [has been configured](#run-time-configuration), it is called with the transformed result as its argument now.
 
 Examples of the `run` function are scattered throughout this documentation.
 
@@ -428,13 +428,13 @@ You may never need this function. Use it if and when you want to see the SQL tha
 
 #### `runResultTransform: (qr: pg.QueryResult) => any`
 
-When calling `run`, the function stored in this property is applied to the result object returned by `pg` in order to produce the result that is ultimately returned.
+When you call `run`, the function stored in this property is applied to the result object returned by `pg`, in order to produce the result that's then returned by the function.
 
-By default, the `rows` array is returned: the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral) supply their own implementations in order to match their declared `RunResult` types.
+By default, the `rows` property (an array) is returned: the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral) supply their own `runResultTransform` implementations in order to match their declared `RunResult` types.
 
 Generally you will not need to call this function directly, but there may be cases where you want to assign a new function to replace the default implementation.
 
-For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp as a `Date`. We could do so like this:
+For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp directly as a `Date`. We could do so like this:
 
 ```typescript
 function dbNowQuery() {
@@ -444,16 +444,38 @@ function dbNowQuery() {
 }
 
 const dbNow = await dbNowQuery().run(pool);
+// dbNow is a Date: the result shown below has come via JSON.stringify
 ```
 
-Note that the `RunResult` type variable reflects the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
+Note that the `RunResult` type variable on the `sql` template function (in this case, `Date`) reflects the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
 
-If a `SQLFragment` does not have `run` called on it directly — for example, if it is instead interpolated into another `SQLFragment`, or given as the value of the `lateral` option — then the `runResultTransform` property remains unused.
+If a `SQLFragment` does not have `run` called on it directly — for example, if it is instead interpolated into another `SQLFragment`, or given as the value of the `lateral` option to the `select` shortcut — then the `runResultTransform` function is never applied.
 
 
 ### `sql` template interpolation types
 
 #### `String`s
+
+The strings that can be directly interpolated into a `sql` template string are defined by its `Interpolations` type variable, [as noted above](#sql-tagged-template-strings). Typically, this will limit them to the names of tables and columns.
+
+Interpolated strings are passed through double-quoted but otherwise unchanged. It's preferable to use interpolated string literals rather than just including the strings in the query itself, in order to benefit from auto-completion and (ongoing) type-checking.
+
+So, for example, write —
+
+```typescript:noresult
+const title = await db.sql`
+  SELECT ${"titles"} FROM ${"books"} LIMIT 1`.run(pool);
+```
+
+— rather than —
+
+```typescript:noresult
+const title = await db.sql`
+  SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this!
+```
+
+— even though they produce identical results right now.
+
 
 #### `Array`s
 

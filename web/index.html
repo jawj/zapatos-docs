@@ -96,7 +96,7 @@
 </code></pre><div class="sqlstuff">
 <pre class="sqltext"><code><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">"authors"</span> (<span class="hljs-string">"isLiving"</span>, <span class="hljs-string">"name"</span>)<br>  <span class="hljs-keyword">VALUES</span> ($<span class="hljs-number">1</span>, $<span class="hljs-number">2</span>)<br><span class="hljs-keyword">RETURNING</span> *</code></pre>
 <pre class="sqlvalues"><code>[<span class="hljs-literal">false</span>, <span class="hljs-string">"Gabriel Garcia Marquez"</span>]</code></pre>
-<pre class="sqlresult"><code>[<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">292</span>,<br>    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Gabriel Garcia Marquez"</span>,<br>    <span class="hljs-attr">"isLiving"</span>: <span class="hljs-literal">false</span><br>  }<br>]</code></pre>
+<pre class="sqlresult"><code>[<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">307</span>,<br>    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Gabriel Garcia Marquez"</span>,<br>    <span class="hljs-attr">"isLiving"</span>: <span class="hljs-literal">false</span><br>  }<br>]</code></pre>
 </div>
 <p>We’ve applied the appropriate type to the object we’re trying to insert (<code>s.authors.Insertable</code>), giving us type-checking and autocompletion on that object. And we’ve specified both which types are allowed as interpolated values in the template string (<code>s.authors.SQL</code>) and what type is going to be returned (<code>s.authors.Selectable[]</code>)&nbsp;when the query runs.</p>
 <p><em>You can click ‘Explore types’ above to open the code in an embedded Monaco (VS Code) editor, so you can check those typings for yourself.</em></p>
@@ -116,7 +116,7 @@
 </code></pre><div class="sqlstuff">
 <pre class="sqltext"><code><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">"authors"</span> (<span class="hljs-string">"isLiving"</span>, <span class="hljs-string">"name"</span>)<br>  <span class="hljs-keyword">VALUES</span> ($<span class="hljs-number">1</span>, $<span class="hljs-number">2</span>), ($<span class="hljs-number">3</span>, $<span class="hljs-number">4</span>)<br><span class="hljs-keyword">RETURNING</span> to_jsonb (<span class="hljs-string">"authors"</span>.*) <span class="hljs-keyword">AS</span> <span class="hljs-keyword">result</span></code></pre>
 <pre class="sqlvalues"><code>[<span class="hljs-literal">false</span>, <span class="hljs-string">"Douglas Adams"</span>, <span class="hljs-literal">false</span>, <span class="hljs-string">"Jane Austen"</span>]</code></pre>
-<pre class="sqlresult"><code>[<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">293</span>,<br>    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Douglas Adams"</span>,<br>    <span class="hljs-attr">"isLiving"</span>: <span class="hljs-literal">false</span><br>  },<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">294</span>,<br>    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Jane Austen"</span>,<br>    <span class="hljs-attr">"isLiving"</span>: <span class="hljs-literal">false</span><br>  }<br>]</code></pre>
+<pre class="sqlresult"><code>[<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">308</span>,<br>    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Douglas Adams"</span>,<br>    <span class="hljs-attr">"isLiving"</span>: <span class="hljs-literal">false</span><br>  },<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">309</span>,<br>    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Jane Austen"</span>,<br>    <span class="hljs-attr">"isLiving"</span>: <span class="hljs-literal">false</span><br>  }<br>]</code></pre>
 </div>
 <p>The <code>insert</code> shortcut accepts a single <code>Insertable</code> or an <code>Insertable[]</code> array, and correspondingly returns a single <code>Selectable</code> or a <code>Selectable[]</code> array. Since we specified <code>'authors'</code> as the first argument here, and an array as the second, input and output will be checked and auto-completed as <code>authors.Insertable[]</code> and <code>authors.Selectable[]</code> respectively.</p>
 <p><em>Again, click ‘Explore types’ to play around and check those typings.</em></p>
@@ -199,14 +199,14 @@ bookAuthorTags.map(<span class="hljs-function"><span class="hljs-params">b</span
 </code></pre><div class="sqlstuff">
 <pre class="sqltext"><code><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">"accounts"</span> (<span class="hljs-string">"balance"</span>)<br>  <span class="hljs-keyword">VALUES</span> ($<span class="hljs-number">1</span>), ($<span class="hljs-number">2</span>)<br><span class="hljs-keyword">RETURNING</span> to_jsonb (<span class="hljs-string">"accounts"</span>.*) <span class="hljs-keyword">AS</span> <span class="hljs-keyword">result</span></code></pre>
 <pre class="sqlvalues"><code>[<span class="hljs-number">50</span>, <span class="hljs-number">50</span>]</code></pre>
-<pre class="sqlresult"><code>[<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">97</span>,<br>    <span class="hljs-attr">"balance"</span>: <span class="hljs-number">50</span><br>  },<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">98</span>,<br>    <span class="hljs-attr">"balance"</span>: <span class="hljs-number">50</span><br>  }<br>]</code></pre>
+<pre class="sqlresult"><code>[<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">107</span>,<br>    <span class="hljs-attr">"balance"</span>: <span class="hljs-number">50</span><br>  },<br>  {<br>    <span class="hljs-attr">"id"</span>: <span class="hljs-number">108</span>,<br>    <span class="hljs-attr">"balance"</span>: <span class="hljs-number">50</span><br>  }<br>]</code></pre>
 <pre class="sqltext"><code><span class="hljs-keyword">START</span> <span class="hljs-keyword">TRANSACTION</span> <span class="hljs-keyword">ISOLATION</span> <span class="hljs-keyword">LEVEL</span> <span class="hljs-keyword">SERIALIZABLE</span></code></pre>
 <pre class="sqltext"><code><span class="hljs-keyword">UPDATE</span><br>  <span class="hljs-string">"accounts"</span><br><span class="hljs-keyword">SET</span> (<span class="hljs-string">"balance"</span>) = <span class="hljs-keyword">ROW</span> (<span class="hljs-string">"balance"</span> - $<span class="hljs-number">1</span>)<br><span class="hljs-keyword">WHERE</span> (<span class="hljs-string">"id"</span> = $<span class="hljs-number">2</span>)<br><span class="hljs-keyword">RETURNING</span> to_jsonb (<span class="hljs-string">"accounts"</span>.*) <span class="hljs-keyword">AS</span> <span class="hljs-keyword">result</span></code></pre>
-<pre class="sqlvalues"><code>[<span class="hljs-number">60</span>, <span class="hljs-number">97</span>]</code></pre>
+<pre class="sqlvalues"><code>[<span class="hljs-number">60</span>, <span class="hljs-number">107</span>]</code></pre>
 <pre class="sqltext"><code><span class="hljs-keyword">UPDATE</span><br>  <span class="hljs-string">"accounts"</span><br><span class="hljs-keyword">SET</span> (<span class="hljs-string">"balance"</span>) = <span class="hljs-keyword">ROW</span> (<span class="hljs-string">"balance"</span> + $<span class="hljs-number">1</span>)<br><span class="hljs-keyword">WHERE</span> (<span class="hljs-string">"id"</span> = $<span class="hljs-number">2</span>)<br><span class="hljs-keyword">RETURNING</span> to_jsonb (<span class="hljs-string">"accounts"</span>.*) <span class="hljs-keyword">AS</span> <span class="hljs-keyword">result</span></code></pre>
-<pre class="sqlvalues"><code>[<span class="hljs-number">60</span>, <span class="hljs-number">98</span>]</code></pre>
+<pre class="sqlvalues"><code>[<span class="hljs-number">60</span>, <span class="hljs-number">108</span>]</code></pre>
 <pre class="sqltext"><code><span class="hljs-keyword">ROLLBACK</span></code></pre>
-<pre class="console"><code>new row for relation "accounts" violates check constraint "accounts_balance_check" / Failing row contains (97, -10).</code></pre>
+<pre class="console"><code>new row for relation "accounts" violates check constraint "accounts_balance_check" / Failing row contains (107, -10).</code></pre>
 </div>
 <p>Finally, it provides a set of hierarchical isolation types so that, for example, if you type a <code>txnClient</code> argument to a function as <code>TxnSatisfying.RepeatableRead</code>, you can call it with <code>Isolation.Serializable</code> or <code>Isolation.RepeatableRead</code> but not <code>Isolation.ReadCommitted</code>.</p>
 <h3 id="what-doesnt-it-do">What doesn’t it do?</h3>
@@ -309,22 +309,22 @@ bookAuthorTags.map(<span class="hljs-function"><span class="hljs-params">b</span
 </code></pre>
 <p>In this case, the <code>random</code> variable is of course still a <code>number</code>, but it is typed as <code>any</code>.</p>
 <h3 id="sqlfragment"><code>SQLFragment</code></h3>
-<p><code>SQLFragment</code> class instances are returned by the <code>sql</code> tagged template function (you’re unlikely ever to contruct them directly with <code>new</code>). They take on the <code>RunResult</code> type variable from the <code>sql</code>  function.</p>
-<p>You can <a href="#other-sql-template-strings">interpolate them</a> in other <code>sql</code> tagged template strings, or access/call the following properties on them:</p>
+<p><code>SQLFragment&lt;RunResult&gt;</code> class instances are returned by the <code>sql</code> tagged template function (you’re unlikely ever to contruct them directly with <code>new</code>). They take on the <code>RunResult</code> type variable from the <code>sql</code>  function.</p>
+<p>You can <a href="#other-sql-template-strings">interpolate them</a> in other <code>sql</code> tagged template strings, or call/access the following properties on them:</p>
 <h4 id="async-runqueryable-queryable"><code>async run(queryable: Queryable): Promise&lt;RunResult&gt;</code></h4>
-<p>The <code>run</code> function compiles, executes, and returns the transformed result of the query represented by this <code>SQLFragment</code>. Taking that one step at a a time:</p>
+<p>The <code>run</code> function compiles, executes, and returns the transformed result of the query represented by this <code>SQLFragment</code>. The <code>awaited</code> return value is typed according to the <code>SQLFragment</code>'s <code>RunResult</code> type variable.</p>
+<p>Taking that one step at a a time:</p>
 <ol>
 <li>
-<p>First, the <code>compile</code> function is called, recursively compiling this <code>SQLFragment</code> and its interpolated values into a <code>{ text: '', values: [] }</code> query that can be passed straight to the <code>pg</code> module.</p>
+<p>First, the <code>compile</code> function is called, recursively compiling this <code>SQLFragment</code> and its interpolated values into a <code>{ text: '', values: [] }</code> query that can be passed straight to the <code>pg</code> module. If a <code>queryListener</code> function <a href="#run-time-configuration">has been configured</a>, it is called with the query as its argument now.</p>
 </li>
 <li>
 <p>Next, the compiled SQL query is executed against the supplied <code>Queryable</code>, which is defined as either a <code>pg.Pool</code> instance or a subtype of <code>pg.PoolClient</code> (<code>TxnClient</code>) as provided by the <a href="#transactions"><code>transaction</code> helper function</a>.</p>
 </li>
 <li>
-<p>Finally, the result returned from <code>pg</code> is fed through this <code>SQLFragment</code>'s <a href="#runresulttransform"><code>runResultTransform()</code></a> function, whose default implementation simply returns the <code>rows</code> property of the result.</p>
+<p>Finally, the result returned from <code>pg</code> is fed through this <code>SQLFragment</code>'s <a href="#runresulttransform"><code>runResultTransform()</code></a> function, whose default implementation simply returns the <code>rows</code> property of the result. If a <code>resultListener</code> function <a href="#run-time-configuration">has been configured</a>, it is called with the transformed result as its argument now.</p>
 </li>
 </ol>
-<p>The unwrapped return value is typed according to the <code>RunResult</code> type variable of this <code>SQLFragment</code>.</p>
 <p>Examples of the <code>run</code> function are scattered throughout this documentation.</p>
 <h4 id="compile-sqlquery"><code>compile(): SQLQuery</code></h4>
 <p>The <code>compile</code> function recursively transforms this <code>SQLFragment</code> and its interpolated values into a <code>SQLQuery</code> object (<code>{ text: string; values: any[]; }</code>) that can be passed straight to the <code>pg</code> module. It is called without arguments (the arguments it can take are for internal use).</p>
@@ -344,10 +344,10 @@ bookAuthorTags.map(<span class="hljs-function"><span class="hljs-params">b</span
 </div>
 <p>You may never need this function. Use it if and when you want to see the SQL that would be executed by the <code>run</code> function, without in fact executing it.</p>
 <h4 id="runresulttransform-qr"><code>runResultTransform: (qr: pg.QueryResult) =&gt; any</code></h4>
-<p>When calling <code>run</code>, the function stored in this property is applied to the result object returned by <code>pg</code> in order to produce the result that is ultimately returned.</p>
-<p>By default, the <code>rows</code> array is returned: the default implementation is just <code>qr =&gt; qr.rows</code>. However, the <a href="#shortcut-functions-and-lateral">shortcut functions</a> supply their own implementations in order to match their declared <code>RunResult</code> types.</p>
+<p>When you call <code>run</code>, the function stored in this property is applied to the result object returned by <code>pg</code>, in order to produce the result that’s then returned by the function.</p>
+<p>By default, the <code>rows</code> property (an array) is returned: the default implementation is just <code>qr =&gt; qr.rows</code>. However, the <a href="#shortcut-functions-and-lateral">shortcut functions</a> supply their own <code>runResultTransform</code> implementations in order to match their declared <code>RunResult</code> types.</p>
 <p>Generally you will not need to call this function directly, but there may be cases where you want to assign a new function to replace the default implementation.</p>
-<p>For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp as a <code>Date</code>. We could do so like this:</p>
+<p>For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp directly as a <code>Date</code>. We could do so like this:</p>
 <pre class="language-typescript runnable"><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">dbNowQuery</span>(<span class="hljs-params"></span>) </span>{
   <span class="hljs-keyword">const</span> query = db.sql&lt;never, <span class="hljs-built_in">Date</span>&gt;<span class="hljs-string">`SELECT now()`</span>;
   query.runResultTransform = <span class="hljs-function"><span class="hljs-params">qr</span> =&gt;</span> qr.rows[<span class="hljs-number">0</span>].now;
@@ -355,14 +355,26 @@ bookAuthorTags.map(<span class="hljs-function"><span class="hljs-params">b</span
 }
 
 <span class="hljs-keyword">const</span> dbNow = <span class="hljs-keyword">await</span> dbNowQuery().run(pool);
+<span class="hljs-comment">// dbNow is a Date: the result shown below has come via JSON.stringify</span>
 </code></pre><div class="sqlstuff">
 <pre class="sqltext"><code><span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">now</span>()</code></pre>
-<pre class="sqlresult"><code><span class="hljs-string">"2020-04-22T13:11:15.742Z"</span></code></pre>
+<pre class="sqlresult"><code><span class="hljs-string">"2020-04-22T16:23:28.063Z"</span></code></pre>
 </div>
-<p>Note that the <code>RunResult</code> type variable reflects the type of the <em>transformed</em> result, not what comes straight back from <code>pg</code> (which in this case is roughly <code>{ rows: [{ now: Date }] }</code>).</p>
-<p>If a <code>SQLFragment</code> does not have <code>run</code> called on it directly —&nbsp;for example, if it is instead interpolated into another <code>SQLFragment</code>, or given as the value of the <code>lateral</code> option — then the <code>runResultTransform</code> property remains unused.</p>
+<p>Note that the <code>RunResult</code> type variable on the <code>sql</code> template function (in this case, <code>Date</code>) reflects the type of the <em>transformed</em> result, not what comes straight back from <code>pg</code> (which in this case is roughly <code>{ rows: [{ now: Date }] }</code>).</p>
+<p>If a <code>SQLFragment</code> does not have <code>run</code> called on it directly —&nbsp;for example, if it is instead interpolated into another <code>SQLFragment</code>, or given as the value of the <code>lateral</code> option to the <code>select</code> shortcut — then the <code>runResultTransform</code> function is never applied.</p>
 <h3 id="sql-template-interpolation-types"><code>sql</code> template interpolation types</h3>
 <h4 id="strings"><code>String</code>s</h4>
+<p>The strings that can be directly interpolated into a <code>sql</code> template string are defined by its <code>Interpolations</code> type variable, <a href="#sql-tagged-template-strings">as noted above</a>. Typically, this will limit them to the names of tables and columns.</p>
+<p>Interpolated strings are passed through double-quoted but otherwise unchanged. It’s preferable to use interpolated string literals rather than just including the strings in the query itself, in order to benefit from auto-completion and (ongoing) type-checking.</p>
+<p>So, for example, write —</p>
+<pre class="language-typescript noresult runnable"><code><span class="hljs-keyword">const</span> title = <span class="hljs-keyword">await</span> db.sql<span class="hljs-string">`
+  SELECT <span class="hljs-subst">${<span class="hljs-string">"title"</span>}</span> FROM <span class="hljs-subst">${<span class="hljs-string">"books"</span>}</span> LIMIT 1`</span>.run(pool);
+</code></pre>
+<p>— rather than —</p>
+<pre class="language-typescript noresult runnable"><code><span class="hljs-keyword">const</span> title = <span class="hljs-keyword">await</span> db.sql<span class="hljs-string">`
+  SELECT "title" FROM "books" LIMIT 1`</span>.run(pool);  <span class="hljs-comment">// no, don't do this!</span>
+</code></pre>
+<p>—&nbsp;even though they produce identical results right now.</p>
 <h4 id="arrays"><code>Array</code>s</h4>
 <h4 id="other-sql-template-strings">Other <code>sql</code> template strings</h4>
 <h4 id="cols-columnnames-and-vals"><code>cols</code> (<code>ColumnNames</code>) and <code>vals</code> (<code>ColumnValues</code>)</h4>

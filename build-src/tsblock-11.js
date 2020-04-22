@@ -15,12 +15,7 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-function dbNowQuery() {
-    const query = db.sql `SELECT now()`;
-    query.runResultTransform = qr => qr.rows[0].now;
-    return query;
-}
-const dbNow = await dbNowQuery().run(pool);
-// dbNow is a Date: the result shown below has come via JSON.stringify
+const title = await db.sql `
+  SELECT "title" FROM "books" LIMIT 1`.run(pool); // no, don't do this!
 /* original script ends */
 pool.end();
