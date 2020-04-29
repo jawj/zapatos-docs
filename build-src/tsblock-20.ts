@@ -21,24 +21,19 @@
 
         /* original script begins */
         const 
-  // insert one
-  steve = await db.insert('authors', { 
-    name: 'Steven Hawking', 
-    isLiving: false, 
-  }).run(pool),
-
-  // insert many
-  [time, me] = await db.insert('books', [
-    { authorId: steve.id, title: 'A Brief History of Time' },
-    { authorId: steve.id, title: 'My Brief History' },
-  ]).run(pool),
-
-  // insert even more
-  [...tags] = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-  ]).run(pool);
+  newTransactions: s.appleTransactions.Insertable[] = [{
+    environment: 'PROD',
+    originalTransactionId: '123456',
+    accountId: 123,
+    latestReceiptData: "TWFuIGlzIGRpc3Rp",
+  }, {
+    environment: 'PROD',
+    originalTransactionId: '234567',
+    accountId: 234,
+    latestReceiptData: "bmd1aXNoZWQsIG5v",
+  }],
+  result = await db.upsert("appleTransactions", newTransactions, 
+    ["environment", "originalTransactionId"]).run(pool);
 
         /* original script ends */
 

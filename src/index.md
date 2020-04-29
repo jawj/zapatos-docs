@@ -619,13 +619,20 @@ Within `select`, `selectOne` or `count` queries passed as subqueries to the `lat
 
 A key contribution of Zapatos is a set of simple shortcut functions that make everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries extremely easy to work with. Furthermore, the `select` shortcut can be nested in order to generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures with inputs and outputs that are still fully and automatically typed.
 
-Because the shortcuts make heavy use of Postgres's JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. The only difference between these types is that, because JSON has no native `Date` representation, columns that would have been returned as `Date` values in a `Selectable` are instead returned as ISO 8601 strings (the result of calling `toJSON()` on them).
+Because the shortcuts make heavy use of Postgres's JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. The only difference between these types is that, because JSON has no native `Date` representation, columns that would have been returned as `Date` values in a `Selectable` are instead returned as ISO 8601 strings (the result of calling `toJSON()` on them) in a `JSONSelectable`.
 
-In node, it's safe to convert this string straight back to a `Date` by passing it to `new Date()` (web browsers' date parsing may vary). But since JavaScript's built-in date/time support is terrible, you're probably better off with a date library such as [Luxon](https://moment.github.io/luxon/) (where you would instead use: `DateTime.fromISO()`);
+Since you're using Node, it's safe to convert this string straight back to a `Date` by passing it to `new Date()` (web browsers' date parsing may vary). But since JavaScript's built-in date/time support is terrible, you're probably anyway better off using a library such as [Luxon](https://moment.github.io/luxon/) (where you would instead use `DateTime.fromISO()`);
 
 #### insert
 
-The `insert` shortcut inserts one or more rows in a table, and returns the inserted row or rows. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]`.
+```typescript:norun
+interface InsertSignatures {
+  <T extends Table>(table: T, values: InsertableForTable<T>): SQLFragment<JSONSelectableForTable<T>>;
+  <T extends Table>(table: T, values: InsertableForTable<T>[]): SQLFragment<JSONSelectableForTable<T>[]>;
+}
+```
+
+The `insert` shortcut inserts one or more rows in a table, and returns them with any `DEFAULT` values filled in. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]`.
 
 For example:
 
@@ -633,7 +640,7 @@ For example:
 const 
   // insert one
   steve = await db.insert('authors', { 
-    name: 'Stephen Hawking', 
+    name: 'Steven Hawking', 
     isLiving: false, 
   }).run(pool),
 
@@ -646,15 +653,102 @@ const
   // insert even more
   [...tags] = await db.insert('tags', [
     { bookId: time.id, tag: 'physics' },
-    { bookId: time.id, tag: 'physicist' },
+    { bookId: me.id, tag: 'physicist' },
     { bookId: me.id, tag: 'autobiography' },
   ]).run(pool);
 ```
 
+Note that Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
+
 
 #### update
 
+```typescript:norun
+interface UpdateSignatures {
+  <T extends Table>(table: T, values: UpdatableForTable<T>, where: WhereableForTable<T> | SQLFragment): SQLFragment<JSONSelectableForTable<T>[]>;
+}
+```
+
+The `update` shortcut updates rows in the database. It takes a `Table` name and a corresponding `Updatable` and `Whereable` — in that order, matching the order in a raw SQL query. It returns a corresponding `JSONSelectable[]`, listing every row affected.
+
+For example, when we discover with that we've mis-spelled a famous physicist's name, we can do this:
+
+```typescript
+await db.update('authors', 
+  { name: 'Stephen Hawking' },
+  { name: 'Steven Hawking' }
+).run(pool);
+```
+
+For additional flexibility, `Updatable` values can also be `SQLFragment`s. Take a table such as the following:
+
+```sql
+CREATE TABLE "emailAuthentication" 
+( "email" citext PRIMARY KEY
+, "consecutiveFailedLogins" INTEGER NOT NULL DEFAULT 0
+, "lastFailedLogin" TIMESTAMPTZ );
+```
+
+Then, to atomically increment the `consecutiveFailedLogins` value, we can do something like this:
+
+```typescript
+await db.update("emailAuthentication", { 
+  consecutiveFailedLogins: db.sql`${db.self} + 1`,
+  lastFailedLogin: db.sql`now()`,
+}, { email: 'me@privacy.net' }).run(pool);
+```
+
 #### upsert
+
+```typescript:norun
+interface UpsertAction { $action: 'INSERT' | 'UPDATE'; }
+type UpsertReturnableForTable<T extends Table> = JSONSelectableForTable<T> & UpsertAction;
+
+interface UpsertSignatures {
+  <T extends Table>(table: T, values: InsertableForTable<T>, uniqueCols: ColumnForTable<T> | ColumnForTable<T>[], noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>>;
+  <T extends Table>(table: T, values: InsertableForTable<T>[], uniqueCols: ColumnForTable<T> | ColumnForTable<T>[], noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>[]>;
+}
+```
+
+The `upsert` shortcut issues an [`INSERT ... ON CONFLICT ... DO UPDATE`](https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT) query. Like `insert`, it takes a `Table` name and a corresponding `Insertable` or `Insertable[]`. 
+
+It then takes, in addition, an appropriate column name or array of column names as the 'arbiter index(es)' on which a conflict is to be detected. Optionally, it can also take a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+
+It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row.
+
+Let's say we have a table of app subscription transactions:
+
+```sql
+CREATE TABLE "appleTransactions" 
+( "environment" "appleEnvironment" NOT NULL  -- enum: 'PROD' or 'Sandbox'
+, "originalTransactionId" TEXT NOT NULL
+, "accountId" INTEGER REFERENCES "accounts"("id") NOT NULL
+, "latestReceiptData" TEXT );
+
+ALTER TABLE "appleTransactions" ADD CONSTRAINT "appleTransPKey" 
+  PRIMARY KEY ("environment", "originalTransactionId");
+```
+
+When we receive a purchase receipt, we need to either store a new record or update an existing record for each distinct(`environment`, `originalTransactionId`) it contains.
+
+We can `map` the transaction data in the receipt into an `appleTransactions.Insertable[]`, and do what's needed with a single `upsert` call. In this example, though, we hard-code the `Insertable[]` for ease of exposition:
+
+```typescript
+const 
+  newTransactions: s.appleTransactions.Insertable[] = [{
+    environment: 'PROD',
+    originalTransactionId: '123456',
+    accountId: 123,
+    latestReceiptData: "TWFuIGlzIGRpc3Rp",
+  }, {
+    environment: 'PROD',
+    originalTransactionId: '234567',
+    accountId: 234,
+    latestReceiptData: "bmd1aXNoZWQsIG5v",
+  }],
+  result = await db.upsert("appleTransactions", newTransactions, 
+    ["environment", "originalTransactionId"]).run(pool);
+```
 
 #### delete
 

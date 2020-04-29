@@ -15,22 +15,9 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const 
-// insert one
-steve = await db.insert('authors', {
-    name: 'Steven Hawking',
-    isLiving: false,
-}).run(pool), 
-// insert many
-[time, me] = await db.insert('books', [
-    { authorId: steve.id, title: 'A Brief History of Time' },
-    { authorId: steve.id, title: 'My Brief History' },
-]).run(pool), 
-// insert even more
-[...tags] = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-]).run(pool);
+await db.update("emailAuthentication", {
+    consecutiveFailedLogins: db.sql `${db.self} + 1`,
+    lastFailedLogin: db.sql `now()`,
+}, { email: 'me@privacy.net' }).run(pool);
 /* original script ends */
 pool.end();
