@@ -617,7 +617,40 @@ Within `select`, `selectOne` or `count` queries passed as subqueries to the `lat
 
 ### Shortcut functions and lateral joins
 
+A key contribution of Zapatos is a set of simple shortcut functions that make everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries extremely easy to work with. Furthermore, the `select` shortcut can be nested in order to generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures with inputs and outputs that are still fully and automatically typed.
+
+Because the shortcuts make heavy use of Postgres's JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. The only difference between these types is that, because JSON has no native `Date` representation, columns that would have been returned as `Date` values in a `Selectable` are instead returned as ISO 8601 strings (the result of calling `toJSON()` on them).
+
+In node, it's safe to convert this string straight back to a `Date` by passing it to `new Date()` (web browsers' date parsing may vary). But since JavaScript's built-in date/time support is terrible, you're probably better off with a date library such as [Luxon](https://moment.github.io/luxon/) (where you would instead use: `DateTime.fromISO()`);
+
 #### insert
+
+The `insert` shortcut inserts one or more rows in a table, and returns the inserted row or rows. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]`.
+
+For example:
+
+```typescript
+const 
+  // insert one
+  steve = await db.insert('authors', { 
+    name: 'Stephen Hawking', 
+    isLiving: false, 
+  }).run(pool),
+
+  // insert many
+  [time, me] = await db.insert('books', [
+    { authorId: steve.id, title: 'A Brief History of Time' },
+    { authorId: steve.id, title: 'My Brief History' },
+  ]).run(pool),
+
+  // insert even more
+  [...tags] = await db.insert('tags', [
+    { bookId: time.id, tag: 'physics' },
+    { bookId: time.id, tag: 'physicist' },
+    { bookId: me.id, tag: 'autobiography' },
+  ]).run(pool);
+```
+
 
 #### update
 
