@@ -479,11 +479,11 @@ const title = await db.sql`
 — even though the two produce the same result right now.
 
 
-#### `cols(): ColumnNames` and `vals(): ColumnValues`
+#### `cols()` and `vals()`
 
-The `cols` and `vals` wrapper functions (which return `ColumnNames` and `ColumnValues` class instances respectively) are designed primarily to help with `INSERT` queries.
+The `cols` and `vals` wrapper functions (which return `ColumnNames` and `ColumnValues` class instances respectively) are intended to help with `INSERT` queries.
 
-Pass them each the same `Insertable` object: the `cols` are compiled to a comma-separated list of the column names, and the `vals` are compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values in matching order. To return to an earlier example:
+Pass them each the same `Insertable` object: `cols` is compiled to a comma-separated list of the object's keys, which are the column names, and `vals` is compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values, in matching order. To return to an earlier example:
 
 ```typescript
 const
@@ -511,41 +511,108 @@ const
 
 #### `sql` template strings
 
+`sql` template strings (resulting in `SQLFragment`s) can be interpolated within other `sql` template strings (`SQLFragment`s). This provides flexibility in building queries programmatically.
 
+For example, the [`select` shortcut](#select) makes extensive use of nested `sql` templates to build its queries:
+ 
+```typescript:norun
+const
+  rowsQuery = sql<SQL, any>`
+    SELECT ${allColsSQL} AS result 
+    FROM ${table}${tableAliasSQL}
+    ${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}`,
 
+  // we need the aggregate function, if one's needed, to sit in an outer 
+  // query, to keep ORDER and LIMIT working normally in the main query
+  query = mode !== SelectResultMode.Many ? rowsQuery :
+    sql<SQL, any>`
+      SELECT coalesce(jsonb_agg(result), '[]') AS result 
+      FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
+```
 
 #### Arrays
 
-Items in an interpolated array are treated just the same as if they had been interpolated directly. This can be useful in building queries programmatically. As a slightly contrived example:
+Items in an interpolated array are treated just the same as if they had been interpolated directly. This, again, can be useful for building queries programmatically.
 
-```typescript
-async function getBooksWhereAll(...conditions: db.SQLFragment[]) {
-  for (let i = conditions.length - 1; i > 0; i--) {
-    conditions.splice(i, 0, db.sql` AND `);
-  }
-  return db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${conditions}`.run(pool);
-}
+To take the [`select` shortcut](#select) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
 
-const books = await getBooksWhereAll(
-  db.sql<s.books.SQL>`(${"title"} LIKE 'One%')`,
-  db.sql<s.books.SQL>`(${"authorId"} = 12)`
-);
+```typescript:norun
+const
+  lateralOpt = allOptions.lateral,
+  lateralSQL = lateralOpt === undefined ? [] :
+    Object.keys(lateralOpt).map(k => {
+      const subQ = lateralOpt[k];
+      subQ.parentTable = aliasedTable;  // enables `parent()` in subquery's Wherables
+      return sql<SQL>` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
+    });
 ```
+
+The `lateralSQL` variable — a `SQLFragment[]` — is subsequently interpolated into the final query (some additional SQL using `jsonb_build_object()` is interpolated earlier in that query, to return the result of the lateral subquery alongside the main query columns).
+
+Note that a useful idiom also seen here is the use of the empty array (`[]`) to conditionally interpolate nothing at all.
 
 #### `Whereable`
 
+Any plain JS object interpolated into a `sql` template string is type-checked as a `Whereable`, and compiled into one or more conditions joined with `AND` (but, for flexibility, no `WHERE`). The object's keys represent column names, and the corresponding values are compiled as (injection-safe) parameters.
+
+For example:
+
+```typescript
+const 
+  title = 'Pride and Prejudice',
+  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
+```
+
+A `Whereable`'s values can also be `SQLFragments`, however, and this makes them extremely flexible. In a `SQLFragment` inside a `Whereable`, the special symbol `self` can be used to refer to the column name. This arrangement enables us to use any operator or function we want — not just `=`.
+
+For example:
+
+```typescript
+const 
+  titleLike = `Pride%`,
+  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{ 
+      title: db.sql<db.SQL>`${db.self} LIKE ${db.param(titleLike)}`,
+      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '200 years'`,
+    }}`.run(pool);
+```
+
+
 #### `self`
+
+The use of the `self` symbol is explained in [the section on `Whereable`s](#whereable).
+
 
 #### `param(value: any): Parameter`
 
+In general, Zapatos' type-checking won't let us [pass user-supplied data unsafely into a query](https://xkcd.com/327/) by accident. The `param` wrapper function exists to enable the safe passing of user-supplied data into a query using numbered query parameters (`$1`, `$2`, ...). 
+
+For example:
+
+```typescript
+const 
+  title = 'Pride and Prejudice',
+  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${"title"} = ${db.param(title)}`.run(pool);
+```
+
+This same mechanism is applied automatically when we use [a `Whereable` object](#whereable) (and in this example, using a `Whereable` would be more readable and more concise). It's also applied when we use [the `vals` function](#cols-and-vals) to create a `ColumnValues` wrapper object.
+
+
 #### `default`
+
+The `default` symbol simply compiles to the SQL `DEFAULT` keyword. This may be useful in `INSERT` and `UPDATE` queries where no value is supplied for one or more of the affected columns.
+
 
 #### `raw(value: string): DangerousRawString`
 
+The `raw` function returns `DangerousRawString` wrapper instances. This represents an escape hatch, enabling us to interpolate arbitrary strings into queries in contexts where the `param` wrapper is unsuitable (such as when we're interpolating basic SQL syntax elements). **If you pass user-controlled data to this function you will open yourself up to SQL injection attacks.**
+
+
 #### `parent(columnName: string): ParentColumn`
 
-#### 
+Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `param()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral).
 
 
 ### Shortcut functions and lateral joins

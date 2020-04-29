@@ -160,7 +160,7 @@ export class SQLFragment<RunResult = pg.QueryResult['rows']> {
       qr = await queryable.query(query),
       result = this.runResultTransform(qr);
     if (config.resultListener) config.resultListener(result);
-    
+
     return result;
   }
 
