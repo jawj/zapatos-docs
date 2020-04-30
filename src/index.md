@@ -155,7 +155,7 @@ CREATE TABLE "books"
 
 CREATE TABLE "tags"
 ( "tag" TEXT NOT NULL
-, "bookId" INTEGER NOT NULL REFERENCES "books"("id") );
+, "bookId" INTEGER NOT NULL REFERENCES "books"("id") ON DELETE CASCADE );
 
 CREATE UNIQUE INDEX "tagsUniqueIdx" ON "tags"("tag", "bookId");
 ```
@@ -492,9 +492,8 @@ const
     isLiving: false,
   },
   [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
-      INSERT INTO ${"authors"} (${db.cols(author)})
-      VALUES(${db.vals(author)}) RETURNING *`
-    .run(pool);
+    INSERT INTO ${"authors"} (${db.cols(author)})
+    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
 ```
 
 A second use for the `cols` function is in selecting only a subset of columns, in conjunction with the `OnlyCols` type. Pass an array of column names to `cols`, and they're compiled appropriately, as seen in this example:
@@ -820,9 +819,44 @@ const
 
 => shortcuts.ts /* === delete === */
 
-#### delete
+#### deletes
+
+```typescript:norun
+export interface DeleteSignatures {
+  <T extends Table>(table: T, where: WhereableForTable<T> | SQLFragment): SQLFragment<JSONSelectableForTable<T>[]>;
+}
+```
+
+The `deletes` shortcut, unsurprisingly, deletes rows from a table (`delete`, unfortunately, is a JavaScript reserved word). It takes the table name and an appropriate `Whereable` or `SQLFragment`, and returns the deleted rows as a `JSONSelectable`.
+
+For example:
+
+```typescript
+await db.deletes('books', { title: 'Holes' }).run(pool);
+```
+
+=> shortcuts.ts /* === truncate === */
 
 #### truncate
+
+```typescript:norun
+type TruncateIdentityOpts = 'CONTINUE IDENTITY' | 'RESTART IDENTITY';
+type TruncateForeignKeyOpts = 'RESTRICT' | 'CASCADE';
+
+interface TruncateSignatures {
+  (table: Table | Table[], optId: TruncateIdentityOpts): SQLFragment<undefined>;
+  (table: Table | Table[], optFK: TruncateForeignKeyOpts): SQLFragment<undefined>;
+  (table: Table | Table[], optId: TruncateIdentityOpts, optFK: TruncateForeignKeyOpts): SQLFragment<undefined>;
+}
+```
+
+The `truncate` shortcut truncates one or more tables. It takes a `Table` name or a `Table[]` name array, and (optionally) the options `'CONTINUE IDENTITY'`/`'RESTART IDENTITY'` and/or `'RESTRICT'`/`'CASCADE'`.
+
+For instance:
+
+```typescript
+await db.truncate('bankAccounts').run(pool);
+```
 
 #### select
 

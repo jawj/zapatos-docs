@@ -20,14 +20,7 @@
         
 
         /* original script begins */
-        const
-  author: s.authors.Insertable = {
-    name: 'Joseph Conrad',
-    isLiving: false,
-  },
-  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
-    INSERT INTO ${"authors"} (${db.cols(author)})
-    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
+        await db.deletes('books', { title: 'Holes' }).run(pool);
 
         /* original script ends */
 

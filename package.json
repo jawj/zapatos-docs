@@ -11,7 +11,7 @@
   "dependencies": {
     "@types/highlight.js": "^9.12.3",
     "@types/jsdom": "^16.2.1",
-    "@types/markdown-it": "^10.0.0",
+    "@types/markdown-it": "^10.0.1",
     "@types/pg": "^7.14.3",
     "highlight.js": "^9.18.1",
     "jsdom": "^16.2.2",
@@ -20,8 +20,8 @@
     "monaco-editor": "^0.20.0",
     "pg": "^7.18.2",
     "pg-native": "^3.0.0",
-    "ts-node": "^8.6.2",
+    "ts-node": "^8.9.1",
     "typescript": "^3.8.3",
-    "zapatos": "^0.1.23"
+    "zapatos": "^0.1.24"
   }
 }

@@ -12,7 +12,7 @@ CREATE TABLE "books"
 
 CREATE TABLE "tags"
 ( "tag" TEXT NOT NULL
-, "bookId" INTEGER NOT NULL REFERENCES "books"("id") );
+, "bookId" INTEGER NOT NULL REFERENCES "books"("id") ON DELETE CASCADE );
 
 CREATE UNIQUE INDEX "tagsUniqueIdx" ON "tags"("bookId", "tag");
 CREATE INDEX "tagsBookIdIdx" ON "tags"("tag");

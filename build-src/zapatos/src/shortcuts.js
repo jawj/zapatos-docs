@@ -106,12 +106,13 @@ export const select = function (table, where = all, options = {}, mode = SelectR
             sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => raw(`'${c}', "${c}"`))})` :
             sql `to_jsonb(${aliasedTable}.*)`, colsLateralSQL = allOptions.lateral === undefined ? [] :
         sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(allOptions.lateral), sql `, `, k => raw(`'${k}', "cj_${k}".result`))})`, colsExtraSQL = allOptions.extras === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(allOptions.extras), sql `, `, k => [raw(`'${k}', `), allOptions.extras[k]])})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : [sql ` WHERE `, where], orderSQL = !allOptions.order ? [] :
-        [sql ` ORDER BY `, ...mapWithSeparator(allOptions.order, sql `, `, o => sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`)], limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${raw(String(allOptions.limit))}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${raw(String(allOptions.offset))}`, lateralSQL = allOptions.lateral === undefined ? [] : Object.keys(allOptions.lateral).map(k => {
-        const subQ = allOptions.lateral[k];
-        subQ.parentTable = aliasedTable; // enables db.parent('column') in nested query Wherables
-        return sql ` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
-    });
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(allOptions.extras), sql `, `, k => [raw(`'${k}', `), allOptions.extras[k]])})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, orderSQL = !allOptions.order ? [] :
+        [sql ` ORDER BY `, ...mapWithSeparator(allOptions.order, sql `, `, o => sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`)], limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${raw(String(allOptions.limit))}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${raw(String(allOptions.offset))}`, lateralOpt = allOptions.lateral, lateralSQL = lateralOpt === undefined ? [] :
+        Object.keys(lateralOpt).map(k => {
+            const subQ = lateralOpt[k];
+            subQ.parentTable = aliasedTable; // enables `parent('column')` in subquery's Wherables
+            return sql ` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
+        });
     const rowsQuery = sql `SELECT ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
         // we need the aggregate to sit in a sub-SELECT in order to keep ORDER and LIMIT working as usual
         sql `SELECT coalesce(jsonb_agg(result), '[]') AS result FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
