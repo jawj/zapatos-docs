@@ -1,34 +1,34 @@
 CREATE TABLE "authors" 
 ( "id" SERIAL PRIMARY KEY
 , "name" TEXT NOT NULL
-, "isLiving" BOOLEAN
-);
+, "isLiving" BOOLEAN );
 
 CREATE TABLE "books" 
 ( "id" SERIAL PRIMARY KEY
 , "authorId" INTEGER NOT NULL REFERENCES "authors"("id")
 , "title" TEXT
 , "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
-, "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+, "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now() );
 
 CREATE TABLE "tags"
 ( "tag" TEXT NOT NULL
-, "bookId" INTEGER NOT NULL REFERENCES "books"("id")
-);
+, "bookId" INTEGER NOT NULL REFERENCES "books"("id") );
+
 CREATE UNIQUE INDEX "tagsUniqueIdx" ON "tags"("bookId", "tag");
 CREATE INDEX "tagsBookIdIdx" ON "tags"("tag");
+
+CREATE TABLE "bankAccounts" 
+( "id" SERIAL PRIMARY KEY
+, "balance" INTEGER NOT NULL DEFAULT 0 CHECK ("balance" > 0) );
 
 CREATE TABLE "emailAuthentication" 
 ( "email" TEXT PRIMARY KEY
 , "consecutiveFailedLogins" INTEGER NOT NULL DEFAULT 0
-, "lastFailedLogin" TIMESTAMPTZ
-);
+, "lastFailedLogin" TIMESTAMPTZ );
 
 CREATE TYPE "appleEnvironment" AS ENUM 
 ( 'PROD'
-, 'Sandbox'
-);
+, 'Sandbox' );
 
 CREATE TABLE "appleTransactions" 
 ( "environment" "appleEnvironment" NOT NULL
@@ -55,3 +55,22 @@ CREATE TABLE "stores"
 , "geom" GEOMETRY NOT NULL
 );
 CREATE INDEX "storesGeomIdx" ON "stores" USING gist("geom");
+
+
+INSERT INTO "authors" VALUES (1000, 'Philip Pullman', true);
+INSERT INTO "books" VALUES (1000, 1000, 'Northern Lights');
+INSERT INTO "books" VALUES (1001, 1000, 'The Subtle Knife');
+INSERT INTO "books" VALUES (1002, 1000, 'The Amber Spyglass');
+INSERT INTO "tags" VALUES ('His Dark Materials', 1000);
+
+INSERT INTO "authors" VALUES (1001, 'Mark Haddon', true);
+INSERT INTO "books" VALUES (1003, 1001, 'The Curious Incident of the Dog in the Night-Time');
+INSERT INTO "tags" VALUES ('mystery', 1003);
+
+INSERT INTO "authors" VALUES (1002, 'Louis Sachar', true);
+INSERT INTO "books" VALUES (1004, 1002, 'Holes');
+INSERT INTO "tags" VALUES ('adventure', 1004);
+
+INSERT INTO "emailAuthentication" VALUES ('me@privacy.net');
+
+INSERT INTO "appleTransactions" VALUES ('PROD', '123456', 123, 'X');

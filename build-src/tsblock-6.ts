@@ -23,6 +23,8 @@
         const [{ random }] = await db.sql<never, [{ random: number }]>`
   SELECT random()`.run(pool);
 
+console.log(random);
+
         /* original script ends */
 
         pool.end();

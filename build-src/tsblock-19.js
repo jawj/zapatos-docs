@@ -14,10 +14,13 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
-/* original script begins */
-await db.update("emailAuthentication", {
-    consecutiveFailedLogins: db.sql `${db.self} + 1`,
-    lastFailedLogin: db.sql `now()`,
-}, { email: 'me@privacy.net' }).run(pool);
+const query = db.sql `
+  SELECT ${"authors"}.*, bq.* 
+  FROM ${"authors"} LEFT JOIN LATERAL (
+    SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
+    FROM ${"books"}
+    WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
+  ) bq ON true`;
+const authorBooks = await query.run(pool);
 /* original script ends */
 pool.end();

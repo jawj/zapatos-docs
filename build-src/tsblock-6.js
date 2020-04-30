@@ -17,5 +17,6 @@ import { pool } from './pgPool';
 /* original script begins */
 const [{ random }] = await db.sql `
   SELECT random()`.run(pool);
+console.log(random);
 /* original script ends */
 pool.end();

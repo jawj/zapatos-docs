@@ -20,8 +20,8 @@
         
 
         /* original script begins */
-        const authorQuery = db.sql<s.authors.SQL, s.authors.Selectable[]>`
-  SELECT * FROM ${"authors"}`;
+        const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
+  SELECT * FROM ${"authors"}`.run(pool);
 
         /* original script ends */
 

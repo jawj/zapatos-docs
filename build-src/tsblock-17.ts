@@ -20,25 +20,15 @@
         
 
         /* original script begins */
-        const 
-  // insert one
-  steve = await db.insert('authors', { 
-    name: 'Steven Hawking', 
-    isLiving: false, 
-  }).run(pool),
+        type bookAuthorSQL = s.books.SQL | s.authors.SQL | "author";
+type bookAuthorSelectable = s.books.Selectable & { author: s.authors.Selectable };
 
-  // insert many
-  [time, me] = await db.insert('books', [
-    { authorId: steve.id, title: 'A Brief History of Time' },
-    { authorId: steve.id, title: 'My Brief History' },
-  ]).run(pool),
+const query = db.sql<bookAuthorSQL, bookAuthorSelectable[]>`
+  SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
+  FROM ${"books"} JOIN ${"authors"} 
+  ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
 
-  // insert even more
-  [...tags] = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-  ]).run(pool);
+const bookAuthors = await query.run(pool);
 
         /* original script ends */
 

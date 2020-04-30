@@ -20,10 +20,18 @@
         
 
         /* original script begins */
-        await db.update("emailAuthentication", { 
-  consecutiveFailedLogins: db.sql`${db.self} + 1`,
-  lastFailedLogin: db.sql`now()`,
-}, { email: 'me@privacy.net' }).run(pool);
+        type authorBooksSQL = s.authors.SQL | s.books.SQL;
+type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
+
+const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
+  SELECT ${"authors"}.*, bq.* 
+  FROM ${"authors"} LEFT JOIN LATERAL (
+    SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
+    FROM ${"books"}
+    WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
+  ) bq ON true`;
+
+const authorBooks = await query.run(pool);
 
         /* original script ends */
 

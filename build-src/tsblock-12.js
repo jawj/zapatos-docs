@@ -16,7 +16,7 @@ import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
 const author = {
-    name: 'Gabriel Garcia Marquez',
+    name: 'Joseph Conrad',
     isLiving: false,
 }, [insertedAuthor] = await db.sql `
       INSERT INTO ${"authors"} (${db.cols(author)})

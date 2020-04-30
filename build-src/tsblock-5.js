@@ -15,7 +15,7 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const authorQuery = db.sql `
-  SELECT * FROM ${"authors"}`;
+const authors = await db.sql `
+  SELECT * FROM ${"authors"}`.run(pool);
 /* original script ends */
 pool.end();

@@ -15,25 +15,16 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const 
-// insert one
-steve = await db.insert('authors', {
-    name: 'Steven Hawking',
-    isLiving: false,
-}).run(pool), 
-// insert many
-[time, me] = await db.insert('books', [{
-        authorId: steve.id,
-        title: 'A Brief History of Time',
-        createdAt: db.sql `now()`,
+const newTransactions = [{
+        environment: 'PROD',
+        originalTransactionId: '123456',
+        accountId: 123,
+        latestReceiptData: "TWFuIGlzIGRpc3Rp",
     }, {
-        authorId: steve.id,
-        title: 'My Brief History',
-        createdAt: db.sql `now()`,
-    }]).run(pool), [...tags] = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-]).run(pool);
+        environment: 'PROD',
+        originalTransactionId: '234567',
+        accountId: 234,
+        latestReceiptData: "bmd1aXNoZWQsIG5v",
+    }], result = await db.upsert("appleTransactions", newTransactions, ["environment", "originalTransactionId"]).run(pool);
 /* original script ends */
 pool.end();

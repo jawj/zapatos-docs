@@ -22,7 +22,7 @@
         /* original script begins */
         const
   author: s.authors.Insertable = {
-    name: 'Gabriel Garcia Marquez',
+    name: 'Joseph Conrad',
     isLiving: false,
   },
   [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`

@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,8 +54,15 @@ var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, runnableTags, pgFmtArgs, formatSQL;
+    var tmpdb, dbEnv, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_a) {
+        tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, '');
+        dbEnv = __assign(__assign({}, process.env), { ZDBNAME: tmpdb });
+        console.info('Creating temporary DB...');
+        child_process_1.execSync("createdb " + tmpdb);
+        child_process_1.execSync("psql " + tmpdb + " < schema.sql");
+        console.info('Running Zapatos ...');
+        child_process_1.execSync("npx zapatos", { env: dbEnv });
         // --- Monaco editor and Zapatos file bundle for it ---
         console.info('Copying Monaco editor ...');
         child_process_1.execSync("cp -r ./node_modules/monaco-editor/min ./web/monaco");
@@ -69,6 +87,8 @@ var jsdom_1 = require("jsdom");
             'zapatos/src.ts': "\n      export * from './src/index';",
         });
         fs.writeFileSync('./web/zapatos-bundle.js', "const zapatosBundle = " + JSON.stringify(all) + ";");
+        // --- add source code links ---
+        console.info('Adding source code links ...');
         rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }), src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, function (_dummy, srcFileName, targetLine) {
             var _a;
             var srcPath = "./build-src/zapatos/src/" + srcFileName, srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }), targetRegEx = new RegExp('^\\s*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*$', 'm'), foundAtIndex = (_a = srcFile.match(targetRegEx)) === null || _a === void 0 ? void 0 : _a.index;
@@ -77,6 +97,7 @@ var jsdom_1 = require("jsdom");
             var lineNo = srcFile.slice(0, foundAtIndex).split('\n').length + 2;
             return "<div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
         });
+        // --- transform and highlight Markdown ---
         console.info('Transforming Markdown ...');
         md = new MarkdownIt({
             html: true,
@@ -137,8 +158,8 @@ var jsdom_1 = require("jsdom");
             }
         };
         runnableTags.forEach(function (runnableTag, i) {
-            console.info("Running script block " + i + " ..");
-            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8' });
+            console.info("Running script block " + i + " ...");
+            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv });
             // console.log(stdout);
             var parts = stdout.split(/%{2,}/);
             if (!runnableTag.className.match(/\bnoresult\b/)) {
@@ -169,7 +190,10 @@ var jsdom_1 = require("jsdom");
             }
             runnableTag.className += ' runnable';
         });
+        console.info("Writing HTML ...");
         fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
+        console.info('Dropping temporary DB...');
+        child_process_1.execSync("dropdb " + tmpdb);
         return [2 /*return*/];
     });
 }); })();

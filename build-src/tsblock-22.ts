@@ -20,16 +20,10 @@
         
 
         /* original script begins */
-        type authorBooksSQL = s.authors.SQL | s.books.SQL;
-type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
-
-const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
-  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
-  FROM ${"authors"} JOIN ${"books"} 
-  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
-  GROUP BY ${"authors"}.${"id"}`;
-
-const authorBooks = await query.run(pool);
+        await db.update("emailAuthentication", { 
+  consecutiveFailedLogins: db.sql`${db.self} + 1`,
+  lastFailedLogin: db.sql`now()`,
+}, { email: 'me@privacy.net' }).run(pool);
 
         /* original script ends */
 

@@ -1,4 +1,3 @@
-
 # Zapatos: _Zero-Abstraction Postgres for TypeScript_
 
 ## What does it do?
@@ -203,13 +202,12 @@ const result = db.transaction(pool, db.Isolation.Serializable, async txnClient =
 });
 ```
 
-For example, take this `accounts` table:
+For example, take this `bankAccounts` table:
 
 ```sql
-CREATE TABLE accounts (
-  id SERIAL PRIMARY KEY,
-  balance INTEGER NOT NULL DEFAULT 0 CHECK (balance > 0)
-);
+CREATE TABLE "bankAccounts" 
+( "id" SERIAL PRIMARY KEY
+, "balance" INTEGER NOT NULL DEFAULT 0 CHECK ("balance" > 0) );
 ```
 
 We can use the `transaction` helper like so:
@@ -218,15 +216,15 @@ We can use the `transaction` helper like so:
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 
-const [accountA, accountB] = await db.insert('accounts', 
+const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
 
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
   db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
-    db.update('accounts',
+    db.update('bankAccounts',
       { balance: db.sql<db.SQL>`${db.self} - ${db.param(amount)}` },
       { id: sendingAccountId }).run(txnClient),
-    db.update('accounts',
+    db.update('bankAccounts',
       { balance: db.sql<db.SQL>`${db.self} + ${db.param(amount)}` },
       { id: receivingAccountId }).run(txnClient),
   ]));
@@ -356,9 +354,9 @@ Arbitrary queries are written using the tagged template function `sql`, which re
 
 The `sql` function is [generic](https://www.typescriptlang.org/docs/handbook/generics.html), having two type variables. For example: 
 
-```typescript:noresult
-const authorQuery = db.sql<s.authors.SQL, s.authors.Selectable[]>`
-  SELECT * FROM ${"authors"}`;
+```typescript
+const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
+  SELECT * FROM ${"authors"}`.run(pool);
 ```
 
 The first type variable, `Interpolations`, defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
@@ -369,9 +367,11 @@ The second type variable, `RunResult`, describes what will be returned if we cal
 
 Take another example of these type variables:
 
-```typescript:noresult
+```typescript
 const [{ random }] = await db.sql<never, [{ random: number }]>`
   SELECT random()`.run(pool);
+
+console.log(random);
 ```
 
 `Interpolations` is `never` because nothing needs to be interpolated in this query, and the `RunResult` type says that the query will return one row comprising one numeric column, named `random`. The `random` TypeScript variable we initialize will of course be typed as a `number`. 
@@ -483,12 +483,12 @@ const title = await db.sql`
 
 The `cols` and `vals` wrapper functions (which return `ColumnNames` and `ColumnValues` class instances respectively) are intended to help with `INSERT` queries.
 
-Pass them each the same `Insertable` object: `cols` is compiled to a comma-separated list of the object's keys, which are the column names, and `vals` is compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values, in matching order. To return to an earlier example:
+Pass them each the same `Insertable` object: `cols` is compiled to a comma-separated list of the object's keys, which are the column names, and `vals` is compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values, in matching order. To return to (approximately) an earlier example:
 
 ```typescript
 const
   author: s.authors.Insertable = {
-    name: 'Gabriel Garcia Marquez',
+    name: 'Joseph Conrad',
     isLiving: false,
   },
   [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
@@ -617,6 +617,61 @@ The `raw` function returns `DangerousRawString` wrapper instances. This represen
 Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `param()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral).
 
 
+### Manual joins using Postgres' JSON features
+
+We can make use of Postgres' excellent JSON support to achieve a variety of `JOIN` queries. That's not unique to Zapatos, of course, but perhaps it's helpful to consider a few example queries. 
+
+Take this example, retrieving each book with its (single) author:
+
+```typescript
+type bookAuthorSQL = s.books.SQL | s.authors.SQL | "author";
+type bookAuthorSelectable = s.books.Selectable & { author: s.authors.Selectable };
+
+const query = db.sql<bookAuthorSQL, bookAuthorSelectable[]>`
+  SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
+  FROM ${"books"} JOIN ${"authors"} 
+  ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
+
+const bookAuthors = await query.run(pool);
+```
+
+Of course, we might also want the converse query, retrieving each author with their (many) books. This is also easy enough to arrange:
+
+```typescript
+type authorBooksSQL = s.authors.SQL | s.books.SQL;
+type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
+
+const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
+  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
+  FROM ${"authors"} JOIN ${"books"} 
+  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
+  GROUP BY ${"authors"}.${"id"}`;
+
+const authorBooks = await query.run(pool);
+```
+
+Note that if you want to include authors with no books, you need a `LEFT JOIN` in this query, and then you'll also want to fix the annoying [`[null]` array results `jsonb_agg` will return for those authors](https://stackoverflow.com/questions/24155190/postgresql-left-join-json-agg-ignore-remove-null).
+
+But rather than do it that way, we can achieve the same result using a [`LATERAL` join](https://medium.com/kkempin/postgresqls-lateral-join-bfd6bd0199df) instead:
+
+```typescript
+type authorBooksSQL = s.authors.SQL | s.books.SQL;
+type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
+
+const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
+  SELECT ${"authors"}.*, bq.* 
+  FROM ${"authors"} LEFT JOIN LATERAL (
+    SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
+    FROM ${"books"}
+    WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
+  ) bq ON true`;
+
+const authorBooks = await query.run(pool);
+```
+
+Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select) and its [`lateral` option](#lateral) can make this much less painful.
+
+
 ### Shortcut functions and lateral joins
 
 A key contribution of Zapatos is a set of simple shortcut functions that make everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries extremely easy to work with. Furthermore, the `select` shortcut can be nested in order to generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures with inputs and outputs that are still fully and automatically typed.
@@ -645,22 +700,28 @@ const
   // insert one
   steve = await db.insert('authors', { 
     name: 'Steven Hawking', 
-    isLiving: false, 
+    isLiving: false,
   }).run(pool),
 
   // insert many
-  [time, me] = await db.insert('books', [
-    { authorId: steve.id, title: 'A Brief History of Time' },
-    { authorId: steve.id, title: 'My Brief History' },
-  ]).run(pool),
+  [time, me] = await db.insert('books', [{ 
+    authorId: steve.id, 
+    title: 'A Brief History of Time',
+    createdAt: db.sql`now()`,
+  }, { 
+    authorId: steve.id, 
+    title: 'My Brief History',
+    createdAt: db.sql`now()`,
+  }]).run(pool),
 
-  // insert even more
   [...tags] = await db.insert('tags', [
     { bookId: time.id, tag: 'physics' },
     { bookId: me.id, tag: 'physicist' },
     { bookId: me.id, tag: 'autobiography' },
   ]).run(pool);
 ```
+
+You'll note that `Insertable`s can take `SQLFragment` values (from the `sql` tagged template function) as well as direct values (strings, numbers, and so on). 
 
 Note that Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
 
@@ -685,7 +746,7 @@ await db.update('authors',
 ).run(pool);
 ```
 
-For additional flexibility, `Updatable` values can also be `SQLFragment`s. Take a table such as the following:
+Like `Insertable` values, `Updatable` values can also be `SQLFragment`s. For instance, take a table such as the following:
 
 ```sql
 CREATE TABLE "emailAuthentication" 
@@ -694,7 +755,7 @@ CREATE TABLE "emailAuthentication"
 , "lastFailedLogin" TIMESTAMPTZ );
 ```
 
-Then, to atomically increment the `consecutiveFailedLogins` value, we can do something like this:
+To atomically increment the `consecutiveFailedLogins` value, we can do something like this:
 
 ```typescript
 await db.update("emailAuthentication", { 

@@ -7,6 +7,17 @@ import * as hljs from 'highlight.js';
 import { JSDOM } from 'jsdom';
 
 (async () => {
+
+  const tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`;
+  const dbEnv = { ...process.env, ZDBNAME: tmpdb };
+
+  console.info('Creating temporary DB...');
+  execSync(`createdb ${tmpdb}`);
+  execSync(`psql ${tmpdb} < schema.sql`);
+
+  console.info('Running Zapatos ...');
+  execSync(`npx zapatos`, { env: dbEnv });
+
   // --- Monaco editor and Zapatos file bundle for it ---
 
   console.info('Copying Monaco editor ...');
@@ -43,9 +54,9 @@ import { JSDOM } from 'jsdom';
 
   fs.writeFileSync('./web/zapatos-bundle.js', `const zapatosBundle = ${JSON.stringify(all)};`);
 
-  // --- transform and highlight Markdown ---
+  // --- add source code links ---
 
-
+  console.info('Adding source code links ...');
   const
     rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }),
     src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, (_dummy, srcFileName, targetLine) => {
@@ -61,8 +72,9 @@ import { JSDOM } from 'jsdom';
       return `<div class="src-link"><a href="https://github.com/jawj/zapatos/blob/master/src/${srcFileName}#L${lineNo}">Source code »</a></div>`;
     });
 
-  console.info('Transforming Markdown ...');
+  // --- transform and highlight Markdown ---
 
+  console.info('Transforming Markdown ...');
   const
     md = new MarkdownIt({
       html: true,
@@ -191,10 +203,10 @@ import { JSDOM } from 'jsdom';
     }
 
   runnableTags.forEach((runnableTag, i) => {
-    console.info(`Running script block ${i} ..`);
+    console.info(`Running script block ${i} ...`);
 
     const stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
-      { cwd: './build-src', encoding: 'utf8' });
+      { cwd: './build-src', encoding: 'utf8', env: dbEnv });
     // console.log(stdout);
 
     const parts = stdout.split(/%{2,}/);
@@ -230,6 +242,10 @@ import { JSDOM } from 'jsdom';
     runnableTag.className += ' runnable';
   });
 
+  console.info(`Writing HTML ...`);
   fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
+
+  console.info('Dropping temporary DB...');
+  execSync(`dropdb ${tmpdb}`);
 })();
 

@@ -20,16 +20,20 @@
         
 
         /* original script begins */
-        type authorBooksSQL = s.authors.SQL | s.books.SQL;
-type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
-
-const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
-  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
-  FROM ${"authors"} JOIN ${"books"} 
-  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
-  GROUP BY ${"authors"}.${"id"}`;
-
-const authorBooks = await query.run(pool);
+        const 
+  newTransactions: s.appleTransactions.Insertable[] = [{
+    environment: 'PROD',
+    originalTransactionId: '123456',
+    accountId: 123,
+    latestReceiptData: "TWFuIGlzIGRpc3Rp",
+  }, {
+    environment: 'PROD',
+    originalTransactionId: '234567',
+    accountId: 234,
+    latestReceiptData: "bmd1aXNoZWQsIG5v",
+  }],
+  result = await db.upsert("appleTransactions", newTransactions, 
+    ["environment", "originalTransactionId"]).run(pool);
 
         /* original script ends */
 

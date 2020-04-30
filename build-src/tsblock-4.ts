@@ -19,15 +19,15 @@
         import * as db from './zapatos/src';
 import { pool } from './pgPool';
 
-const [accountA, accountB] = await db.insert('accounts', 
+const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
 
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
   db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
-    db.update('accounts',
+    db.update('bankAccounts',
       { balance: db.sql<db.SQL>`${db.self} - ${db.param(amount)}` },
       { id: sendingAccountId }).run(txnClient),
-    db.update('accounts',
+    db.update('bankAccounts',
       { balance: db.sql<db.SQL>`${db.self} + ${db.param(amount)}` },
       { id: receivingAccountId }).run(txnClient),
   ]));

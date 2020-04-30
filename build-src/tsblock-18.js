@@ -14,7 +14,11 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
-/* original script begins */
-await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);
+const query = db.sql `
+  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
+  FROM ${"authors"} JOIN ${"books"} 
+  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
+  GROUP BY ${"authors"}.${"id"}`;
+const authorBooks = await query.run(pool);
 /* original script ends */
 pool.end();

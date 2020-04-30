@@ -14,23 +14,10 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
-/* original script begins */
-const 
-// insert one
-steve = await db.insert('authors', {
-    name: 'Steven Hawking',
-    isLiving: false,
-}).run(pool), 
-// insert many
-[time, me] = await db.insert('books', [
-    { authorId: steve.id, title: 'A Brief History of Time' },
-    { authorId: steve.id, title: 'My Brief History' },
-]).run(pool), 
-// insert even more
-[...tags] = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-]).run(pool);
+const query = db.sql `
+  SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
+  FROM ${"books"} JOIN ${"authors"} 
+  ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
+const bookAuthors = await query.run(pool);
 /* original script ends */
 pool.end();

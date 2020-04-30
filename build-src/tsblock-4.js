@@ -15,10 +15,10 @@ xyz.setConfig({
 /* original script begins */
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
-const [accountA, accountB] = await db.insert('accounts', [{ balance: 50 }, { balance: 50 }]).run(pool);
+const [accountA, accountB] = await db.insert('bankAccounts', [{ balance: 50 }, { balance: 50 }]).run(pool);
 const transferMoney = (sendingAccountId, receivingAccountId, amount) => db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
-    db.update('accounts', { balance: db.sql `${db.self} - ${db.param(amount)}` }, { id: sendingAccountId }).run(txnClient),
-    db.update('accounts', { balance: db.sql `${db.self} + ${db.param(amount)}` }, { id: receivingAccountId }).run(txnClient),
+    db.update('bankAccounts', { balance: db.sql `${db.self} - ${db.param(amount)}` }, { id: sendingAccountId }).run(txnClient),
+    db.update('bankAccounts', { balance: db.sql `${db.self} + ${db.param(amount)}` }, { id: receivingAccountId }).run(txnClient),
 ]));
 try {
     const [updatedAccountA, updatedAccountB] = await transferMoney(accountA.id, accountB.id, 60);
