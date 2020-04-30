@@ -509,6 +509,8 @@ const
     SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 ```
 
+=> core.ts // === SQL tagged template strings ===
+
 #### `sql` template strings
 
 `sql` template strings (resulting in `SQLFragment`s) can be interpolated within other `sql` template strings (`SQLFragment`s). This provides flexibility in building queries programmatically.
@@ -623,6 +625,8 @@ Because the shortcuts make heavy use of Postgres's JSON support, their return va
 
 Since you're using Node, it's safe to convert this string straight back to a `Date` by passing it to `new Date()` (web browsers' date parsing may vary). But since JavaScript's built-in date/time support is terrible, you're probably anyway better off using a library such as [Luxon](https://moment.github.io/luxon/) (where you would instead use `DateTime.fromISO()`);
 
+=> shortcuts.ts /* === insert === */
+
 #### insert
 
 ```typescript:norun
@@ -660,6 +664,7 @@ const
 
 Note that Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
 
+=> shortcuts.ts /* === update === */
 
 #### update
 
@@ -697,6 +702,8 @@ await db.update("emailAuthentication", {
   lastFailedLogin: db.sql`now()`,
 }, { email: 'me@privacy.net' }).run(pool);
 ```
+
+=> shortcuts.ts /* === upsert === */
 
 #### upsert
 
@@ -749,6 +756,8 @@ const
   result = await db.upsert("appleTransactions", newTransactions, 
     ["environment", "originalTransactionId"]).run(pool);
 ```
+
+=> shortcuts.ts /* === delete === */
 
 #### delete
 

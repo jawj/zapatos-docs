@@ -157,4 +157,7 @@ code {
   display: inline-block;
   padding: 5px 0;
 }
-
+.src-link {
+  float: right;
+  margin: 3ex 0 0 2em;
+}

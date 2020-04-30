@@ -45,7 +45,24 @@ import { JSDOM } from 'jsdom';
 
   // --- transform and highlight Markdown ---
 
+
+  const
+    rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }),
+    src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, (_dummy, srcFileName, targetLine) => {
+      const
+        srcPath = `./build-src/zapatos/src/${srcFileName}`,
+        srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }),
+        targetRegEx = new RegExp('^\\s*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*$', 'm'),
+        foundAtIndex = srcFile.match(targetRegEx)?.index;
+
+      if (foundAtIndex === undefined) throw new Error(`"${targetLine}" not found in ${srcPath}`);
+      const lineNo = srcFile.slice(0, foundAtIndex).split('\n').length + 2;
+
+      return `<div class="src-link"><a href="https://github.com/jawj/zapatos/blob/master/src/${srcFileName}#L${lineNo}">Source code »</a></div>`;
+    });
+
   console.info('Transforming Markdown ...');
+
   const
     md = new MarkdownIt({
       html: true,
@@ -57,13 +74,12 @@ import { JSDOM } from 'jsdom';
           try {
             return `<pre class="language-${lang}${options.map(o => ' ' + o)}"><code>${hljs.highlight(lang, str).value}</code></pre>`;
           } catch (err) {
-            console.log('Highlighting error', err);
+            console.error('Highlighting error', err);
           }
         }
         return '';
       }
     }),
-    src = fs.readFileSync('./src/index.md', { encoding: 'utf8' }),
     htmlContent = md.render(src),
     html = `<!DOCTYPE html>
     <html>
@@ -76,8 +92,9 @@ import { JSDOM } from 'jsdom';
         <!-- monaco editor -->
         <script src="monaco/vs/loader.js"></script>
         <script src="zapatos-bundle.js"></script>
-        <!-- custom -->
+        <!-- fonts -->
         <link rel="stylesheet" href="https://use.typekit.net/mdb7zvi.css">
+        <!-- custom -->
         <link rel="stylesheet" href="docs.css">
       </head>
       <body>

@@ -43,7 +43,7 @@ var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var recurseNodes, all, md, src, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, runnableTags, pgFmtArgs, formatSQL;
+    var recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_a) {
         // --- Monaco editor and Zapatos file bundle for it ---
         console.info('Copying Monaco editor ...');
@@ -69,7 +69,14 @@ var jsdom_1 = require("jsdom");
             'zapatos/src.ts': "\n      export * from './src/index';",
         });
         fs.writeFileSync('./web/zapatos-bundle.js', "const zapatosBundle = " + JSON.stringify(all) + ";");
-        // --- transform and highlight Markdown ---
+        rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }), src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, function (_dummy, srcFileName, targetLine) {
+            var _a;
+            var srcPath = "./build-src/zapatos/src/" + srcFileName, srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }), targetRegEx = new RegExp('^\\s*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*$', 'm'), foundAtIndex = (_a = srcFile.match(targetRegEx)) === null || _a === void 0 ? void 0 : _a.index;
+            if (foundAtIndex === undefined)
+                throw new Error("\"" + targetLine + "\" not found in " + srcPath);
+            var lineNo = srcFile.slice(0, foundAtIndex).split('\n').length + 2;
+            return "<div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
+        });
         console.info('Transforming Markdown ...');
         md = new MarkdownIt({
             html: true,
@@ -82,12 +89,12 @@ var jsdom_1 = require("jsdom");
                         return "<pre class=\"language-" + lang + options.map(function (o) { return ' ' + o; }) + "\"><code>" + hljs.highlight(lang, str).value + "</code></pre>";
                     }
                     catch (err) {
-                        console.log('Highlighting error', err);
+                        console.error('Highlighting error', err);
                     }
                 }
                 return '';
             }
-        }), src = fs.readFileSync('./src/index.md', { encoding: 'utf8' }), htmlContent = md.render(src), html = "<!DOCTYPE html>\n    <html>\n      <head>\n        <!-- tocbot -->\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n        <!-- highlighting -->\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/default.min.css\">\n        <!-- monaco editor -->\n        <script src=\"monaco/vs/loader.js\"></script>\n        <script src=\"zapatos-bundle.js\"></script>\n        <!-- custom -->\n        <link rel=\"stylesheet\" href=\"https://use.typekit.net/mdb7zvi.css\">\n        <link rel=\"stylesheet\" href=\"docs.css\">\n      </head>\n      <body>\n        <div id=\"toc\"></div>\n        <div id=\"content\">" + htmlContent + "</div>\n        <script src=\"docs.js\"></script>\n      </body>\n    </html>\n  ";
+        }), htmlContent = md.render(src), html = "<!DOCTYPE html>\n    <html>\n      <head>\n        <!-- tocbot -->\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n        <!-- highlighting -->\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/default.min.css\">\n        <!-- monaco editor -->\n        <script src=\"monaco/vs/loader.js\"></script>\n        <script src=\"zapatos-bundle.js\"></script>\n        <!-- fonts -->\n        <link rel=\"stylesheet\" href=\"https://use.typekit.net/mdb7zvi.css\">\n        <!-- custom -->\n        <link rel=\"stylesheet\" href=\"docs.css\">\n      </head>\n      <body>\n        <div id=\"toc\"></div>\n        <div id=\"content\">" + htmlContent + "</div>\n        <script src=\"docs.js\"></script>\n      </body>\n    </html>\n  ";
         dom = new jsdom_1.JSDOM(html), document = dom.window.document;
         console.info('Adding id attributes to headings...');
         maxIdLength = 32, content = document.querySelector('#content'), headings = content.querySelectorAll('h1, h2, h3, h4'), headingMap = {};
