@@ -993,14 +993,142 @@ The `{ limit: 1 }` option is now applied automatically. And the return type foll
 
 ##### `lateral` and `alias`
 
+Earlier we put together [some big `LATERAL` joins of authors and books](#manual-joins-using-postgres-json-features). This was a powerful and satisfying application of Postgres' JSON support ... but also a bit of an eyesore, heavy on both punctuation and manually constructed and applied types.
 
+We can improve on this. Since `SQLFragments` are already designed to contain other `SQLFragments`, it's a pretty small leap to enable `select`/`selectOne`/`count` calls to be nested inside other `select`/`selectOne` calls in order to significantly simplify this kind of `LATERAL` join query.
+
+We achieve this with an additional `options` key, `lateral`, which takes a mapping of property names to nested query shortcuts. It allows us to write an even bigger join (of books, each with their author and tags) like so:
+
+```typescript
+const booksAuthorTags = await db.select('books', db.all, {
+  lateral: {
+    author: db.selectOne('authors', { id: db.parent('authorId') }),
+    tags: db.select('tags', { bookId: db.parent('id') }),
+  }
+}).run(pool);
+```
+
+Or we can turn this around, nesting more deeply to retrieve authors, each with their books, each with their tags:
+
+```typescript
+const authorsBooksTags = await db.select('authors', db.all, {
+  columns: ['name'],
+  order: [{ by: 'name', direction: 'ASC' }],
+  lateral: {
+    books: db.select('books', { authorId: db.parent('id') }, {
+      columns: ['title'],
+      order: [{ by: 'createdAt', direction: 'DESC' }],
+      lateral: {
+        tags: db.select('tags', { bookId: db.parent('id') }, { columns: ['tag'] })
+      }
+    })
+  }
+}).run(pool);
+```
+
+You'll note the use of the `parent` function to refer to a join column in the table of the containing query. This is simply a convenience: in the join of books to authors above, we could just as well formulate the `Whereable` as:
+
+```typescript:norun
+{ authorId: sql`${"authors"}.${"id"}` }
+```
+
+We can also nest `count` and `selectOne` calls, as you might expect. And we can join a table to itself, though in this case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity:
+
+Take this new, self-referencing table:
+
+```sql
+CREATE TABLE "employees"
+( "id" SERIAL PRIMARY KEY
+, "name" TEXT NOT NULL
+, "managerId" INTEGER REFERENCES "employees"("id") );
+```
+
+Add some employees:
+
+```typescript
+const
+  anna = await db.insert('employees', 
+    { name: 'Anna' }).run(pool),
+  [beth, charlie] = await db.insert('employees', [
+    { name: 'Beth', managerId: anna.id },
+    { name: 'Charlie', managerId: anna.id },
+  ]).run(pool),
+  dougal = await db.insert('employees', 
+    { name: 'Dougal', managerId: beth.id }).run(pool);
+```
+
+Then query for a summary (joining the table to itself twice, with appropriate aliasing):
+
+```typescript
+const people = await db.select('employees', db.all, {
+  columns: ['name'], 
+  lateral: {
+    lineManager: db.selectOne('employees', { id: db.parent('managerId') },
+      { alias: 'managers', columns: ['name'] }),
+    directReports: db.count('employees', { managerId: db.parent('id') },
+      { alias: 'reports' }),
+  },
+}).run(pool);
+```
+
+As usual, this is fully typed. If, for example, you were to forget that `directReports` is a count rather than an array of employees, VS Code would soon disabuse you.
+
+There are still a couple of limitations to type inference for nested queries. First, there's no check that your join makes sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, the result type of a nested `selectOne` always includes `undefined` even if the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint (in which case we know that Postgres will have enforced the existence of a record).
+
+Nevertheless, this is a handy, flexible — but still transparent and zero-abstraction — way to generate and run complex join queries. 
 
 
 ##### `extras`
 
+You're not limited to equating a foreign key to a primary key, either. For example, you can sub-`select` the `N` nearest somethings using `limit` alongside an `order` option with PostGIS's index-aware [`<-> operator`](https://postgis.net/docs/geometry_distance_knn.html). You could even return the distance to each one, using another new `options` key, `extras`, which works in a rather similar way to `lateral`.
 
+Here's a new table:
 
-#### count
+```sql
+CREATE EXTENSION postgis;
+CREATE TABLE "stores"
+( "id" SERIAL PRIMARY KEY
+, "name" TEXT NOT NULL
+, "geom" GEOMETRY NOT NULL
+);
+CREATE INDEX "storesGeomIdx" ON "stores" USING gist("geom");
+```
+
+Add some stores:
+
+```typescript
+const gbPoint = (mEast: number, mNorth: number) =>
+  sql`ST_SetSRID(ST_Point(${param(mEast)}, ${param(mNorth)}), 27700)`;
+
+const [brighton] = await insert('stores', [
+  { name: 'Brighton', geom: gbPoint(530590, 104190) },
+  { name: 'London', geom: gbPoint(534930, 179380) },
+  { name: 'Edinburgh', geom: gbPoint(323430, 676130) },
+  { name: 'Newcastle', geom: gbPoint(421430, 563130) },
+  { name: 'Exeter', geom: gbPoint(288430, 92130) },
+]).run(pool);
+```
+
+And then query my local store (Brighton) plus its three nearest alternatives, with their distance in metres:
+
+```typescript
+const localStore = await selectOne('stores', { id: brighton.id }, {
+  columns: ['name'],
+  lateral: {
+    alternatives: select('stores', sql<s.stores.SQL>`${"id"} <> ${parent("id")}`, {
+      alias: 'nearby',
+      order: [{ by: sql<s.stores.SQL>`${"geom"} <-> ${parent("geom")}`, direction: 'ASC' }],
+      limit: 3,
+      columns: ['name'],
+      extras: {
+        distance: sql<s.stores.SQL, number>`ST_Distance(${"geom"}, ${parent("geom")})`,
+      },
+    })
+  }
+}).run(pool);
+
+console.dir(localStore);
+```
 
 
 ### Transactions

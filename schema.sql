@@ -62,6 +62,11 @@ INSERT INTO "books" VALUES (1000, 1000, 'Northern Lights');
 INSERT INTO "books" VALUES (1001, 1000, 'The Subtle Knife');
 INSERT INTO "books" VALUES (1002, 1000, 'The Amber Spyglass');
 INSERT INTO "tags" VALUES ('His Dark Materials', 1000);
+INSERT INTO "tags" VALUES ('1/3', 1000);
+INSERT INTO "tags" VALUES ('His Dark Materials', 1001);
+INSERT INTO "tags" VALUES ('2/3', 1001);
+INSERT INTO "tags" VALUES ('His Dark Materials', 1002);
+INSERT INTO "tags" VALUES ('3/3', 1002);
 
 INSERT INTO "authors" VALUES (1001, 'Mark Haddon', true);
 INSERT INTO "books" VALUES (1003, 1001, 'The Curious Incident of the Dog in the Night-Time');
