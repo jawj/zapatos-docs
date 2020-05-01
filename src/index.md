@@ -347,11 +347,11 @@ const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
   SELECT * FROM ${"authors"}`.run(pool);
 ```
 
-The first type variable, `Interpolations`, defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
+The first type variable, `Interpolations` (above: `s.authors.SQL`), defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
 
 The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, and if you have multiple interpolated values of different types then you may need to specify a value explicitly (either `db.SQL` or something more precise).
 
-The second type variable, `RunResult`, describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral) query options. Its default value if not specified is `any[]`.
+The second type variable, `RunResult` (above: `s.authors.Selectable[]`), describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral) query options. Its default value if not specified is `any[]`.
 
 Take another example of these type variables:
 
@@ -364,7 +364,7 @@ console.log(random);
 
 `Interpolations` is `never` because nothing needs to be interpolated in this query, and the `RunResult` type says that the query will return one row comprising one numeric column, named `random`. The `random` TypeScript variable we initialize will of course be typed as a `number`. 
 
-If you're happy to have your types tied down a little less tightly, it also works to wholly omit the type variables in this query, falling back on their defaults:
+If you're happy to have your types tied down a little less tightly, it also works to wholly omit the type variables in this particular query, falling back on their defaults:
 
 ```typescript:noresult
 const [{ random }] = await db.sql`SELECT random()`.run(pool);
