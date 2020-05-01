@@ -12,15 +12,14 @@ xyz.setConfig({
         }
     }
 });
-/* original script begins */
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
+/* original script begins */
 const bookAuthorTags = await db.select('books', db.all, {
     lateral: {
         author: db.selectOne('authors', { id: db.parent('authorId') }),
         tags: db.select('tags', { bookId: db.parent('id') }),
     }
 }).run(pool);
-bookAuthorTags.map(b => `${b.author.name}: ${b.title} (${b.tags.map(t => t.tag).join(', ')})`);
 /* original script ends */
 pool.end();

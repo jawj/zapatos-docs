@@ -14,12 +14,13 @@
           }
         });
         
+          import * as db from './zapatos/src';
+          import * as s from './zapatos/schema';
+          import { pool } from './pgPool';
+        
 
         /* original script begins */
-        import * as db from './zapatos/src';
-import { pool } from './pgPool';
-
-const [accountA, accountB] = await db.insert('bankAccounts', 
+        const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
 
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>

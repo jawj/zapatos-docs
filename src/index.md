@@ -120,9 +120,6 @@ To eliminate the boilerplate, Zapatos supplies some simple functions to generate
 Let's use one of them — `insert` — to add two more authors:
 
 ```typescript
-import * as db from './zapatos/src';
-import { pool } from './pgPool';
-
 const [doug, janey] = await db.insert('authors', [
   { name: 'Douglas Adams', isLiving: false },
   { name: 'Jane Austen', isLiving: false},
@@ -165,18 +162,12 @@ Now, let's say I want to show a list of books, each with its (one) author and (m
 Let's try it:
 
 ```typescript
-import * as db from './zapatos/src';
-import { pool } from './pgPool';
-
 const bookAuthorTags = await db.select('books', db.all, {
   lateral: {
     author: db.selectOne('authors', { id: db.parent('authorId') }),
     tags: db.select('tags', { bookId: db.parent('id') }),
   }
 }).run(pool);
-
-bookAuthorTags.map(b => 
-  `${b.author!.name}: ${b.title} (${b.tags.map(t => t.tag).join(', ')})`);
 ```
 
 This generates an efficient three-table `LATERAL JOIN` that returns a nested JSON structure directly from the database. Every nested element is again fully and automatically typed.
@@ -213,9 +204,6 @@ CREATE TABLE "bankAccounts"
 We can use the `transaction` helper like so:
 
 ```typescript
-import * as db from './zapatos/src';
-import { pool } from './pgPool';
-
 const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
 
@@ -1080,27 +1068,28 @@ Nevertheless, this is a handy, flexible — but still transparent and zero-abstr
 
 ##### `extras`
 
-You're not limited to equating a foreign key to a primary key, either. For example, you can sub-`select` the `N` nearest somethings using `limit` alongside an `order` option with PostGIS's index-aware [`<-> operator`](https://postgis.net/docs/geometry_distance_knn.html). You could even return the distance to each one, using another new `options` key, `extras`, which works in a rather similar way to `lateral`.
+The `extras` option allows us to include additional result keys that don't represent columns of our tables. That could be a computed quantity, such as a geographical distance via PostGIS. 
 
-Here's a new table:
+The option takes a mapping of property names to `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variables of those template strings are significant, as they are passed through to the result type.
+
+Take this new table:
 
 ```sql
 CREATE EXTENSION postgis;
 CREATE TABLE "stores"
 ( "id" SERIAL PRIMARY KEY
 , "name" TEXT NOT NULL
-, "geom" GEOMETRY NOT NULL
-);
+, "geom" GEOMETRY NOT NULL );
 CREATE INDEX "storesGeomIdx" ON "stores" USING gist("geom");
 ```
 
-Add some stores:
+Let's add some stores:
 
 ```typescript
 const gbPoint = (mEast: number, mNorth: number) =>
-  sql`ST_SetSRID(ST_Point(${param(mEast)}, ${param(mNorth)}), 27700)`;
+  db.sql`ST_SetSRID(ST_Point(${db.param(mEast)}, ${db.param(mNorth)}), 27700)`;
 
-const [brighton] = await insert('stores', [
+const [brighton] = await db.insert('stores', [
   { name: 'Brighton', geom: gbPoint(530590, 104190) },
   { name: 'London', geom: gbPoint(534930, 179380) },
   { name: 'Edinburgh', geom: gbPoint(323430, 676130) },
@@ -1109,26 +1098,30 @@ const [brighton] = await insert('stores', [
 ]).run(pool);
 ```
 
-And then query my local store (Brighton) plus its three nearest alternatives, with their distance in metres:
+And now let's query my local store (Brighton) plus its three nearest alternatives, with their distances in metres:
 
 ```typescript
-const localStore = await selectOne('stores', { id: brighton.id }, {
+const localStore = await db.selectOne('stores', { id: 1 }, {
   columns: ['name'],
   lateral: {
-    alternatives: select('stores', sql<s.stores.SQL>`${"id"} <> ${parent("id")}`, {
+    alternatives: db.select('stores', db.sql`${"id"} <> ${db.parent("id")}`, {
       alias: 'nearby',
-      order: [{ by: sql<s.stores.SQL>`${"geom"} <-> ${parent("geom")}`, direction: 'ASC' }],
-      limit: 3,
       columns: ['name'],
-      extras: {
-        distance: sql<s.stores.SQL, number>`ST_Distance(${"geom"}, ${parent("geom")})`,
+      extras: {  // <-- here it is!
+        distance: db.sql<s.stores.SQL, number>`
+          ST_Distance(${"geom"}, ${db.parent("geom")})`,
       },
+      order: [{ 
+        by: db.sql<s.stores.SQL>`${"geom"} <-> ${db.parent("geom")}`, 
+        direction: 'ASC' 
+      }],
+      limit: 3,
     })
   }
 }).run(pool);
-
-console.dir(localStore);
 ```
+
+The example shows also that the `lateral` option is not limited to equating a foreign key to a primary key: here, we're using PostGIS's index-aware [`<-> operator`](https://postgis.net/docs/geometry_distance_knn.html).
 
 
 ### Transactions

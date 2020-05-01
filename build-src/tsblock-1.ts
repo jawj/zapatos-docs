@@ -14,12 +14,13 @@
           }
         });
         
+          import * as db from './zapatos/src';
+          import * as s from './zapatos/schema';
+          import { pool } from './pgPool';
+        
 
         /* original script begins */
-        import * as db from './zapatos/src';
-import { pool } from './pgPool';
-
-const [doug, janey] = await db.insert('authors', [
+        const [doug, janey] = await db.insert('authors', [
   { name: 'Douglas Adams', isLiving: false },
   { name: 'Jane Austen', isLiving: false},
 ]).run(pool);

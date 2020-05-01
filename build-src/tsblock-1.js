@@ -12,9 +12,9 @@ xyz.setConfig({
         }
     }
 });
-/* original script begins */
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
+/* original script begins */
 const [doug, janey] = await db.insert('authors', [
     { name: 'Douglas Adams', isLiving: false },
     { name: 'Jane Austen', isLiving: false },
