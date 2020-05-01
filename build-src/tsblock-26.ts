@@ -20,7 +20,16 @@
         
 
         /* original script begins */
-        await db.truncate('bankAccounts').run(pool);
+        export const allTables: s.AllTables = [
+  'appleTransactions', 
+  'authors', 
+  'bankAccounts', 
+  'books', 
+  'emailAuthentication', 
+  'employees', 
+  'stores',
+  'tags',
+];
 
         /* original script ends */
 

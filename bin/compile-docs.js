@@ -115,7 +115,7 @@ var jsdom_1 = require("jsdom");
                 }
                 return '';
             }
-        }), htmlContent = md.render(src), html = "<!DOCTYPE html>\n    <html>\n      <head>\n        <!-- tocbot -->\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n        <!-- highlighting -->\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/default.min.css\">\n        <!-- monaco editor -->\n        <script src=\"monaco/vs/loader.js\"></script>\n        <script src=\"zapatos-bundle.js\"></script>\n        <!-- fonts -->\n        <link rel=\"stylesheet\" href=\"https://use.typekit.net/mdb7zvi.css\">\n        <!-- custom -->\n        <link rel=\"stylesheet\" href=\"docs.css\">\n      </head>\n      <body>\n        <div id=\"toc\"></div>\n        <div id=\"content\">" + htmlContent + "</div>\n        <script src=\"docs.js\"></script>\n      </body>\n    </html>\n  ";
+        }), htmlContent = md.render(src), html = "<!DOCTYPE html>\n    <html>\n      <head>\n        <title>Zapatos: Docs</title>\n        <!-- tocbot -->\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n        <!-- highlighting -->\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/default.min.css\">\n        <!-- monaco editor -->\n        <script src=\"monaco/vs/loader.js\"></script>\n        <script src=\"zapatos-bundle.js\"></script>\n        <!-- fonts -->\n        <link rel=\"stylesheet\" href=\"https://use.typekit.net/mdb7zvi.css\">\n        <!-- custom -->\n        <link rel=\"stylesheet\" href=\"docs.css\">\n      </head>\n      <body>\n        <div id=\"toc\"></div>\n        <div id=\"content\">" + htmlContent + "</div>\n        <script src=\"docs.js\"></script>\n      </body>\n    </html>\n  ";
         dom = new jsdom_1.JSDOM(html), document = dom.window.document;
         console.info('Adding id attributes to headings...');
         maxIdLength = 32, content = document.querySelector('#content'), headings = content.querySelectorAll('h1, h2, h3, h4'), headingMap = {};
@@ -159,7 +159,7 @@ var jsdom_1 = require("jsdom");
         };
         runnableTags.forEach(function (runnableTag, i) {
             console.info("Running script block " + i + " ...");
-            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv });
+            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node --no-warnings tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv });
             // console.log(stdout);
             var parts = stdout.split(/%{2,}/);
             if (!runnableTag.className.match(/\bnoresult\b/)) {

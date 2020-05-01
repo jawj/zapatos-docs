@@ -12,9 +12,17 @@ xyz.setConfig({
         }
     }
 });
-import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-await db.truncate('bankAccounts').run(pool);
+export const allTables = [
+    'appleTransactions',
+    'authors',
+    'bankAccounts',
+    'books',
+    'emailAuthentication',
+    'employees',
+    'stores',
+    'tags',
+];
 /* original script ends */
 pool.end();

@@ -96,6 +96,7 @@ import { JSDOM } from 'jsdom';
     html = `<!DOCTYPE html>
     <html>
       <head>
+        <title>Zapatos: Docs</title>
         <!-- tocbot -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css">
@@ -205,7 +206,7 @@ import { JSDOM } from 'jsdom';
   runnableTags.forEach((runnableTag, i) => {
     console.info(`Running script block ${i} ...`);
 
-    const stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
+    const stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node --no-warnings tsblock-${i}.js`,
       { cwd: './build-src', encoding: 'utf8', env: dbEnv });
     // console.log(stdout);
 
