@@ -7,8 +7,7 @@ CREATE TABLE "books"
 ( "id" SERIAL PRIMARY KEY
 , "authorId" INTEGER NOT NULL REFERENCES "authors"("id")
 , "title" TEXT
-, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
-, "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now() );
+, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now() );
 
 CREATE TABLE "tags"
 ( "tag" TEXT NOT NULL

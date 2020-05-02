@@ -176,7 +176,7 @@ _Once again, the code above is in a Monaco (VS Code) editor, so you can play wit
 
 We can of course extend this to deeper nesting (e.g. query each author, with their books, with their tags); to self-joins (of a table with itself, e.g. employees to their managers in the same `employees` table); and to joins on relationships other than foreign keys (e.g. joining the nearest _N_ somethings using the PostGIS `<->` distance operator).
 
-[Tell me more about nested select queries »](#detail2)
+[Tell me more about nested `select` queries »](#detail2)
 
 
 #### Transactions
@@ -334,7 +334,7 @@ This is likely most useful for the database connection details. For example, on 
 }
 ```
 
-## Full documentation
+## User guide
 
 ### `sql` tagged template strings
 
@@ -386,7 +386,7 @@ The `run` function compiles, executes, and returns the transformed result of the
 
 Taking that one step at a a time:
 
-1. First, the `compile` function is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
+1. First, [the `compile` function](#compile-sqlquery) is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
 
 2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as either a `pg.Pool` instance or a subtype of `pg.PoolClient` (`TxnClient`) as provided by the [`transaction` helper function](#transactions).
 
@@ -416,9 +416,9 @@ You may never need this function. Use it if and when you want to see the SQL tha
 
 #### `runResultTransform: (qr: pg.QueryResult) => any`
 
-When you call `run`, the function stored in this property is applied to the result object returned by `pg`, in order to produce the result that's then returned by the function.
+When you call `run`, the function stored in this property is applied to the `QueryResult` object returned by `pg`, in order to produce the result that the `run` function ultimately returns.
 
-By default, the `rows` property (an array) is returned: the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral) supply their own `runResultTransform` implementations in order to match their declared `RunResult` types.
+By default, the `QueryResult`’s `rows` property (which is an array) is returned: that is, the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral) supply their own `runResultTransform` implementations in order to match their declared `RunResult` types.
 
 Generally you will not need to call this function directly, but there may be cases where you want to assign a new function to replace the default implementation.
 
@@ -432,10 +432,10 @@ function dbNowQuery() {
 }
 
 const dbNow = await dbNowQuery().run(pool);
-// dbNow is a Date: the result shown below has come via JSON.stringify
+// dbNow is a Date: the result you can toggle below has come via JSON.stringify
 ```
 
-Note that the `RunResult` type variable on the `sql` template function (in this case, `Date`) reflects the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
+Note that the `RunResult` type variable on the `sql` template function (in this case, `Date`) must reflect the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
 
 If a `SQLFragment` does not have `run` called on it directly — for example, if it is instead interpolated into another `SQLFragment`, or given as the value of the `lateral` option to the `select` shortcut — then the `runResultTransform` function is never applied.
 
@@ -601,12 +601,12 @@ The `raw` function returns `DangerousRawString` wrapper instances. This represen
 
 #### `parent(columnName: string): ParentColumn`
 
-Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `param()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral).
+Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral).
 
 
 ### Manual joins using Postgres' JSON features
 
-We can make use of Postgres' excellent JSON support to achieve a variety of `JOIN` queries. That's not unique to Zapatos, of course, but perhaps it's helpful to consider a few example queries. 
+We can make use of Postgres' excellent JSON support to achieve a variety of `JOIN` queries. That's not unique to Zapatos, of course, but it may be helpful to consider a few example queries in this context. 
 
 Take this example, retrieving each book with its (single) author:
 
@@ -639,7 +639,7 @@ const authorBooks = await query.run(pool);
 
 Note that if you want to include authors with no books, you need a `LEFT JOIN` in this query, and then you'll also want to fix the annoying [`[null]` array results `jsonb_agg` will return for those authors](https://stackoverflow.com/questions/24155190/postgresql-left-join-json-agg-ignore-remove-null).
 
-But rather than do it that way, we can achieve the same result using a [`LATERAL` join](https://medium.com/kkempin/postgresqls-lateral-join-bfd6bd0199df) instead:
+Rather than do it that way, though, we can achieve the same result using a [`LATERAL JOIN`](https://medium.com/kkempin/postgresqls-lateral-join-bfd6bd0199df) instead:
 
 ```typescript
 type authorBooksSQL = s.authors.SQL | s.books.SQL;
@@ -1072,6 +1072,8 @@ The `extras` option allows us to include additional result keys that don't repre
 
 The option takes a mapping of property names to `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variables of those template strings are significant, as they are passed through to the result type.
 
+Let's see `extras` in use, with an example that shows too how the `lateral` option can go well beyond simply mathcing a foreign key to a primary key.
+
 Take this new table:
 
 ```sql
@@ -1083,7 +1085,7 @@ CREATE TABLE "stores"
 CREATE INDEX "storesGeomIdx" ON "stores" USING gist("geom");
 ```
 
-Let's add some stores:
+Insert some new stores:
 
 ```typescript
 const gbPoint = (mEast: number, mNorth: number) =>
@@ -1098,7 +1100,7 @@ const [brighton] = await db.insert('stores', [
 ]).run(pool);
 ```
 
-And now let's query my local store (Brighton) plus its three nearest alternatives, with their distances in metres:
+And now query my local store (Brighton) plus its three nearest alternatives, with their distances in metres, using PostGIS's index-aware [`<-> operator`](https://postgis.net/docs/geometry_distance_knn.html):
 
 ```typescript
 const localStore = await db.selectOne('stores', { id: 1 }, {
@@ -1109,10 +1111,11 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
       columns: ['name'],
       extras: {  // <-- here it is!
         distance: db.sql<s.stores.SQL, number>`
-          ST_Distance(${"geom"}, ${db.parent("geom")})`,
+          ${"geom"} <-> ${db.parent("geom")}`,
       },
       order: [{ 
-        by: db.sql<s.stores.SQL>`${"geom"} <-> ${db.parent("geom")}`, 
+        by: db.sql<s.stores.SQL>`
+          ${"geom"} <-> ${db.parent("geom")}`, 
         direction: 'ASC' 
       }],
       limit: 3,
@@ -1121,51 +1124,48 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
 }).run(pool);
 ```
 
-The example shows also that the `lateral` option is not limited to equating a foreign key to a primary key: here, we're using PostGIS's index-aware [`<-> operator`](https://postgis.net/docs/geometry_distance_knn.html).
-
-
 ### Transactions
 
 
 ### Run-time configuration
 
 
-Suggestion: use tslint to check for unawaited Promises
 
-## Licence
+One broader suggestion: configure [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid pitfalls accompanying heavy use of Promises.
 
 
-<!--
-What's happening here? First, we've applied the appropriate type to the object we're trying to insert: namely, `s.authors.Insertable`. This will give us type-checking and autocompletion on that object. 
+## Meta
 
-Then we've used our [tagged template function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals), `db.sql`, to put together the query. We've specified both which types are allowed as interpolated values in the template string (`s.authors.SQL`) and what type is going to be returned (`s.authors.Selectable[]`) when the query runs.
+### This documentation
 
-Within the query, we've interpolated the table name, `${"authors"}`. Only the `authors` table and its column names are allowed as interpolated strings with `s.authors.SQL` specified, so it's hard to get that wrong. And we've used two helper functions, `db.cols` and `db.vals`, which split our `Insertable` into matching-ordered column names and (`$1`, `$2`, ... parameterized) values.
+This document is generated from a [separate repository](https://github.com/jawj/zapatos-docs/). 
 
-Finally, we've run the query using a specific `pg` client or pool, and accessed the newly inserted record's serial `id` value.
--->
-<!--
-Let's try one more raw SQL query, and search for the record we just inserted:
+Most of the TypeScript code examples are run, producing the expandable SQL/results sections, as the document is compiled, so they should be free of basic errors. As part of that process, all generated SQL is funnelled through [pgFormatter](https://github.com/darold/pgFormatter) for easier reading.
 
-```typescript
-import * as db from './zapatos/src';
-import * as s from './zapatos/schema';
-import { pool } from './pgPool';
 
-const 
-  searchPattern = '%marquez%',  // could be untrusted 
-  [firstFoundAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
-    SELECT * FROM ${"authors"} WHERE ${{
-      isLiving: false,
-      name: db.sql<db.SQL>`${db.self} ILIKE ${db.param(searchPattern)}`,
-    }}`
-  .run(pool);
+### Licence
 
-console.log(firstFoundAuthor?.name);
-```
+This software is released under the [MIT licence](http://www.opensource.org/licenses/mit-license.php). Go forth, fork, and hack on it!
 
-Much of this is familiar. What's new is the object we've interpolated in our `WHERE` clause, an `s.authors.Wherable` that compiles to the conjunction of the given conditions. 
 
-You'll notice that a `Whereable` can take either primitive values, which are simply tested for equality, or a `SQLFragment` (the return type of `db.sql`), in which case we can do whatever we want, using the symbol `db.self` to refer to the keyed column name.
--->
+### Fixes, feature and contributions
+
+It's a lovely feeling when people use and appreciate our work. But it can sour a little if they feel entitled to demand free work, toot sweet, on top of whatever else might be on our plates. 
+
+If you're asking for or contributing new work, my response is likely to reflect these principles:
+
+**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix definite bugs or improve readability or consistency without any major trade-offs. I'll do my best to act on clear, minimal, failing test cases too.
+
+**Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address obscure (IMHO) use-cases or to eke out minor performance gains that are almost certainly swamped by network and database latencies. 
+
+**Scratching my own itch.**  I'm not very likely to put a lot of my own effort into features I don't currently need ... unless we're talking about paid consultancy, which I'm more than happy to discuss.
+
+
+### Roadmap
+
+Some nice-to-haves would include:
+
+* **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in the generated types and the shortcut functions that make use of them.
+
+* **Tests.**  The proprietary server API that's the original consumer of this library has a test suite that exercises the code base moderately fully, but a proper test suite is kind of indispensable. It should test not just returned values but also the inferred types — which is possible, but a little fiddly.
 

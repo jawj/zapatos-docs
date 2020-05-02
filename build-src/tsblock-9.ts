@@ -27,7 +27,7 @@
 }
 
 const dbNow = await dbNowQuery().run(pool);
-// dbNow is a Date: the result shown below has come via JSON.stringify
+// dbNow is a Date: the result you can toggle below has come via JSON.stringify
 
         /* original script ends */
 
