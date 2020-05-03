@@ -1,4 +1,6 @@
-# Zapatos: _Zero-Abstraction Postgres for TypeScript_
+<img src="zapatos.png" width="240" alt="Shoe" style="margin: 0 0 20px -3px">
+
+# Zapatos: <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
 
 ## What does it do?
 
@@ -14,7 +16,7 @@ To achieve that, it does these five things:
 
 * **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
 
-* **Transactions** &nbsp; A transaction function helps with managing and retrying transactions. [Show me »](#transaction)
+* **Transactions** &nbsp; A transaction function helps with managing and retrying transactions. [Show me »](#transactions)
 
 
 ### Why does it do that?
@@ -78,7 +80,7 @@ export type SelectableForTable<T extends Table> = {
 }[T];
 ```
 
-[Tell me more about the command line tool »](#detail1)
+[Tell me more about the command line tool »](#how-do-i-use-it)
 
 #### Arbitrary SQL
 
@@ -106,7 +108,7 @@ We've applied the appropriate type to the object we're trying to insert (`s.auth
 
 _You can click 'Explore types' above to open the code in an embedded Monaco (VS Code) editor, so you can check those typings for yourself._ 
 
-[Tell me more about writing arbitrary SQL »](#detail2)
+[Tell me more about writing arbitrary SQL »](#sql-tagged-template-strings)
 
 
 #### Everyday CRUD
@@ -132,7 +134,7 @@ _Again, click 'Explore types' to play around and check those typings._
 
 In addition to `insert`, there are shortcuts for `select`, `selectOne` and `count`, and for `update`, `upsert`, `delete` and `truncate`. 
 
-[Tell me more about the shortcut functions »](#detail2)
+[Tell me more about the shortcut functions »](#shortcut-functions-and-lateral-joins)
 
 
 #### JOINs as nested JSON
@@ -176,7 +178,7 @@ _Once again, the code above is in a Monaco (VS Code) editor, so you can play wit
 
 We can of course extend this to deeper nesting (e.g. query each author, with their books, with their tags); to self-joins (of a table with itself, e.g. employees to their managers in the same `employees` table); and to joins on relationships other than foreign keys (e.g. joining the nearest _N_ somethings using the PostGIS `<->` distance operator).
 
-[Tell me more about nested `select` queries »](#detail2)
+[Tell me more about nested `select` queries »](#lateral-and-alias)
 
 
 #### Transactions
@@ -336,6 +338,8 @@ This is likely most useful for the database connection details. For example, on 
 
 ## User guide
 
+=> core.ts // === SQL tagged template strings ===
+
 ### `sql` tagged template strings
 
 Arbitrary queries are written using the tagged template function `sql`, which returns [`SQLFragment`](#sqlfragment) class instances.
@@ -351,7 +355,7 @@ The first type variable, `Interpolations` (above: `s.authors.SQL`), defines allo
 
 The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, and if you have multiple interpolated values of different types then you may need to specify a value explicitly (either `db.SQL` or something more precise).
 
-The second type variable, `RunResult` (above: `s.authors.Selectable[]`), describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral) query options. Its default value if not specified is `any[]`.
+The second type variable, `RunResult` (above: `s.authors.Selectable[]`), describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform-qr-pgqueryresult--any)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral-and-alias) query options. Its default value if not specified is `any[]`.
 
 Take another example of these type variables:
 
@@ -371,73 +375,6 @@ const [{ random }] = await db.sql`SELECT random()`.run(pool);
 ```
 
 In this case, the `random` variable is of course still a `number`, but it is typed as `any`.
-
-
-### `SQLFragment`
-
-`SQLFragment<RunResult>` class instances are what is returned by the `sql` tagged template function — you're unlikely ever to contruct them directly with `new`. They take on the `RunResult` type variable from the `sql` template function that constructs them.
-
-You can [interpolate them](#other-sql-template-strings) into other `sql` tagged template strings, or call/access the following properties on them:
-
-
-#### `async run(queryable: Queryable): Promise<RunResult>`
-
-The `run` function compiles, executes, and returns the transformed result of the query represented by this `SQLFragment`. The `awaited` return value is typed according to the `SQLFragment`'s `RunResult` type variable.
-
-Taking that one step at a a time:
-
-1. First, [the `compile` function](#compile-sqlquery) is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
-
-2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as either a `pg.Pool` instance or a subtype of `pg.PoolClient` (`TxnClient`) as provided by the [`transaction` helper function](#transactions).
-
-3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform) function, whose default implementation simply returns the `rows` property of the result. If a `resultListener` function [has been configured](#run-time-configuration), it is called with the transformed result as its argument now.
-
-Examples of the `run` function are scattered throughout this documentation.
-
-
-#### `compile(): SQLQuery`
-
-The `compile` function recursively transforms this `SQLFragment` and its interpolated values into a `SQLQuery` object (`{ text: string; values: any[]; }`) that can be passed straight to the `pg` module. It is called without arguments (the arguments it can take are for internal use).
-
-For example:
-
-```typescript
-const 
-  authorId = 12,  // from some untrusted source
-  query = db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${{authorId}}`,
-  compiled = query.compile();
-
-console.log(compiled);
-```
-
-You may never need this function. Use it if and when you want to see the SQL that would be executed by the `run` function, without in fact executing it. 
-
-
-#### `runResultTransform: (qr: pg.QueryResult) => any`
-
-When you call `run`, the function stored in this property is applied to the `QueryResult` object returned by `pg`, in order to produce the result that the `run` function ultimately returns.
-
-By default, the `QueryResult`’s `rows` property (which is an array) is returned: that is, the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral) supply their own `runResultTransform` implementations in order to match their declared `RunResult` types.
-
-Generally you will not need to call this function directly, but there may be cases where you want to assign a new function to replace the default implementation.
-
-For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp directly as a `Date`. We could do so like this:
-
-```typescript
-function dbNowQuery() {
-  const query = db.sql<never, Date>`SELECT now()`;
-  query.runResultTransform = qr => qr.rows[0].now;
-  return query;
-}
-
-const dbNow = await dbNowQuery().run(pool);
-// dbNow is a Date: the result you can toggle below has come via JSON.stringify
-```
-
-Note that the `RunResult` type variable on the `sql` template function (in this case, `Date`) must reflect the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
-
-If a `SQLFragment` does not have `run` called on it directly — for example, if it is instead interpolated into another `SQLFragment`, or given as the value of the `lateral` option to the `select` shortcut — then the `runResultTransform` function is never applied.
 
 
 ### `sql` template interpolation types
@@ -496,53 +433,10 @@ const
     SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 ```
 
-=> core.ts // === SQL tagged template strings ===
-
-#### `sql` template strings
-
-`sql` template strings (resulting in `SQLFragment`s) can be interpolated within other `sql` template strings (`SQLFragment`s). This provides flexibility in building queries programmatically.
-
-For example, the [`select` shortcut](#select) makes extensive use of nested `sql` templates to build its queries:
- 
-```typescript:norun
-const
-  rowsQuery = sql<SQL, any>`
-    SELECT ${allColsSQL} AS result 
-    FROM ${table}${tableAliasSQL}
-    ${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}`,
-
-  // we need the aggregate function, if one's needed, to sit in an outer 
-  // query, to keep ORDER and LIMIT working normally in the main query
-  query = mode !== SelectResultMode.Many ? rowsQuery :
-    sql<SQL, any>`
-      SELECT coalesce(jsonb_agg(result), '[]') AS result 
-      FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
-```
-
-#### Arrays
-
-Items in an interpolated array are treated just the same as if they had been interpolated directly. This, again, can be useful for building queries programmatically.
-
-To take the [`select` shortcut](#select) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
-
-```typescript:norun
-const
-  lateralOpt = allOptions.lateral,
-  lateralSQL = lateralOpt === undefined ? [] :
-    Object.keys(lateralOpt).map(k => {
-      const subQ = lateralOpt[k];
-      subQ.parentTable = aliasedTable;  // enables `parent()` in subquery's Wherables
-      return sql<SQL>` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
-    });
-```
-
-The `lateralSQL` variable — a `SQLFragment[]` — is subsequently interpolated into the final query (some additional SQL using `jsonb_build_object()` is interpolated earlier in that query, to return the result of the lateral subquery alongside the main query columns).
-
-Note that a useful idiom also seen here is the use of the empty array (`[]`) to conditionally interpolate nothing at all.
 
 #### `Whereable`
 
-Any plain JS object interpolated into a `sql` template string is type-checked as a `Whereable`, and compiled into one or more conditions joined with `AND` (but, for flexibility, no `WHERE`). The object's keys represent column names, and the corresponding values are compiled as (injection-safe) parameters.
+Any plain JavaScript object interpolated into a `sql` template string is type-checked as a `Whereable`, and compiled into one or more conditions joined with `AND` (but, for flexibility, no `WHERE`). The object's keys represent column names, and the corresponding values are compiled as (injection-safe) parameters.
 
 For example:
 
@@ -566,7 +460,6 @@ const
       createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '200 years'`,
     }}`.run(pool);
 ```
-
 
 #### `self`
 
@@ -594,6 +487,49 @@ This same mechanism is applied automatically when we use [a `Whereable` object](
 The `default` symbol simply compiles to the SQL `DEFAULT` keyword. This may be useful in `INSERT` and `UPDATE` queries where no value is supplied for one or more of the affected columns.
 
 
+#### `sql` template strings
+
+`sql` template strings (resulting in `SQLFragment`s) can be interpolated within other `sql` template strings (`SQLFragment`s). This provides flexibility in building queries programmatically.
+
+For example, the [`select` shortcut](#select-selectone-and-count) makes extensive use of nested `sql` templates to build its queries:
+ 
+```typescript:norun
+const
+  rowsQuery = sql<SQL, any>`
+    SELECT ${allColsSQL} AS result 
+    FROM ${table}${tableAliasSQL}
+    ${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}`,
+
+  // we need the aggregate function, if one's needed, to sit in an outer 
+  // query, to keep ORDER and LIMIT working normally in the main query
+  query = mode !== SelectResultMode.Many ? rowsQuery :
+    sql<SQL, any>`
+      SELECT coalesce(jsonb_agg(result), '[]') AS result 
+      FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
+```
+
+#### Arrays
+
+Items in an interpolated array are treated just the same as if they had been interpolated directly. This, again, can be useful for building queries programmatically.
+
+To take the [`select` shortcut](#select-selectone-and-count) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
+
+```typescript:norun
+const
+  lateralOpt = allOptions.lateral,
+  lateralSQL = lateralOpt === undefined ? [] :
+    Object.keys(lateralOpt).map(k => {
+      const subQ = lateralOpt[k];
+      subQ.parentTable = aliasedTable;  // enables `parent()` in subquery's Wherables
+      return sql<SQL>` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
+    });
+```
+
+The `lateralSQL` variable — a `SQLFragment[]` — is subsequently interpolated into the final query (some additional SQL using `jsonb_build_object()` is interpolated earlier in that query, to return the result of the lateral subquery alongside the main query columns).
+
+Note that a useful idiom also seen here is the use of the empty array (`[]`) to conditionally interpolate nothing at all.
+
+
 #### `raw(value: string): DangerousRawString`
 
 The `raw` function returns `DangerousRawString` wrapper instances. This represents an escape hatch, enabling us to interpolate arbitrary strings into queries in contexts where the `param` wrapper is unsuitable (such as when we're interpolating basic SQL syntax elements). **If you pass user-controlled data to this function you will open yourself up to SQL injection attacks.**
@@ -601,7 +537,74 @@ The `raw` function returns `DangerousRawString` wrapper instances. This represen
 
 #### `parent(columnName: string): ParentColumn`
 
-Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral).
+Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral-and-alias).
+
+
+### `SQLFragment`
+
+`SQLFragment<RunResult>` class instances are what is returned by the `sql` tagged template function — you're unlikely ever to contruct them directly with `new`. They take on the `RunResult` type variable from the `sql` template function that constructs them.
+
+You can [interpolate them](#sql-template-strings) into other `sql` tagged template strings, or call/access the following properties on them:
+
+
+#### `async run(queryable: Queryable): Promise<RunResult>`
+
+The `run` function compiles, executes, and returns the transformed result of the query represented by this `SQLFragment`. The `awaited` return value is typed according to the `SQLFragment`'s `RunResult` type variable.
+
+Taking that one step at a a time:
+
+1. First, [the `compile` function](#compile-sqlquery) is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
+
+2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as either a `pg.Pool` instance or a subtype of `pg.PoolClient` (`TxnClient`) as provided by the [`transaction` helper function](#transactions-1).
+
+3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform-qr-pgqueryresult--any) function, whose default implementation simply returns the `rows` property of the result. If a `resultListener` function [has been configured](#run-time-configuration), it is called with the transformed result as its argument now.
+
+Examples of the `run` function are scattered throughout this documentation.
+
+
+#### `compile(): SQLQuery`
+
+The `compile` function recursively transforms this `SQLFragment` and its interpolated values into a `SQLQuery` object (`{ text: string; values: any[]; }`) that can be passed straight to the `pg` module. It is called without arguments (the arguments it can take are for internal use).
+
+For example:
+
+```typescript
+const 
+  authorId = 12,  // from some untrusted source
+  query = db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{authorId}}`,
+  compiled = query.compile();
+
+console.log(compiled);
+```
+
+You may never need this function. Use it if and when you want to see the SQL that would be executed by the `run` function, without in fact executing it. 
+
+
+#### `runResultTransform: (qr: pg.QueryResult) => any`
+
+When you call `run`, the function stored in this property is applied to the `QueryResult` object returned by `pg`, in order to produce the result that the `run` function ultimately returns.
+
+By default, the `QueryResult`’s `rows` property (which is an array) is returned: that is, the default implementation is just `qr => qr.rows`. However, the [shortcut functions](#shortcut-functions-and-lateral-joins) supply their own `runResultTransform` implementations in order to match their declared `RunResult` types.
+
+Generally you will not need to call this function directly, but there may be cases where you want to assign a new function to replace the default implementation.
+
+For example, imagine we wanted to create a function returning a query that, when run, returns the current database timestamp directly as a `Date`. We could do so like this:
+
+```typescript
+function dbNowQuery() {
+  const query = db.sql<never, Date>`SELECT now()`;
+  query.runResultTransform = qr => qr.rows[0].now;
+  return query;
+}
+
+const dbNow = await dbNowQuery().run(pool);
+// dbNow is a Date: the result you can toggle below has come via JSON.stringify
+```
+
+Note that the `RunResult` type variable on the `sql` template function (in this case, `Date`) must reflect the type of the _transformed_ result, not what comes straight back from `pg` (which in this case is roughly `{ rows: [{ now: Date }] }`).
+
+If a `SQLFragment` does not have `run` called on it directly — for example, if it is instead interpolated into another `SQLFragment`, or given as the value of the `lateral` option to the `select` shortcut — then the `runResultTransform` function is never applied.
 
 
 ### Manual joins using Postgres' JSON features
@@ -656,7 +659,7 @@ const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
 const authorBooks = await query.run(pool);
 ```
 
-Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select) and its [`lateral` option](#lateral) can make this much less painful.
+Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select-selectone-and-count) and its [`lateral` option](#lateral-and-alias) can make this much less painful.
 
 
 ### Shortcut functions and lateral joins
@@ -1129,9 +1132,26 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
 
 ### Run-time configuration
 
+There are a few configuration options you can set at runtime:
 
+```typescript:norun
+export interface Config {
+  transactionAttemptsMax: number;
+  transactionRetryDelay: { minMs: number, maxMs: number };
+  queryListener?(str: any): void;
+  resultListener?(str: any): void;
+};
+```
 
-One broader suggestion: configure [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid pitfalls accompanying heavy use of Promises.
+Read the current values with `getConfig()` and set new values with `setConfig(newConfig: Partial<Config>)`.
+
+* `transactionAttemptsMax` determines how many times the `transaction` helper will try to execute a query in the face of serialization errors before giving up. It defaults to `5`.
+
+* `transactionRetryDelay` determines the range within which the `transaction` helper will pick a random delay before each retry. It's expressed in milliseconds and defaults to `{ minMs: 25, maxMs: 250 }`. 
+
+* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query. You might use one or both of these functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
+
+One general configuration suggestion: set up [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid Promise-related pitfalls.
 
 
 ## Meta
@@ -1140,12 +1160,7 @@ One broader suggestion: configure [tslint](https://palantir.github.io/tslint/) w
 
 This document is generated from a [separate repository](https://github.com/jawj/zapatos-docs/). 
 
-Most of the TypeScript code examples are run, producing the expandable SQL/results sections, as the document is compiled, so they should be free of basic errors. As part of that process, all generated SQL is funnelled through [pgFormatter](https://github.com/darold/pgFormatter) for easier reading.
-
-
-### Licence
-
-This software is released under the [MIT licence](http://www.opensource.org/licenses/mit-license.php). Go forth, fork, and hack on it!
+Most of the TypeScript code examples are run, producing the expandable SQL/results sections, as the document is compiled, so they should be free of basic errors. During this process, all generated SQL is funnelled through [pgFormatter](https://github.com/darold/pgFormatter) for easier reading.
 
 
 ### Fixes, feature and contributions
@@ -1154,9 +1169,9 @@ It's a lovely feeling when people use and appreciate our work. But it can sour a
 
 If you're asking for or contributing new work, my response is likely to reflect these principles:
 
-**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix definite bugs or improve readability or consistency without any major trade-offs. I'll do my best to act on clear, minimal, failing test cases too.
+**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix bugs or improve readability or consistency without any major trade-offs. I'll do my best to act on clear, minimal test cases that demonstrate unambiguous bugs.
 
-**Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address obscure (IMHO) use-cases or to eke out minor performance gains that are almost certainly swamped by network and database latencies. 
+**Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address niche use-cases or to eke out minor performance gains that are almost certainly swamped by network and database latencies. 
 
 **Scratching my own itch.**  I'm not very likely to put a lot of my own effort into features I don't currently need ... unless we're talking about paid consultancy, which I'm more than happy to discuss.
 
@@ -1165,7 +1180,21 @@ If you're asking for or contributing new work, my response is likely to reflect 
 
 Some nice-to-haves would include:
 
-* **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in the generated types and the shortcut functions that make use of them.
+* **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in generated types and the shortcut functions that make use of them.
 
-* **Tests.**  The proprietary server API that's the original consumer of this library has a test suite that exercises the code base moderately fully, but a proper test suite is kind of indispensable. It should test not just returned values but also the inferred types — which is possible, but a little fiddly.
+* **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](http://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
+
+
+### Licence
+
+This software is released under the [MIT licence](http://www.opensource.org/licenses/mit-license.php).
+
+Copyright (C) 2020 George MacKerron
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 

@@ -124,24 +124,26 @@ code {
   padding: 0 2px;
 }
 #content {
-  margin-left: 32%;
-  padding-left: 30px;
+  margin-left: 240px;
+  padding-left: 40px;
 }
 #toc {
-  width: 24%;
+  width: 240px;
   position: fixed;
   line-height: 1.1;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1080px) {
   body {
     padding-right: 2.5%;
     padding-left: 2.5%;
   }
+}
+@media (max-width: 720px) {
   #content {
-    margin-left: 32%;
+    margin: 0;
   }
   #toc {
-    width: 30.4%;
+    display: none;
   }
 }
 #toc ol {

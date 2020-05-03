@@ -15,10 +15,9 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const titleLike = `Pride%`, books = await db.sql `
-    SELECT * FROM ${"books"} WHERE ${{
-    title: db.sql `${db.self} LIKE ${db.param(titleLike)}`,
-    createdAt: db.sql `${db.self} > now() - INTERVAL '200 years'`,
-}}`.run(pool);
+const authorId = 12, // from some untrusted source
+query = db.sql `
+    SELECT * FROM ${"books"} WHERE ${{ authorId }}`, compiled = query.compile();
+console.log(compiled);
 /* original script ends */
 pool.end();

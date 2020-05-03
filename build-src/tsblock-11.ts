@@ -20,8 +20,13 @@
         
 
         /* original script begins */
-        const title = await db.sql`
-  SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this!
+        // the <const> prevents generalization to string[]
+const bookCols = <const>['id', 'title'];
+type BookDatum = s.books.OnlyCols<typeof bookCols>;
+
+const
+  bookData = await db.sql<s.books.SQL, BookDatum[]>`
+    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 
         /* original script ends */
 

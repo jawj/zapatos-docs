@@ -20,14 +20,10 @@
         
 
         /* original script begins */
-        const
-  author: s.authors.Insertable = {
-    name: 'Joseph Conrad',
-    isLiving: false,
-  },
-  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
-    INSERT INTO ${"authors"} (${db.cols(author)})
-    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
+        const 
+  title = 'Pride and Prejudice',
+  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
 
         /* original script ends */
 

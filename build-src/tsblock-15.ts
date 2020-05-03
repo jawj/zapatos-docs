@@ -21,12 +21,12 @@
 
         /* original script begins */
         const 
-  titleLike = `Pride%`,
-  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${{ 
-      title: db.sql<db.SQL>`${db.self} LIKE ${db.param(titleLike)}`,
-      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '200 years'`,
-    }}`.run(pool);
+  authorId = 12,  // from some untrusted source
+  query = db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{authorId}}`,
+  compiled = query.compile();
+
+console.log(compiled);
 
         /* original script ends */
 

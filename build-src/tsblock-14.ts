@@ -23,7 +23,7 @@
         const 
   title = 'Pride and Prejudice',
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
+    SELECT * FROM ${"books"} WHERE ${"title"} = ${db.param(title)}`.run(pool);
 
         /* original script ends */
 

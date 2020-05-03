@@ -20,10 +20,14 @@
         
 
         /* original script begins */
-        const 
-  title = 'Pride and Prejudice',
-  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${"title"} = ${db.param(title)}`.run(pool);
+        function dbNowQuery() {
+  const query = db.sql<never, Date>`SELECT now()`;
+  query.runResultTransform = qr => qr.rows[0].now;
+  return query;
+}
+
+const dbNow = await dbNowQuery().run(pool);
+// dbNow is a Date: the result you can toggle below has come via JSON.stringify
 
         /* original script ends */
 

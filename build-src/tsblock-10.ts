@@ -20,8 +20,14 @@
         
 
         /* original script begins */
-        const title = await db.sql`
-  SELECT ${"title"} FROM ${"books"} LIMIT 1`.run(pool);
+        const
+  author: s.authors.Insertable = {
+    name: 'Joseph Conrad',
+    isLiving: false,
+  },
+  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
+    INSERT INTO ${"authors"} (${db.cols(author)})
+    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
 
         /* original script ends */
 

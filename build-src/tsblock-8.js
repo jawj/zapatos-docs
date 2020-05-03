@@ -15,9 +15,7 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const authorId = 12, // from some untrusted source
-query = db.sql `
-    SELECT * FROM ${"books"} WHERE ${{ authorId }}`, compiled = query.compile();
-console.log(compiled);
+const title = await db.sql `
+  SELECT ${"title"} FROM ${"books"} LIMIT 1`.run(pool);
 /* original script ends */
 pool.end();

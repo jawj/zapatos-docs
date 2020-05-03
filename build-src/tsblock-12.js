@@ -15,11 +15,7 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const author = {
-    name: 'Joseph Conrad',
-    isLiving: false,
-}, [insertedAuthor] = await db.sql `
-    INSERT INTO ${"authors"} (${db.cols(author)})
-    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
+const title = 'Pride and Prejudice', books = await db.sql `
+    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
 /* original script ends */
 pool.end();

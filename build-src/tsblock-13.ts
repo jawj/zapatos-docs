@@ -20,13 +20,13 @@
         
 
         /* original script begins */
-        // the <const> prevents generalization to string[]
-const bookCols = <const>['id', 'title'];
-type BookDatum = s.books.OnlyCols<typeof bookCols>;
-
-const
-  bookData = await db.sql<s.books.SQL, BookDatum[]>`
-    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
+        const 
+  titleLike = `Pride%`,
+  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{ 
+      title: db.sql<db.SQL>`${db.self} LIKE ${db.param(titleLike)}`,
+      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '200 years'`,
+    }}`.run(pool);
 
         /* original script ends */
 

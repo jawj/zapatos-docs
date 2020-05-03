@@ -15,7 +15,12 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const title = 'Pride and Prejudice', books = await db.sql `
-    SELECT * FROM ${"books"} WHERE ${"title"} = ${db.param(title)}`.run(pool);
+function dbNowQuery() {
+    const query = db.sql `SELECT now()`;
+    query.runResultTransform = qr => qr.rows[0].now;
+    return query;
+}
+const dbNow = await dbNowQuery().run(pool);
+// dbNow is a Date: the result you can toggle below has come via JSON.stringify
 /* original script ends */
 pool.end();
