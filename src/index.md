@@ -187,7 +187,7 @@ We can of course extend this to deeper nesting (e.g. query each author, with the
 
 Transactions are where I've found traditional ORMs like TypeORM and Sequelize probably most footgun-prone. Zapatos is always explicit about what client or pool is running your query — hence the `pool` argument in all our examples so far. 
 
-Zapatos also offers a simple `transaction` helper function that handles issuing a `ROLLBACK` on error, releasing the database client in a `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. It looks like this:
+Zapatos also offers a simple `transaction` helper function that handles issuing a SQL `ROLLBACK` on error, releasing the database client in a TypeScript `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. It looks like this:
 
 ```typescript:noresult
 const result = db.transaction(pool, db.Isolation.Serializable, async txnClient => {
