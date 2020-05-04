@@ -1,7 +1,7 @@
 // animated heading
 
 window.addEventListener('load', function () {
-  Array.prototype.slice.call(document.getElementsByClassName('extra-vowels')).forEach(function (vowel) {
+  Array.prototype.slice.call(document.querySelectorAll('h1 .extra-vowels')).forEach(function (vowel) {
     console.log(vowel);
     Object.assign(vowel.style, { top: '0px', opacity: 1 });
   });

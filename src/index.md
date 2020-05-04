@@ -1167,7 +1167,7 @@ Most of the TypeScript code examples are run, producing the expandable SQL/resul
 
 If you're asking for or contributing new work, my response is likely to reflect these principles:
 
-**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix bugs or improve readability or consistency without any major trade-offs. I'll do my best to act on clear, minimal test cases that demonstrate unambiguous bugs.
+**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix bugs or improve readability or consistency without any major trade-offs. I'll also do my best to act on clear, minimal test cases that demonstrate unambiguous bugs.
 
 **Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address niche use-cases or to eke out minor performance gains that are almost certainly swamped by network and database latencies. 
 

@@ -101,7 +101,7 @@ import { JSDOM } from 'jsdom';
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css">
         <!-- highlighting -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/default.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/xcode.min.css">
         <!-- monaco editor -->
         <script src="monaco/vs/loader.js"></script>
         <script src="zapatos-bundle.js"></script>
