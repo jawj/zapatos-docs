@@ -17,7 +17,7 @@ h1, h2, h3, h4, h5 {
   color: #000;
 }
 a {
-  color: #3366ee;
+  color: #36e;
   text-decoration: none;
 }
 li {
@@ -38,6 +38,9 @@ pre {
 }
 pre code {
   background: transparent;
+}
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code, .is-active-link > code {
+  font-weight: bold;
 }
 #monaco-overlay {
   position: fixed;
@@ -69,6 +72,7 @@ pre code {
 }
 .runnable {
   position: relative;
+  padding-bottom: 20px;
 }
 .sqlstuff {
   border: 1px solid #eee;
@@ -87,11 +91,17 @@ pre code {
   font-weight: bold;
   font-size: 9pt;
   display: inline-block;
-  padding: 0 3px;
+  padding: 0 7px;
 }
 .openmonaco {
-  color: #fff;
-  background: #3366ee;
+  color: #36e;
+  border: 1px solid #36e;
+  background: #fff;
+  right: 10px;
+  top: auto;
+  bottom: -9px;
+  border-radius: 10px;
+  padding: 0 10px;
 }
 .sqltext, .language-sql {
   background: #eeeeff;
@@ -124,13 +134,18 @@ code {
   padding: 0 2px;
 }
 #content {
-  margin-left: 240px;
-  padding-left: 40px;
+  margin-left: 260px;
+  padding-left: 50px;
 }
 #toc {
-  width: 240px;
   position: fixed;
   line-height: 1.1;
+  overflow-y: auto;
+  box-sizing: border-box;
+  width: 260px;
+  height: 100%;
+  top: 0;
+  padding: 30px 0;
 }
 @media (max-width: 1080px) {
   body {
@@ -150,10 +165,14 @@ code {
   list-style-type: none;
 }
 #toc li {
-  margin: 5px 0;
+  margin: 4px 0;
 }
 .toc-list {
   padding-left: 20px;
+}
+#toc > .toc-list {
+  position: relative;
+  overflow: hidden;
 }
 .toc-link {
   display: inline-block;
@@ -162,4 +181,17 @@ code {
 .src-link {
   float: right;
   margin: 3ex 0 0 2em;
+}
+.toc-link::before {
+  margin-top: -5px;
+}
+
+.extra-vowels {
+  position: relative;
+  top: -30px;
+  transition: 0.4s top, 0.4s opacity;
+  opacity: 0;
+}
+.extra-vowels.o {
+  transition-delay: 0.1s;
 }

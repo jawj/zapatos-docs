@@ -1,9 +1,19 @@
+// animated heading
+
+window.addEventListener('load', function () {
+  Array.prototype.slice.call(document.getElementsByClassName('extra-vowels')).forEach(function (vowel) {
+    console.log(vowel);
+    Object.assign(vowel.style, { top: '0px', opacity: 1 });
+  });
+});
+
 // tocbot
 
 tocbot.init({
   tocSelector: '#toc',
   contentSelector: '#content',
   headingSelector: 'h1, h2, h3, h4',
+  includeHtml: true,
 });
 
 // SQL/result sections
@@ -45,7 +55,7 @@ var
 
 runnables.forEach(function (runnable) {
   runnable.insertAdjacentHTML('afterbegin',
-    '<a class="openmonaco" href="#" title="See this in embedded VS Code">★ Explore types</a>');
+    '<a class="openmonaco" href="#" title="See this in embedded VS Code">Explore types »</a>');
 });
 
 document.body.insertAdjacentHTML('afterbegin',

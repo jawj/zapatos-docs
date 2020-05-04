@@ -1,6 +1,6 @@
-<img src="zapatos.png" width="240" alt="Shoe" style="margin: 0 0 20px -3px">
+<a href="https://translate.google.com/#view=home&op=translate&sl=es&tl=en&text=zapatos"><img src="zapatos.png" width="180" alt="Shoe" style="margin: 0 0 10px -2px; border: none;"></a>
 
-# Zapatos: <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
+# <b>Zap<span class="extra-vowels a">a</span>t<span class="extra-vowels o">o</span>s:</b> <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
 
 ## What does it do?
 
@@ -8,7 +8,7 @@
 
 To achieve that, it does these five things:
 
-* **Typescript schema** &nbsp; A command-line tool speaks to your Postgres database and writes up a TypeScript schema of detailed types for every table. This enables the following three things. [Show me »](#typescript-schema)
+* **Typescript schema** &nbsp; A command-line tool speaks to your Postgres database and writes up a detailed TypeScript schema for every table. This enables the next three things in this list. [Show me »](#typescript-schema)
 
 * **Arbitrary SQL** &nbsp; Simple building blocks help you write arbitrary SQL using [tagged templates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates), and manually apply the right types to what goes in and what comes back. [Show me »](#arbitrary-sql)
 
@@ -16,7 +16,7 @@ To achieve that, it does these five things:
 
 * **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
 
-* **Transactions** &nbsp; A transaction function helps with managing and retrying transactions. [Show me »](#transactions)
+* **Transactions** &nbsp; A `transaction` function helps with managing and retrying transactions. [Show me »](#transactions)
 
 
 ### Why does it do that?
@@ -34,7 +34,7 @@ Zapatos aims to minimise the misery of abstraction, intensify the joy of type in
 
 #### Typescript schema
 
-**A command-line tool speaks to your Postgres database and writes up a TypeScript schema of detailed types for every table.**
+**A command-line tool speaks to your Postgres database and writes up a detailed TypeScript schema for every table.**
 
 Take this ultra-simple SQL schema for a single table, `authors`:
 
@@ -183,7 +183,7 @@ We can of course extend this to deeper nesting (e.g. query each author, with the
 
 #### Transactions
 
-**A transaction function helps with managing and retrying transactions.**
+**A `transaction` function helps with managing and retrying transactions.**
 
 Transactions are where I've found traditional ORMs like TypeORM and Sequelize probably most footgun-prone. Zapatos is always explicit about what client or pool is running your query — hence the `pool` argument in all our examples so far. 
 
@@ -1154,7 +1154,7 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 One general configuration suggestion: set up [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid Promise-related pitfalls.
 
 
-## Meta
+## Metadata
 
 ### This documentation
 
@@ -1165,15 +1165,13 @@ Most of the TypeScript code examples are run, producing the expandable SQL/resul
 
 ### Fixes, feature and contributions
 
-It's a lovely feeling when people use and appreciate our work. But it can sour a little if they feel entitled to demand free work, toot sweet, on top of whatever else might be on our plates. 
-
 If you're asking for or contributing new work, my response is likely to reflect these principles:
 
 **Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix bugs or improve readability or consistency without any major trade-offs. I'll do my best to act on clear, minimal test cases that demonstrate unambiguous bugs.
 
 **Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address niche use-cases or to eke out minor performance gains that are almost certainly swamped by network and database latencies. 
 
-**Scratching my own itch.**  I'm not very likely to put a lot of my own effort into features I don't currently need ... unless we're talking about paid consultancy, which I'm more than happy to discuss.
+**Scratching my own itch.**  I'm unlikely to put a lot of my own effort into features I don't currently need ... unless we're talking about paid consultancy, which I'm more than happy to discuss.
 
 
 ### Roadmap
@@ -1196,5 +1194,4 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 
