@@ -326,7 +326,7 @@ This file has up to four top-level keys:
 
 #### Environment variables
 
-All values in `zapatosconfig.json` can have environment variables (node.js's `process.env.SOMETHING`) interpolated via [handlebars](https://handlebarsjs.com/)-style doubly-curly-brackets `{{variables}}`. 
+All values in `zapatosconfig.json` can have environment variables (Node's `process.env.SOMETHING`) interpolated via [handlebars](https://handlebarsjs.com/)-style doubly-curly-brackets `{{variables}}`. 
 
 This is likely most useful for the database connection details. For example, on Heroku you'd probably configure your database as:
 
