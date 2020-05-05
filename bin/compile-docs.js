@@ -115,7 +115,7 @@ var jsdom_1 = require("jsdom");
                 }
                 return '';
             }
-        }), htmlContent = md.render(src), html = "<!DOCTYPE html>\n    <html>\n      <head>\n        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n        <title>Zapatos: Docs</title>\n        <!-- tocbot -->\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n        <!-- highlighting -->\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/xcode.min.css\">\n        <!-- monaco editor -->\n        <script src=\"monaco/vs/loader.js\"></script>\n        <script src=\"zapatos-bundle.js\"></script>\n        <!-- fonts -->\n        <link rel=\"stylesheet\" href=\"https://use.typekit.net/mdb7zvi.css\">\n        <!-- custom -->\n        <link rel=\"stylesheet\" href=\"docs.css\">\n      </head>\n      <body>\n        <!-- http://tholman.com/github-corners/ -->\n        <a href=\"https://github.com/jawj/zapatos\" class=\"github-corner\" aria-label=\"View source on GitHub\"><svg width=\"80\" height=\"80\" viewBox=\"0 0 250 250\" style=\"fill:#aaa; color:#fff; position: fixed; z-index: 150; top: 0; border: 0; right: 0;\" aria-hidden=\"true\"><path d=\"M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z\"></path><path d=\"M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2\" fill=\"currentColor\" style=\"transform-origin: 130px 106px;\" class=\"octo-arm\"></path><path d=\"M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z\" fill=\"currentColor\" class=\"octo-body\"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>\n      \n        <div id=\"toc\"></div>\n        <div id=\"content\">" + htmlContent + "</div>\n        <script src=\"docs.js\"></script>\n      </body>\n    </html>\n  ";
+        }), htmlContent = md.render(src), html = "<!DOCTYPE html>\n    <html lang=\"en\">\n      <head>\n        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n        <title>Zapatos: Docs</title>\n        <!-- tocbot -->\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n        <!-- highlighting -->\n        <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/xcode.min.css\">\n        <!-- monaco editor -->\n        <script src=\"monaco/vs/loader.js\"></script>\n        <script src=\"zapatos-bundle.js\"></script>\n        <!-- fonts -->\n        <link rel=\"stylesheet\" href=\"https://use.typekit.net/mdb7zvi.css\">\n        <!-- octocat -->\n        <style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>\n        <!-- custom -->\n        <link rel=\"stylesheet\" href=\"docs.css\">\n      </head>\n      <body>\n        <!-- http://tholman.com/github-corners/ -->\n        <a href=\"https://github.com/jawj/zapatos\" class=\"github-corner\" aria-label=\"View source on GitHub\"><svg width=\"80\" height=\"80\" viewBox=\"0 0 250 250\" style=\"fill:#aaa; color:#fff; position: fixed; z-index: 150; top: 0; border: 0; right: 0;\" aria-hidden=\"true\"><path d=\"M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z\"></path><path d=\"M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2\" fill=\"currentColor\" style=\"transform-origin: 130px 106px;\" class=\"octo-arm\"></path><path d=\"M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z\" fill=\"currentColor\" class=\"octo-body\"></path></svg></a>\n      \n        <div id=\"toc\"></div>\n        <div id=\"content\">" + htmlContent + "</div>\n        <script src=\"docs.js\"></script>\n      </body>\n    </html>\n  ";
         dom = new jsdom_1.JSDOM(html), document = dom.window.document;
         console.info('Adding id attributes to headings...');
         maxIdLength = 64, content = document.querySelector('#content'), headings = content.querySelectorAll('h1, h2, h3, h4, h5'), headingMap = {};
@@ -177,15 +177,15 @@ var jsdom_1 = require("jsdom");
                     var part = parts_1[_i];
                     var _a = part.split('%:'), type = _a[0], str = _a[1];
                     if (type === 'text') {
-                        var fmtSql = formatSQL(str), highlightSql = hljs.highlight('sql', fmtSql).value.trim(); //.replace(/\n/g, '<br>');
+                        var fmtSql = formatSQL(str), highlightSql = hljs.highlight('sql', fmtSql).value.trim();
                         output += "<pre class=\"sqltext\"><code>" + highlightSql + "</code></pre>\n";
                     }
                     else if (type === 'values') {
-                        var highlightValues = hljs.highlight('json', str).value; //.replace(/\n/g, '<br>');
+                        var highlightValues = hljs.highlight('json', str).value;
                         output += "<pre class=\"sqlvalues\"><code>" + highlightValues + "</code></pre>\n";
                     }
                     else if (type === 'result') {
-                        var highlightResult = hljs.highlight('json', str).value; //.replace(/\n/g, '<br>');
+                        var highlightResult = hljs.highlight('json', str).value;
                         output += "<pre class=\"sqlresult\"><code>" + highlightResult + "</code></pre>\n";
                     }
                     else { // console output
@@ -207,6 +207,30 @@ var jsdom_1 = require("jsdom");
                     "<span class=\"hljs-keyword\">import</span> { pool } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./pgPool'</span>;\n" : '') +
                 '</code>');
             runnableTag.className += ' runnable';
+        });
+        console.info("Wrapping code for nicely indented line breaks ...");
+        Array.from(content.querySelectorAll('pre code')).forEach(function (code) {
+            var lines = code.innerHTML.trim().split('\n'), tagStack = [], 
+            // here, we're closing any open spans at the end of a line, and reopening them on the next line ...
+            mangledLines = lines.map(function (line) {
+                var re = /<[/]?span[^>]*>/g, openingSpans = tagStack.join(''), m;
+                while (m = re.exec(line)) {
+                    if (m[0] == '</span>')
+                        tagStack.pop();
+                    else
+                        tagStack.push(m[0]);
+                }
+                var closingSpans = '';
+                for (var i = 0; i < tagStack.length; i++)
+                    closingSpans += '</span>';
+                // ... so that we can then wrap the line in a new span that causes it to wrap with indent
+                var wrapIndent = line.replace(/<[^<]+>/g, '').match(/^\s*/)[0].length + 4;
+                return '<span class="line">' +
+                    '<span class="indent-line" style="padding-left: ' + wrapIndent + 'ch; text-indent: -' + wrapIndent + 'ch;">' +
+                    openingSpans + line + closingSpans +
+                    '</span></span>';
+            });
+            code.innerHTML = mangledLines.join('\n');
         });
         console.info("Writing HTML ...");
         fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });

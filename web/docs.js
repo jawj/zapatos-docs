@@ -139,35 +139,3 @@ function openMonaco(code) {
   editor.setValue(code);
   editor.layout();
 }
-
-// wrap code nicely
-
-var codes = Array.prototype.slice.call(document.querySelectorAll('pre code'));
-codes.forEach(function (code) {
-  var
-    lines = code.innerHTML.trim().split('\n'),
-    tagStack = [],
-
-    // here, we're closing any open spans at the end of a line, and reopening them on the next line ...
-    mangledLines = lines.map(function (line) {
-      var
-        re = /<[/]?span[^>]*>/g,
-        openingSpans = tagStack.join('');
-      while (m = re.exec(line)) {
-        if (m[0] == '</span>') tagStack.pop();
-        else tagStack.push(m[0]);
-      }
-      var closingSpans = '';
-      for (var i = 0; i < tagStack.length; i++) closingSpans += '</span>';
-
-      // ... so that we can then wrap the line in a new span that causes it to wrap with indent
-      var wrapIndent = line.replace(/<[^<]+>/g, '').match(/^\s*/)[0].length + 4;
-
-      return '<span class="line">' +
-        '<span class="indent-line" style="padding-left: ' + wrapIndent + 'ch; text-indent: -' + wrapIndent + 'ch;">' +
-        openingSpans + line + closingSpans +
-        '</span></span>';
-    });
-
-  code.innerHTML = mangledLines.join('\n');
-});
