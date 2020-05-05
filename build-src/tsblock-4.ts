@@ -34,7 +34,7 @@ const transferMoney = (sendingAccountId: number, receivingAccountId: number, amo
   ]));
 
 try {
-  const [updatedAccountA, updatedAccountB] = await transferMoney(accountA.id, accountB.id, 60);
+  const [[updatedAccountA], [updatedAccountB]] = await transferMoney(accountA.id, accountB.id, 60);
 } catch(err) {
   console.log(err.message, '/', err.detail);
 }

@@ -33,7 +33,7 @@ code, pre {
   background: #f4f4f4;
 }
 pre {
-  padding: 6px 12px;
+  padding: 9px 12px;
   margin: 15px 0 20px;
   white-space: pre-wrap;
 }
@@ -71,6 +71,7 @@ pre code {
 .runnable {
   position: relative;
   margin-top: 30px;
+  padding-top: 20px;
 }
 .sqlstuff {
   border: 1px solid #eee;
@@ -109,7 +110,8 @@ pre code {
 .imports {
   display: none;
   border-bottom: 1px dotted #ccc;
-  padding: 20px 0 7px;
+  padding-bottom: 10px;
+  margin-bottom: 9px;
 }
 .sqltext, .language-sql {
   background: #eeeeff;

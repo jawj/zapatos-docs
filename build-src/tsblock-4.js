@@ -21,7 +21,7 @@ const transferMoney = (sendingAccountId, receivingAccountId, amount) => db.trans
     db.update('bankAccounts', { balance: db.sql `${db.self} + ${db.param(amount)}` }, { id: receivingAccountId }).run(txnClient),
 ]));
 try {
-    const [updatedAccountA, updatedAccountB] = await transferMoney(accountA.id, accountB.id, 60);
+    const [[updatedAccountA], [updatedAccountB]] = await transferMoney(accountA.id, accountB.id, 60);
 }
 catch (err) {
     console.log(err.message, '/', err.detail);

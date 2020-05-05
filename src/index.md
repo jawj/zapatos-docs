@@ -898,34 +898,39 @@ export interface CountSignatures {
 
 Yes, the signatures are beastly — and that's leaving out the horrors behind `FullSelectReturnTypeForTable<...>` — but don't panic! 
 
-The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `JSONSelectable[]`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), the appropriate `Whereable` for the target table, or a `SQLFragment` from a `sql` template string. Recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable), which means the `SQLFragment` variant will rarely be required.
+The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), the appropriate `Whereable` for the target table, or a `SQLFragment` from a `sql` template string. Recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable), which means the `SQLFragment` variant will rarely be required.
 
-In use, it looks like this:
+The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable>`, promising only a single object when run. The `count` function, finally, generates a query to count matching rows, and thus returns a `SQLFragment<number>`.
+
+In use, they look like this:
 
 ```typescript
 const 
-  // no WHERE clause
+  // select, no WHERE clause
   allBooks = await db.select('books', db.all).run(pool),
 
-  // using a Whereable
+  // select, Whereable
   authorBooks = await db.select('books', { authorId: 1000 }).run(pool),
 
-  // going for selectOne, since authors.id is a primary key
+  // selectOne (since authors.id is a primary key), Whereable
   oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool),
 
-  // using a Whereable with an embedded SQLFragment
+  // count
+  numberOfAuthors = await db.count('authors', db.all).run(pool),
+
+  // select, Whereable with an embedded SQLFragment
   recentAuthorBooks = await db.select('books', { 
     authorId: 1001,
     createdAt: db.sql<db.SQL>`
       ${db.self} > now() - INTERVAL '7 days'` 
   }).run(pool),
 
-  // using just a SQLFragment (but a Whereable might be preferable)
+  // select, SQLFragment (but a Whereable might be preferable)
   allRecentBooks = await db.select('books', db.sql<s.books.SQL>`
     ${"createdAt"} > now() - INTERVAL '7 days'`).run(pool);
 ```
 
-Similar to our earlier shortcut examples, once I've typed in `'books'` as the first argument to the function, TypeScript and VS Code know both how to type-check and auto-complete both the `WHERE` argument and the type that will returned by `run`.
+Similar to our earlier shortcut examples, once I've typed in `'books'` or `'authors'` as the first argument to the function, TypeScript and VS Code know both how to type-check and auto-complete both the `WHERE` argument and the type that will returned by `run`.
 
 The `select` and `selectOne` shortcuts can also take an `options` object as their third argument, which has these possible keys: `columns`, `order`, `limit`, `offset`, `extras`, `lateral` and `alias`.
 
