@@ -96,6 +96,7 @@ import { JSDOM } from 'jsdom';
     html = `<!DOCTYPE html>
     <html>
       <head>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Zapatos: Docs</title>
         <!-- tocbot -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js"></script>
@@ -232,15 +233,15 @@ import { JSDOM } from 'jsdom';
         if (type === 'text') {
           const
             fmtSql = formatSQL(str),
-            highlightSql = hljs.highlight('sql', fmtSql).value.trim().replace(/\n/g, '<br>');
+            highlightSql = hljs.highlight('sql', fmtSql).value.trim();
           output += `<pre class="sqltext"><code>${highlightSql}</code></pre>\n`;
 
         } else if (type === 'values') {
-          const highlightValues = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
+          const highlightValues = hljs.highlight('json', str).value;
           output += `<pre class="sqlvalues"><code>${highlightValues}</code></pre>\n`;
 
         } else if (type === 'result') {
-          const highlightResult = hljs.highlight('json', str).value.replace(/\n/g, '<br>');
+          const highlightResult = hljs.highlight('json', str).value;
           output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
 
         } else {  // console output

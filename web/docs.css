@@ -3,6 +3,8 @@ body {
   font: 12pt/1.667 source-serif-pro, Georgia, serif;
   background: #fff;
   color: #444;
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
 }
 h1 {
   margin: 0 0 60px;
@@ -36,7 +38,28 @@ pre {
   padding: 9px 12px;
   margin: 15px 0 20px;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  counter-reset: line-no;
 }
+pre .indent-line {
+  display: inline-block;
+}
+
+/*
+pre .line::before {
+  counter-increment: line-no;
+  content: counter(line-no);
+  font-size: 6pt;
+  display: inline-block;
+  position: absolute;
+  left: -3.5ch;
+  margin-top: 5pt;
+  color: #aaa;
+  width: 2.5ch;
+  text-align: right;
+}
+*/
+
 pre code {
   background: transparent;
 }
@@ -164,13 +187,13 @@ pre > code {
 p {
   max-width: 85%;
 }
-@media (max-width: 1280px) {
+@media (max-width: 1200px) {
   body {
     padding-right: 2.5%;
     padding-left: 2.5%;
   }
 }
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   #content {
     margin: 0;
     padding: 0;
