@@ -252,6 +252,17 @@ import { JSDOM } from 'jsdom';
       runnableTag.insertAdjacentHTML('afterend', output);
     }
 
+    const script = runnableTag.textContent;
+    runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
+      (script?.match(/\bdb[.]/) ?
+        `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> db <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/src'</span>;\n` : '') +
+      (script?.match(/\bs[.]/) ?
+        `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> s <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/schema'</span>;\n` : '') +
+      (script?.match(/\bpool\b/) ?
+        `<span class="hljs-keyword">import</span> { pool } <span class="hljs-keyword">from</span> <span class="hljs-string">'./pgPool'</span>;\n` : '') +
+      '</code>\n'
+    );
+
     runnableTag.className += ' runnable';
   });
 

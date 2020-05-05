@@ -20,12 +20,12 @@ tocbot.init({
 
 var
   sqlstuff = Array.prototype.slice.call(document.getElementsByClassName('sqlstuff')),
-  showMsg = '▸ Show generated SQL, results',
-  hideMsg = '▾ Hide generated SQL, results';
+  showSQLMsg = '▸ Show generated SQL, results',
+  hideSQLMsg = '▾ Hide generated SQL, results';
 
 sqlstuff.forEach(function (s) {
   s.style.display = 'none';
-  s.insertAdjacentHTML('beforebegin', `<p><a class="sqltoggle" href="#">${showMsg}</a></p>`);
+  s.insertAdjacentHTML('beforebegin', '<p><a class="sqltoggle" href="#">' + showSQLMsg + '</a></p>');
 });
 
 document.addEventListener('click', function (e) {
@@ -37,11 +37,11 @@ document.addEventListener('click', function (e) {
 
     if (sqlstuff.style.display === 'block') {
       sqlstuff.style.display = 'none';
-      target.innerText = showMsg;
+      target.innerText = showSQLMsg;
 
     } else {
       sqlstuff.style.display = 'block';
-      target.innerText = hideMsg;
+      target.innerText = hideSQLMsg;
     }
   }
 });
@@ -51,11 +51,15 @@ document.addEventListener('click', function (e) {
 require.config({ paths: { 'vs': './monaco/vs' } });
 
 var
-  runnables = Array.prototype.slice.call(document.getElementsByClassName('runnable'));
+  runnables = Array.prototype.slice.call(document.getElementsByClassName('runnable'))
+    .filter(r => !r.className.match(/\bnorun\b/)),
+  showImportsMsg = '▸ Show imports',
+  hideImportsMsg = '▾ Hide imports';
 
 runnables.forEach(function (runnable) {
   runnable.insertAdjacentHTML('afterbegin',
-    '<a class="openmonaco" href="#" title="See this in embedded VS Code">Explore types »</a>');
+    '<a class="openmonaco" href="#" title="See this in embedded VS Code">Explore types »</a>' +
+    '<a class="toggleimports" href="#">' + showImportsMsg + '</a>');
 });
 
 document.body.insertAdjacentHTML('afterbegin',
@@ -67,8 +71,12 @@ document.addEventListener('click', function (e) {
   if (target.className === 'openmonaco') {
     e.preventDefault();
     var
-      codeElement = target.nextElementSibling,
-      code = codeElement.innerText.trim();
+      importsElement = target.nextElementSibling.nextElementSibling,
+      codeElement = target.nextElementSibling.nextElementSibling.nextElementSibling,
+      code = importsElement.innerText.trim() + '\n\n' +
+        '(async () => {  // no support for top-level await in Monaco 0.20, TS 3.7\n' +
+        codeElement.innerText.trim().replace(/^/gm, '  ') +
+        '\n})();';
 
     if (!window.monaco) require(['vs/editor/editor.main'], function () {
       var
@@ -98,13 +106,27 @@ document.addEventListener('click', function (e) {
       window.activeMonacoEditor = monaco.editor.create(editor, opts);
       openMonaco(code);
     });
-    else openMonaco(code);
+
+    else openMonaco(code); // without waiting
 
   } else if (target.id === 'closemonaco') {
     e.preventDefault();
 
     var overlay = document.getElementById('monaco-overlay');
     overlay.style.display = 'none';
+
+  } else if (target.className === 'toggleimports') {
+    e.preventDefault();
+
+    var importsDiv = target.parentElement.children[2];
+    if (importsDiv.style.display === 'block') {
+      importsDiv.style.display = 'none';
+      target.innerText = showImportsMsg;
+
+    } else {
+      importsDiv.style.display = 'block';
+      target.innerText = hideImportsMsg;
+    }
   }
 });
 
@@ -112,9 +134,6 @@ function openMonaco(code) {
   var
     overlay = document.getElementById('monaco-overlay'),
     editor = window.activeMonacoEditor;
-
-  if (!code.match(/^\s*import\b/m)) code =
-    `import * as db from './zapatos/src';\nimport * as s from './zapatos/schema';\nimport { pool } from './pgPool';\n\n` + code;
 
   overlay.style.display = 'block';
   editor.setValue(code);

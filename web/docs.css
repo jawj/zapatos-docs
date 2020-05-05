@@ -70,7 +70,7 @@ pre code {
 }
 .runnable {
   position: relative;
-  padding-bottom: 20px;
+  margin-top: 30px;
 }
 .sqlstuff {
   border: 1px solid #eee;
@@ -80,7 +80,7 @@ pre code {
   position: relative;
   margin: 0;
 }
-.sqltext::before, .sqlvalues::before, .sqlresult::before, .console::before, .openmonaco {
+.sqltext::before, .sqlvalues::before, .sqlresult::before, .console::before, .openmonaco, .toggleimports {
   background: #444;
   color: #fff;
   position: absolute;
@@ -91,15 +91,25 @@ pre code {
   display: inline-block;
   padding: 0 7px;
 }
-.openmonaco {
+.openmonaco, .toggleimports {
   color: #36e;
   border: 1px solid #36e;
   background: #fff;
   right: 10px;
-  top: auto;
-  bottom: -9px;
+  top: -9px;
   border-radius: 10px;
   padding: 0 10px;
+}
+.toggleimports {
+  right: auto;
+  left: 10px;
+  color: #999;
+  border: 1px solid #999;
+}
+.imports {
+  display: none;
+  border-bottom: 1px dotted #ccc;
+  padding: 20px 0 7px;
 }
 .sqltext, .language-sql {
   background: #eeeeff;
@@ -130,6 +140,10 @@ pre code {
 code {
   display: inline-block;
   padding: 0 2px;
+}
+pre > code {
+  display: unset;
+  padding: unset;
 }
 #content {
   margin-left: 260px;

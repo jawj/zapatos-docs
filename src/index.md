@@ -89,10 +89,6 @@ export type SelectableForTable<T extends Table> = {
 Let's insert something into that `authors` table for which we just generated the types. We'll write the SQL query ourselves, to show how that works (though we'll see an easier way [in the next section](#everyday-crud)):
 
 ```typescript
-import * as db from './zapatos/src';
-import * as s from './zapatos/schema';
-import { pool } from './pgPool';
-
 const
   author: s.authors.Insertable = {
     name: 'Gabriel Garcia Marquez',
@@ -174,7 +170,7 @@ const bookAuthorTags = await db.select('books', db.all, {
 
 This generates an efficient three-table `LATERAL JOIN` that returns a nested JSON structure directly from the database. Every nested element is again fully and automatically typed.
 
-_Once again, the code above is in a Monaco (VS Code) editor, so you can play with it and and check that._ 
+_Again, you can click 'Explore types' above to open the code in an embedded Monaco (VS Code) editor, so you can check those typings for yourself._ 
 
 We can of course extend this to deeper nesting (e.g. query each author, with their books, with their tags); to self-joins (of a table with itself, e.g. employees to their managers in the same `employees` table); and to joins on relationships other than foreign keys (e.g. joining the nearest _N_ somethings using the PostGIS `<->` distance operator).
 
@@ -190,7 +186,7 @@ Transactions are where I've found traditional ORMs like TypeORM and Sequelize pr
 Zapatos also offers a simple `transaction` helper function that handles issuing a SQL `ROLLBACK` on error, releasing the database client in a TypeScript `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. It looks like this:
 
 ```typescript:noresult
-const result = db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+const result = await db.transaction(pool, db.Isolation.Serializable, async txnClient => {
   /* queries here use txnClient instead of pool */
 });
 ```
@@ -220,7 +216,7 @@ const transferMoney = (sendingAccountId: number, receivingAccountId: number, amo
   ]));
 
 try {
-  const [updatedAccountA, updatedAccountB] = await transferMoney(accountA.id, accountB.id, 60);
+  const [[updatedAccountA], [updatedAccountB]] = await transferMoney(accountA.id, accountB.id, 60);
 } catch(err) {
   console.log(err.message, '/', err.detail);
 }
@@ -909,7 +905,7 @@ In use, it looks like this:
 ```typescript
 const 
   // no WHERE clause
-  allBooks =  await db.select('books', db.all).run(pool),
+  allBooks = await db.select('books', db.all).run(pool),
 
   // using a Whereable
   authorBooks = await db.select('books', { authorId: 1000 }).run(pool),
@@ -1003,12 +999,8 @@ Or we can turn this around, nesting more deeply to retrieve authors, each with t
 
 ```typescript
 const authorsBooksTags = await db.select('authors', db.all, {
-  columns: ['name'],
-  order: [{ by: 'name', direction: 'ASC' }],
   lateral: {
     books: db.select('books', { authorId: db.parent('id') }, {
-      columns: ['title'],
-      order: [{ by: 'createdAt', direction: 'DESC' }],
       lateral: {
         tags: db.select('tags', { bookId: db.parent('id') }, { columns: ['tag'] })
       }

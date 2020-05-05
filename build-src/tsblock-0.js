@@ -12,9 +12,9 @@ xyz.setConfig({
         }
     }
 });
-/* original script begins */
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
+/* original script begins */
 const author = {
     name: 'Gabriel Garcia Marquez',
     isLiving: false,

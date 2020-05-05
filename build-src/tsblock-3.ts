@@ -20,7 +20,7 @@
         
 
         /* original script begins */
-        const result = db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+        const result = await db.transaction(pool, db.Isolation.Serializable, async txnClient => {
   /* queries here use txnClient instead of pool */
 });
 

@@ -14,13 +14,13 @@
           }
         });
         
+          import * as db from './zapatos/src';
+          import * as s from './zapatos/schema';
+          import { pool } from './pgPool';
+        
 
         /* original script begins */
-        import * as db from './zapatos/src';
-import * as s from './zapatos/schema';
-import { pool } from './pgPool';
-
-const
+        const
   author: s.authors.Insertable = {
     name: 'Gabriel Garcia Marquez',
     isLiving: false,
