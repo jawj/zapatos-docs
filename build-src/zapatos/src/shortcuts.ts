@@ -1,3 +1,11 @@
+/*
+** DON'T EDIT THIS FILE (unless you're working on Zapatos) **
+It's part of Zapatos, and will be overwritten when the database schema is regenerated
+
+Zapatos: https://jawj.github.io/zapatos/
+Copyright (C) 2020 George MacKerron
+Released under the MIT licence: see LICENCE file
+*/
 
 /* tslint:disable */
 
@@ -235,7 +243,7 @@ export type FullSelectReturnTypeForTable<T extends Table, C extends ColumnForTab
 export enum SelectResultMode { Many, One, Count }
 
 export interface SelectSignatures {
-  <T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap, M extends SelectResultMode = SelectResultMode.Many> (
+  <T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap, M extends SelectResultMode = SelectResultMode.Many>(
     table: T,
     where: WhereableForTable<T> | SQLFragment | AllType,
     options?: SelectOptionsForTable<T, C, L, E>,
@@ -348,7 +356,11 @@ export const selectOne: SelectOneSignatures = function (
 /* === count === */
 
 export interface CountSignatures {
-  <T extends Table>(table: T, where: WhereableForTable<T> | SQLFragment | AllType, options?: { columns?: ColumnForTable<T>[], alias?: string }): SQLFragment<number>;
+  <T extends Table>(
+    table: T,
+    where: WhereableForTable<T> | SQLFragment | AllType,
+    options?: { columns?: ColumnForTable<T>[], alias?: string },
+  ): SQLFragment<number>;
 }
 
 /**

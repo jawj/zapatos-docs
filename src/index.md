@@ -1155,9 +1155,7 @@ One general configuration suggestion: set up [tslint](https://palantir.github.io
 
 ### This documentation
 
-This document is generated from a [separate repository](https://github.com/jawj/zapatos-docs/). 
-
-Most of the TypeScript code examples are run, producing the expandable SQL/results sections, as the document is compiled, so they should be free of basic errors. During this process, all generated SQL is funnelled through [pgFormatter](https://github.com/darold/pgFormatter) for easier reading.
+This document is generated from a [separate repository](https://github.com/jawj/zapatos-docs/). All generated SQL has been funnelled through [pgFormatter](https://github.com/darold/pgFormatter) for easier reading.
 
 
 ### Fixes, feature and contributions

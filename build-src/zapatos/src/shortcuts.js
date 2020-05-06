@@ -1,4 +1,11 @@
-/* tslint:disable */
+/*
+** DON'T EDIT THIS FILE (unless you're working on Zapatos) **
+It's part of Zapatos, and will be overwritten when the database schema is regenerated
+
+Zapatos: https://jawj.github.io/zapatos/
+Copyright (C) 2020 George MacKerron
+Released under the MIT licence: see LICENCE file
+*/
 import { all, sql, cols, vals, raw, } from './core';
 import { completeKeysWithDefault, mapWithSeparator } from './utils';
 /**
