@@ -95,7 +95,7 @@ var jsdom_1 = require("jsdom");
             if (foundAtIndex === undefined)
                 throw new Error("\"" + targetLine + "\" not found in " + srcPath);
             var lineNo = srcFile.slice(0, foundAtIndex).split('\n').length + 2;
-            return "<div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
+            return "<div style=\"height: 1px; clear: both;\"></div><div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
         });
         // --- transform and highlight Markdown ---
         console.info('Transforming Markdown ...');
@@ -168,7 +168,7 @@ var jsdom_1 = require("jsdom");
         };
         runnableTags.forEach(function (runnableTag, i) {
             console.info("Running script block " + i + " ...");
-            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node --no-warnings tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv });
+            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv });
             // console.log(stdout);
             var parts = stdout.split(/%{2,}/);
             if (!runnableTag.className.match(/\bnoresult\b/)) {
@@ -225,10 +225,9 @@ var jsdom_1 = require("jsdom");
                     closingSpans += '</span>';
                 // ... so that we can then wrap the line in a new span that causes it to wrap with indent
                 var wrapIndent = line.replace(/<[^<]+>/g, '').match(/^\s*/)[0].length + 4;
-                return '<span class="line">' +
-                    '<span class="indent-line" style="padding-left: ' + wrapIndent + 'ch; text-indent: -' + wrapIndent + 'ch;">' +
+                return '<span class="indent-line" style="padding-left: ' + wrapIndent + 'ch; text-indent: -' + wrapIndent + 'ch;">' +
                     openingSpans + line + closingSpans +
-                    '</span></span>';
+                    '</span>';
             });
             code.innerHTML = mangledLines.join('\n');
         });

@@ -33,7 +33,6 @@ let txnSeq = 0;
  */
 export async function transaction(pool, isolationMode, callback) {
     const txnId = txnSeq++, txnClient = await pool.connect(), config = getConfig(), maxAttempts = config.transactionAttemptsMax, { minMs, maxMs } = config.transactionRetryDelay;
-    txnClient.transactionMode = isolationMode;
     try {
         for (let attempt = 1;; attempt++) {
             try {
@@ -68,7 +67,6 @@ export async function transaction(pool, isolationMode, callback) {
         }
     }
     finally {
-        txnClient.transactionMode = undefined;
         txnClient.release();
     }
 }

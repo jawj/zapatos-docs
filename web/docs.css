@@ -44,22 +44,6 @@ pre {
 pre .indent-line {
   display: inline-block;
 }
-
-/*
-pre .line::before {
-  counter-increment: line-no;
-  content: counter(line-no);
-  font-size: 6pt;
-  display: inline-block;
-  position: absolute;
-  left: -3.5ch;
-  margin-top: 5pt;
-  color: #aaa;
-  width: 2.5ch;
-  text-align: right;
-}
-*/
-
 pre code {
   background: transparent;
 }
@@ -187,7 +171,7 @@ pre > code {
 p {
   max-width: 85%;
 }
-@media (max-width: 1200px) {
+@media (max-width: 1280px) {
   body {
     padding-right: 2.5%;
     padding-left: 2.5%;
@@ -224,7 +208,7 @@ p {
 }
 .src-link {
   float: right;
-  margin: 3ex 0 0 2em;
+  margin: 40px 0 0 30px;
 }
 .toc-link::before {
   margin-top: -5px;

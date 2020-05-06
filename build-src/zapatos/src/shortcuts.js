@@ -6,7 +6,7 @@ Zapatos: https://jawj.github.io/zapatos/
 Copyright (C) 2020 George MacKerron
 Released under the MIT licence: see LICENCE file
 */
-import { all, sql, cols, vals, raw, } from './core';
+import { all, sql, cols, vals, raw, param, } from './core';
 import { completeKeysWithDefault, mapWithSeparator } from './utils';
 /**
  * Generate an `INSERT` query `SQLFragment`.
@@ -107,18 +107,18 @@ export var SelectResultMode;
  * @param mode Used internally by `selectOne` and `count`
  */
 export const select = function (table, where = all, options = {}, mode = SelectResultMode.Many) {
-    const allOptions = mode === SelectResultMode.One ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, aliasedTable = allOptions.alias || table, tableAliasSQL = aliasedTable === table ? [] : sql ` AS ${aliasedTable}`, colsSQL = mode === SelectResultMode.Count ?
+    const allOptions = mode === SelectResultMode.One ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, aliasedTable = allOptions.alias || table, lateralOpt = allOptions.lateral, extrasOpt = allOptions.extras, tableAliasSQL = aliasedTable === table ? [] : sql ` AS ${aliasedTable}`, colsSQL = mode === SelectResultMode.Count ?
         (allOptions.columns ? sql `count(${cols(allOptions.columns)})` : sql `count(${aliasedTable}.*)`) :
         allOptions.columns ?
-            sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => raw(`'${c}', "${c}"`))})` :
-            sql `to_jsonb(${aliasedTable}.*)`, colsLateralSQL = allOptions.lateral === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(allOptions.lateral), sql `, `, k => raw(`'${k}', "cj_${k}".result`))})`, colsExtraSQL = allOptions.extras === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(allOptions.extras), sql `, `, k => [raw(`'${k}', `), allOptions.extras[k]])})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, orderSQL = !allOptions.order ? [] :
-        [sql ` ORDER BY `, ...mapWithSeparator(allOptions.order, sql `, `, o => sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`)], limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${raw(String(allOptions.limit))}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${raw(String(allOptions.offset))}`, lateralOpt = allOptions.lateral, lateralSQL = lateralOpt === undefined ? [] :
-        Object.keys(lateralOpt).map(k => {
+            sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => sql `${param(c)}::text, ${c}`)})` :
+            sql `to_jsonb(${aliasedTable}.*)`, colsLateralSQL = lateralOpt === undefined ? [] :
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateralOpt), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, colsExtraSQL = extrasOpt === undefined ? [] :
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extrasOpt), sql `, `, k => sql `${param(k)}::text, ${extrasOpt[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, orderSQL = !allOptions.order ? [] :
+        [sql ` ORDER BY `, ...mapWithSeparator(allOptions.order, sql `, `, o => sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`)], limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${raw(String(allOptions.limit))}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${raw(String(allOptions.offset))}`, lateralSQL = lateralOpt === undefined ? [] :
+        Object.keys(lateralOpt).map((k, i) => {
             const subQ = lateralOpt[k];
             subQ.parentTable = aliasedTable; // enables `parent('column')` in subquery's Wherables
-            return sql ` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
+            return sql ` LEFT JOIN LATERAL (${subQ}) AS "ljoin_${raw(String(i))}" ON true`;
         });
     const rowsQuery = sql `SELECT ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
         // we need the aggregate to sit in a sub-SELECT in order to keep ORDER and LIMIT working as usual
