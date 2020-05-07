@@ -1,5 +1,3 @@
-<a href="https://translate.google.com/#view=home&op=translate&sl=es&tl=en&text=zapatos"><img src="zapatos.jpg" width="175" alt="Zapatos = shoes" style="margin: -15px 0 0 -10px; border: none;"></a>
-
 # <b>Zap<span class="extra-vowels a">a</span>t<span class="extra-vowels o">o</span>s:</b> <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
 
 ## What does it do?
@@ -1194,4 +1192,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+<a href="https://translate.google.com/#view=home&op=translate&sl=es&tl=en&text=zapatos"><img src="zapatos.jpg" width="175" alt="Zapatos = shoes" style="margin-top: 60px; border: none;"></a>
+
 

@@ -2,7 +2,6 @@
 
 window.addEventListener('load', function () {
   Array.prototype.slice.call(document.querySelectorAll('h1 .extra-vowels')).forEach(function (vowel) {
-    console.log(vowel);
     Object.assign(vowel.style, { top: '0px', opacity: 1 });
   });
 });
@@ -14,6 +13,27 @@ tocbot.init({
   contentSelector: '#content',
   headingSelector: 'h1, h2, h3, h4',
   includeHtml: true,
+});
+
+var
+  toc = document.getElementById('toc'),
+  showTocMsg = 'Menu »',
+  hideTocMsg = '« Menu';
+
+toc.insertAdjacentHTML('beforebegin', '<a href="#" id="toc-toggle">' + showTocMsg + '</a>')
+
+document.addEventListener('click', function (e) {
+  var target = e.target;
+  if (target.id === 'toc-toggle') {
+    e.preventDefault();
+    if (toc.style.display === 'block') {
+      toc.style.display = 'none';
+      target.innerText = showTocMsg;
+    } else {
+      toc.style.display = 'block';
+      target.innerText = hideTocMsg;
+    }
+  }
 });
 
 // SQL/result sections
