@@ -24,5 +24,5 @@
 
         /* original script ends */
 
-        pool.end();
+        await pool.end();
       

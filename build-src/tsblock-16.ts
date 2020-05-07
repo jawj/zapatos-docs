@@ -31,5 +31,5 @@ const dbNow = await dbNowQuery().run(pool);
 
         /* original script ends */
 
-        pool.end();
+        await pool.end();
       

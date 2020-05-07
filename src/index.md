@@ -330,6 +330,11 @@ This is likely most useful for the database connection details. For example, on 
 }
 ```
 
+#### `tslint`
+
+One general configuration suggestion: set up [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid Promise-related pitfalls.
+
+
 ## User guide
 
 => core.ts // === SQL tagged template strings ===
@@ -1150,8 +1155,6 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 * `transactionRetryDelay` determines the range within which the `transaction` helper will pick a random delay before each retry. It's expressed in milliseconds and defaults to `{ minMs: 25, maxMs: 250 }`. 
 
 * `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query. You might use one or both of these functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
-
-One general configuration suggestion: set up [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid Promise-related pitfalls.
 
 
 ## Metadata

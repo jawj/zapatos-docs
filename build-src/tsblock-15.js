@@ -20,4 +20,4 @@ query = db.sql `
     SELECT * FROM ${"books"} WHERE ${{ authorId }}`, compiled = query.compile();
 console.log(compiled);
 /* original script ends */
-pool.end();
+await pool.end();

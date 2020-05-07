@@ -17,4 +17,4 @@ import { pool } from './pgPool';
 /* original script begins */
 await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

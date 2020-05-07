@@ -18,4 +18,4 @@ import { pool } from './pgPool';
 const authors = await db.sql `
   SELECT * FROM ${"authors"}`.run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

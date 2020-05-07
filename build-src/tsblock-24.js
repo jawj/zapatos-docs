@@ -17,4 +17,4 @@ import { pool } from './pgPool';
 /* original script begins */
 await db.deletes('books', { title: 'Holes' }).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

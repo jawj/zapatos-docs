@@ -191,7 +191,7 @@ import { JSDOM } from 'jsdom';
         ${ts}
         /* original script ends */
 
-        pool.end();
+        await pool.end();
       `;
 
     fs.writeFileSync(`./build-src/tsblock-${i}.ts`, instrumentedTs, { encoding: 'utf8' });

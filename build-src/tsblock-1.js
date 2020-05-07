@@ -20,4 +20,4 @@ const [doug, janey] = await db.insert('authors', [
     { name: 'Jane Austen', isLiving: false },
 ]).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

@@ -19,4 +19,4 @@ const [{ random }] = await db.sql `
   SELECT random()`.run(pool);
 console.log(random);
 /* original script ends */
-pool.end();
+await pool.end();

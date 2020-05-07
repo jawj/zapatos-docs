@@ -20,4 +20,4 @@ await db.update("emailAuthentication", {
     lastFailedLogin: db.sql `now()`,
 }, { email: 'me@privacy.net' }).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

@@ -20,4 +20,4 @@ const bookCols = ['id', 'title'];
 const bookData = await db.sql `
     SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

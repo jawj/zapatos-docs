@@ -25,4 +25,4 @@ export const allTables = [
     'tags',
 ];
 /* original script ends */
-pool.end();
+await pool.end();

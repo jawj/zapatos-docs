@@ -18,4 +18,4 @@ import { pool } from './pgPool';
 const title = 'Pride and Prejudice', books = await db.sql `
     SELECT * FROM ${"books"} WHERE ${"title"} = ${db.param(title)}`.run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

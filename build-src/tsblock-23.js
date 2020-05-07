@@ -27,4 +27,4 @@ const newTransactions = [{
         latestReceiptData: "bmd1aXNoZWQsIG5v",
     }], result = await db.upsert("appleTransactions", newTransactions, ["environment", "originalTransactionId"]).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

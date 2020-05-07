@@ -22,4 +22,4 @@ const bookAuthorTags = await db.select('books', db.all, {
     }
 }).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

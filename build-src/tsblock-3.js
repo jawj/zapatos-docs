@@ -19,4 +19,4 @@ const result = await db.transaction(pool, db.Isolation.Serializable, async (txnC
     /* queries here use txnClient instead of pool */
 });
 /* original script ends */
-pool.end();
+await pool.end();

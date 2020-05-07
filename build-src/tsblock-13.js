@@ -21,4 +21,4 @@ const titleLike = `Pride%`, books = await db.sql `
     createdAt: db.sql `${db.self} > now() - INTERVAL '200 years'`,
 }}`.run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

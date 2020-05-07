@@ -35,5 +35,5 @@ const authorBooks = await query.run(pool);
 
         /* original script ends */
 
-        pool.end();
+        await pool.end();
       

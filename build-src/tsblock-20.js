@@ -36,4 +36,4 @@ steve = await db.insert('authors', {
     { bookId: me.id, tag: 'autobiography' },
 ]).run(pool);
 /* original script ends */
-pool.end();
+await pool.end();

@@ -27,4 +27,4 @@ catch (err) {
     console.log(err.message, '/', err.detail);
 }
 /* original script ends */
-pool.end();
+await pool.end();

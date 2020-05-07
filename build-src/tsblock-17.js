@@ -20,4 +20,4 @@ const query = db.sql `
   ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
 const bookAuthors = await query.run(pool);
 /* original script ends */
-pool.end();
+await pool.end();
