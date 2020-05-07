@@ -114,7 +114,13 @@ export const select = function (table, where = all, options = {}, mode = SelectR
             sql `to_jsonb(${aliasedTable}.*)`, colsLateralSQL = lateralOpt === undefined ? [] :
         sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateralOpt), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, colsExtraSQL = extrasOpt === undefined ? [] :
         sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extrasOpt), sql `, `, k => sql `${param(k)}::text, ${extrasOpt[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, orderSQL = !allOptions.order ? [] :
-        [sql ` ORDER BY `, ...mapWithSeparator(allOptions.order, sql `, `, o => sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`)], limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${raw(String(allOptions.limit))}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${raw(String(allOptions.offset))}`, lateralSQL = lateralOpt === undefined ? [] :
+        sql ` ORDER BY ${mapWithSeparator(allOptions.order, sql `, `, o => {
+            if (!['ASC', 'DESC'].includes(o.direction))
+                throw new Error(`Direction must be ASC/DESC, not '${o.direction}'`);
+            if (o.nulls && !['FIRST', 'LAST'].includes(o.nulls))
+                throw new Error(`Nulls must be FIRST/LAST/undefined, not '${o.nulls}'`);
+            return sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`;
+        })}`, limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${param(allOptions.limit)}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${param(allOptions.offset)}`, lateralSQL = lateralOpt === undefined ? [] :
         Object.keys(lateralOpt).map((k, i) => {
             const subQ = lateralOpt[k];
             subQ.parentTable = aliasedTable; // enables `parent('column')` in subquery's Wherables
