@@ -1163,7 +1163,7 @@ The `transaction` helper takes a `pg.Pool` instance, an isolation mode, and an `
 * If any other error is thrown, issue a `ROLLBACK`, release the database client, and re-throw the error.
 * Otherwise `COMMIT` the transaction, release the database client, and return the callback's result.
 
-As is implied above, for `REPEATABLE READ` or `SYNCHRONIZED` isolation modes the callback could be called several times. It's therefore important that it doesn't have any non-database-related side-effects (don't bill your customer's credit card from this function!).
+As is implied above, for `REPEATABLE READ` or `SYNCHRONIZED` isolation modes the callback could be called several times. It's therefore important that it doesn't have any non-database-related side-effects (i.e. don't, say, bill your customer's credit card from this function).
 
 We already saw [one `transaction` example](#transactions). Here's another, adapted from [CockroachDB's write-up on `SERIALIZABLE`](https://www.cockroachlabs.com/docs/stable/demo-serializable.html).
 
@@ -1262,9 +1262,11 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 
 * `transactionRetryDelay` determines the range within which the `transaction` helper will pick a random delay before each retry. It's expressed in milliseconds and defaults to `{ minMs: 25, maxMs: 250 }`. 
 
-* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query. You might use one or both of these functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
+* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query.
 
-* `transactionListener`, similarly, is called with messages about transaction retries, and can be used for logging.
+* `transactionListener`, similarly, is called with messages about transaction retries.
+
+You might use one or more of the three listener functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
 
 
 ## Metadata
@@ -1285,7 +1287,7 @@ If you're asking for or contributing new work, my response is likely to reflect 
 **Scratching my own itch.**  I'm unlikely to put a lot of my own effort into features I don't currently need ... unless we're talking about paid consultancy, which I'm more than happy to discuss.
 
 
-### Roadmap
+### What's next
 
 Some nice-to-haves would include:
 
