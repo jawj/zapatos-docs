@@ -32,12 +32,12 @@ let txnSeq = 0;
  * @param callback The callback function that runs queries on the provided client
  */
 export async function transaction(pool, isolationMode, callback) {
-    const txnId = txnSeq++, txnClient = await pool.connect(), config = getConfig(), maxAttempts = config.transactionAttemptsMax, { minMs, maxMs } = config.transactionRetryDelay;
+    const txnId = txnSeq++, txnClient = await pool.connect(), config = getConfig(), { transactionListener } = config, maxAttempts = config.transactionAttemptsMax, { minMs, maxMs } = config.transactionRetryDelay;
     try {
         for (let attempt = 1;; attempt++) {
             try {
-                if (attempt > 1)
-                    console.log(`Retrying transaction #${txnId}, attempt ${attempt} of ${maxAttempts}`);
+                if (attempt > 1 && transactionListener)
+                    transactionListener(`Retrying transaction #${txnId}, attempt ${attempt} of ${maxAttempts}`);
                 await sql `START TRANSACTION ISOLATION LEVEL ${raw(isolationMode)}`.run(txnClient);
                 const result = await callback(txnClient);
                 await sql `COMMIT`.run(txnClient);
@@ -52,11 +52,13 @@ export async function transaction(pool, isolationMode, callback) {
                 if (isDatabaseError(err, "TransactionRollback_SerializationFailure", "TransactionRollback_DeadlockDetected")) {
                     if (attempt < maxAttempts) {
                         const delayBeforeRetry = Math.round(minMs + (maxMs - minMs) * Math.random());
-                        console.log(`Transaction #${txnId} rollback (code ${err.code}) on attempt ${attempt} of ${maxAttempts}, retrying in ${delayBeforeRetry}ms`);
+                        if (transactionListener)
+                            transactionListener(`Transaction #${txnId} rollback (code ${err.code}) on attempt ${attempt} of ${maxAttempts}, retrying in ${delayBeforeRetry}ms`);
                         await wait(delayBeforeRetry);
                     }
                     else {
-                        console.log(`Transaction #${txnId} rollback (code ${err.code}) on attempt ${attempt} of ${maxAttempts}, giving up`);
+                        if (transactionListener)
+                            transactionListener(`Transaction #${txnId} rollback (code ${err.code}) on attempt ${attempt} of ${maxAttempts}, giving up`);
                         throw err;
                     }
                 }

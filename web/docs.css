@@ -84,11 +84,11 @@ pre code {
   border: 1px solid #eee;
   padding: 5px;
 }
-.sqltext, .sqlvalues, .sqlresult, .console {
+.sqltext, .sqlvalues, .sqlresult, .transactionlog, .console {
   position: relative;
   margin: 0;
 }
-.sqltext::before, .sqlvalues::before, .sqlresult::before, .console::before, .openmonaco, .toggleimports {
+.sqltext::before, .sqlvalues::before, .sqlresult::before, .transactionlog::before, .console::before, .openmonaco, .toggleimports {
   background: #444;
   color: #fff;
   position: absolute;
@@ -139,6 +139,9 @@ pre code {
 }
 .sqlresult::before {
   content: '⟶ result';
+}
+.transactionlog::before {
+  content: 'Transactions';
 }
 .console {
   margin: 15px 0 20px;

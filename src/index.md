@@ -859,8 +859,10 @@ export const allTables: s.AllTables = [
   'authors', 
   'bankAccounts', 
   'books', 
+  'doctors',
   'emailAuthentication', 
   'employees', 
+  'shifts',
   'stores',
   'tags',
 ];
@@ -1134,6 +1136,111 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
 
 ### `transaction`
 
+```typescript:norun
+export enum Isolation {
+  // these are the only meaningful values in Postgres: 
+  // see https://www.postgresql.org/docs/11/sql-set-transaction.html
+  Serializable = "SERIALIZABLE",
+  RepeatableRead = "REPEATABLE READ",
+  ReadCommitted = "READ COMMITTED",
+  SerializableRO = "SERIALIZABLE, READ ONLY",
+  RepeatableReadRO = "REPEATABLE READ, READ ONLY",
+  ReadCommittedRO = "READ COMMITTED, READ ONLY",
+  SerializableRODeferrable = "SERIALIZABLE, READ ONLY, DEFERRABLE"
+}
+export async function transaction<T, M extends Isolation>(
+  pool: pg.Pool,
+  isolationMode: M,
+  callback: (client: TxnClient<M>) => Promise<T>
+): Promise<T>
+```
+
+The `transaction` helper takes a `pg.Pool` instance, an isolation mode, and an `async` callback function. It then proceeds as follows:
+
+* Issue a `BEGIN TRANSACTION`.
+* Call the callback, passing to it a database client to use in place of a `pg.Pool`.
+* If a serialization error is thrown, try again after a [configurable](#run-time-configuration) random delay, a [configurable](#run-time-configuration) number of times.
+* If any other error is thrown, issue a `ROLLBACK`, release the database client, and re-throw the error.
+* Otherwise `COMMIT` the transaction, release the database client, and return the callback's result.
+
+As is implied above, for `REPEATABLE READ` or `SYNCHRONIZED` isolation modes the callback could be called several times. It's therefore important that it doesn't have any non-database-related side-effects (don't bill your customer's credit card from this function!).
+
+We already saw [one `transaction` example](#transactions). Here's another, adapted from [CockroachDB's write-up on `SERIALIZABLE`](https://www.cockroachlabs.com/docs/stable/demo-serializable.html).
+
+We have a table of `doctors`, and one of their assigned `shifts`.
+
+```sql
+CREATE TABLE "doctors"
+( "id" SERIAL PRIMARY KEY
+, "name" TEXT NOT NULL );
+
+CREATE TABLE "shifts" 
+( "day" DATE NOT NULL
+, "doctorId" INTEGER NOT NULL REFERENCES "doctors"("id")
+, PRIMARY KEY ("day", "doctorId") );
+```
+
+We populate those tables with two doctors and two days' shifts:
+
+```typescript
+await db.insert('doctors', [
+  { id: 1, name: 'Annabel' }, 
+  { id: 2, name: 'Brian' },
+]).run(pool);
+
+await db.insert('shifts', [
+  { day: '2020-12-24', doctorId: 1 },
+  { day: '2020-12-24', doctorId: 2 },
+  { day: '2020-12-25', doctorId: 1 },
+  { day: '2020-12-25', doctorId: 2 },
+]).run(pool);
+```
+
+The important business logic is that there must always be _at least one doctor_ on shift. Now let's say both doctors happen at the same moment to request leave for 25 December.
+
+```typescript
+async function requestLeaveForDoctorOnDay(doctorId: number, day: string) {
+  return db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+    const otherDoctorsOnShift = await db.count('shifts', {
+      doctorId: db.sql<db.SQL>`${db.self} != ${db.param(doctorId)}`,
+      day,
+    }).run(txnClient);
+    if (otherDoctorsOnShift === 0) return false;
+
+    await db.deletes('shifts', { day, doctorId }).run(txnClient);
+    return true;
+  });
+}
+
+const [leaveBookedForAnnabel, leaveBookedForBrian] = await Promise.all([
+  // in practice, these requests would come from different front-ends
+  requestLeaveForDoctorOnDay(1, '2020-12-25'),
+  requestLeaveForDoctorOnDay(2, '2020-12-25'),
+]);
+
+console.log(`Leave booked for:
+  Annabel – ${leaveBookedForAnnabel}
+  Brian – ${leaveBookedForBrian}`);
+```
+
+Expanding the results, we see that one of the requests is retried and then fails — as it must to retain one doctor on shift — thanks to the `SERIALIZABLE` isolation (`REPEATABLE READ`, which is one isolation level weaker, wouldn't help).
+
+#### `TxnSatisfying` types
+
+```typescript:norun
+export namespace TxnSatisfying {
+  export type Serializable = Isolation.Serializable;
+  export type RepeatableRead = Serializable | Isolation.RepeatableRead;
+  export type ReadCommitted = RepeatableRead | Isolation.ReadCommitted;
+  export type SerializableRO = Serializable | Isolation.SerializableRO;
+  export type RepeatableReadRO = SerializableRO | RepeatableRead | Isolation.RepeatableReadRO;
+  export type ReadCommittedRO = RepeatableReadRO | ReadCommitted | Isolation.ReadCommittedRO;
+  export type SerializableRODeferrable = SerializableRO | Isolation.SerializableRODeferrable;
+}
+```
+
+If you find yourself passing transaction clients around, you may find the `TxnSatisfying` types useful. For example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
+
 
 ### Run-time configuration
 
@@ -1145,6 +1252,7 @@ export interface Config {
   transactionRetryDelay: { minMs: number, maxMs: number };
   queryListener?(str: any): void;
   resultListener?(str: any): void;
+  transactionListener?(str: any): void;
 };
 ```
 
@@ -1155,6 +1263,8 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 * `transactionRetryDelay` determines the range within which the `transaction` helper will pick a random delay before each retry. It's expressed in milliseconds and defaults to `{ minMs: 25, maxMs: 250 }`. 
 
 * `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query. You might use one or both of these functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
+
+* `transactionListener`, similarly, is called with messages about transaction retries, and can be used for logging.
 
 
 ## Metadata

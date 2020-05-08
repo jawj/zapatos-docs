@@ -7,10 +7,13 @@ xyz.setConfig({
         }
     },
     resultListener: (x) => {
-        if (x && !(Array.isArray(x) && x.length === 0)) {
+        if (x != null && !(Array.isArray(x) && x.length === 0)) {
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
         }
-    }
+    },
+    transactionListener: (x) => {
+        console.log('%%transaction%:' + x + '%%');
+    },
 });
 import * as db from './zapatos/src';
 import { pool } from './pgPool';

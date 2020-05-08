@@ -176,10 +176,13 @@ import { JSDOM } from 'jsdom';
             }
           },
           resultListener: (x: any) => {
-            if (x && !(Array.isArray(x) && x.length === 0)) {
+            if (x != null && !(Array.isArray(x) && x.length === 0)) {
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }
-          }
+          },
+          transactionListener: (x: any) => {
+            console.log('%%transaction%:' + x + '%%');
+          },
         });
         ${ts?.match(/^\s*import\b/m) ? '' : `
           import * as db from './zapatos/src';
@@ -245,6 +248,9 @@ import { JSDOM } from 'jsdom';
         } else if (type === 'result') {
           const highlightResult = hljs.highlight('json', str).value;
           output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
+
+        } else if (type === 'transaction') {
+          output += `<pre class="transactionlog"><code>${str}</code></pre>\n`;
 
         } else {  // console output
           const logs = type.trim();

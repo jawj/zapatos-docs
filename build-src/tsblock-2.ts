@@ -8,10 +8,13 @@
             }
           },
           resultListener: (x: any) => {
-            if (x && !(Array.isArray(x) && x.length === 0)) {
+            if (x != null && !(Array.isArray(x) && x.length === 0)) {
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }
-          }
+          },
+          transactionListener: (x: any) => {
+            console.log('%%transaction%:' + x + '%%');
+          },
         });
         
           import * as db from './zapatos/src';

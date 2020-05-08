@@ -144,7 +144,7 @@ var jsdom_1 = require("jsdom");
         runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
             .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
         runnableTags.forEach(function (runnableTag, i) {
-            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          }\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import { pool } from './pgPool';\n        ") + "\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        await pool.end();\n      ";
+            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x != null && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any) => {\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import { pool } from './pgPool';\n        ") + "\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        await pool.end();\n      ";
             fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
         });
         console.info('Compiling TypeScript script blocks ..');
@@ -187,6 +187,9 @@ var jsdom_1 = require("jsdom");
                     else if (type === 'result') {
                         var highlightResult = hljs.highlight('json', str).value;
                         output += "<pre class=\"sqlresult\"><code>" + highlightResult + "</code></pre>\n";
+                    }
+                    else if (type === 'transaction') {
+                        output += "<pre class=\"transactionlog\"><code>" + str + "</code></pre>\n";
                     }
                     else { // console output
                         var logs = type.trim();

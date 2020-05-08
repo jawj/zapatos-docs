@@ -55,6 +55,15 @@ CREATE TABLE "stores"
 );
 CREATE INDEX "storesGeomIdx" ON "stores" USING gist("geom");
 
+CREATE TABLE "doctors"
+( "id" SERIAL PRIMARY KEY
+, "name" TEXT NOT NULL );
+
+CREATE TABLE "shifts" 
+( "day" DATE NOT NULL
+, "doctorId" INTEGER NOT NULL REFERENCES "doctors"("id")
+, PRIMARY KEY ("day", "doctorId") );
+
 
 INSERT INTO "authors" VALUES (1000, 'Philip Pullman', true);
 INSERT INTO "books" VALUES (1000, 1000, 'Northern Lights');
