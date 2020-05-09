@@ -1199,8 +1199,8 @@ await db.insert('shifts', [
 The important business logic is that there must always be _at least one doctor_ on shift. Now let's say both doctors happen at the same moment to request leave for 25 December.
 
 ```typescript
-async function requestLeaveForDoctorOnDay(doctorId: number, day: string) {
-  return db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+const requestLeaveForDoctorOnDay = async (doctorId: number, day: string) =>
+  db.transaction(pool, db.Isolation.Serializable, async txnClient => {
     const otherDoctorsOnShift = await db.count('shifts', {
       doctorId: db.sql<db.SQL>`${db.self} != ${db.param(doctorId)}`,
       day,
@@ -1210,7 +1210,6 @@ async function requestLeaveForDoctorOnDay(doctorId: number, day: string) {
     await db.deletes('shifts', { day, doctorId }).run(txnClient);
     return true;
   });
-}
 
 const [leaveBookedForAnnabel, leaveBookedForBrian] = await Promise.all([
   // in practice, these requests would come from different front-ends
