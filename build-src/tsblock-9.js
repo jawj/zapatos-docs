@@ -19,6 +19,6 @@ import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
 const title = await db.sql `
-  SELECT "title" FROM "books" LIMIT 1`.run(pool); // no, don't do this!
+  SELECT "title" FROM "books" LIMIT 1`.run(pool); // no, don't do this
 /* original script ends */
 await pool.end();

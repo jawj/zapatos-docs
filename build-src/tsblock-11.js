@@ -18,9 +18,11 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-// the <const> prevents generalization to string[]
-const bookCols = ['id', 'title'];
-const bookData = await db.sql `
-    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
+const author = {
+    name: 'Joseph Conrad',
+    isLiving: false,
+}, [insertedAuthor] = await db.sql `
+    INSERT INTO ${"authors"} (${db.cols(author)})
+    VALUES (${db.vals(author)}) RETURNING *`.run(pool);
 /* original script ends */
 await pool.end();

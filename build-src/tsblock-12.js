@@ -18,7 +18,9 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const title = 'Pride and Prejudice', books = await db.sql `
-    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
+// the <const> prevents generalization to string[]
+const bookCols = ['id', 'title'];
+const bookData = await db.sql `
+    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 /* original script ends */
 await pool.end();

@@ -15,19 +15,9 @@ xyz.setConfig({
         console.log('%%transaction%:' + x + '%%');
     },
 });
+import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-export const allTables = [
-    'appleTransactions',
-    'authors',
-    'bankAccounts',
-    'books',
-    'doctors',
-    'emailAuthentication',
-    'employees',
-    'shifts',
-    'stores',
-    'tags',
-];
+await db.truncate('bankAccounts').run(pool);
 /* original script ends */
 await pool.end();

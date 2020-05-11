@@ -18,11 +18,7 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 /* original script begins */
-const author = {
-    name: 'Joseph Conrad',
-    isLiving: false,
-}, [insertedAuthor] = await db.sql `
-    INSERT INTO ${"authors"} (${db.cols(author)})
-    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
+const nameSubmittedByUser = 'books"; DROP TABLE "authors"; --', title = await db.sql `
+    SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool); // NEVER do this!
 /* original script ends */
 await pool.end();

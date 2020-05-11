@@ -23,7 +23,7 @@ const author = {
     isLiving: false,
 }, [insertedAuthor] = await db.sql `
       INSERT INTO ${"authors"} (${db.cols(author)})
-      VALUES(${db.vals(author)}) RETURNING *`
+      VALUES (${db.vals(author)}) RETURNING *`
     .run(pool);
 /* original script ends */
 await pool.end();

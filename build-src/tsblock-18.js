@@ -18,10 +18,9 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import { pool } from './pgPool';
 const query = db.sql `
-  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
-  FROM ${"authors"} JOIN ${"books"} 
-  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
-  GROUP BY ${"authors"}.${"id"}`;
-const authorBooks = await query.run(pool);
+  SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
+  FROM ${"books"} JOIN ${"authors"} 
+  ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
+const bookAuthors = await query.run(pool);
 /* original script ends */
 await pool.end();

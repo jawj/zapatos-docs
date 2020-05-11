@@ -23,14 +23,10 @@
         
 
         /* original script begins */
-        const
-  author: s.authors.Insertable = {
-    name: 'Joseph Conrad',
-    isLiving: false,
-  },
-  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
-    INSERT INTO ${"authors"} (${db.cols(author)})
-    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
+        const 
+  nameSubmittedByUser = 'books"; DROP TABLE "authors"; --',
+  title = await db.sql<any>`
+    SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 
         /* original script ends */
 

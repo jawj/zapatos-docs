@@ -1,3 +1,5 @@
+<div class="logos"><img class="pg-logo" src="pg.svg" width="43.2" height="44.5" alt="Postgres logo" /><img class="ts-logo" src="ts.svg" width="50.5" height="39" alt="TypeScript logo" /></div>
+
 # <b>Zap<span class="extra-vowels a">a</span>t<span class="extra-vowels o">o</span>s:</b> <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
 
 ## What does it do?
@@ -15,17 +17,6 @@ To achieve that, it does these five things:
 * **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
 
 * **Transactions** &nbsp; A `transaction` function helps with managing and retrying transactions. [Show me »](#transactions)
-
-
-### Why does it do that?
-
-It is a truth universally acknowledged that [ORMs aren't very good](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). 
-
-I like SQL, and Postgres especially. In my experience, abstractions that obscure the underlying SQL, or that prioritise ease of switching to another database tomorrow over effective use of _this_ database _today_, are a source of misery.
-
-I've also come to love strongly typed languages, and TypeScript in particular. VS Code's type checking and autocomplete speed development, prevent bugs, and simplify refactoring. Especially when they _just happen_, they bring joy.
-
-Zapatos aims to minimise the misery of abstraction, intensify the joy of type inference, and represent a credible alternative to traditional ORMs.
 
 
 ### How does that look?
@@ -94,7 +85,7 @@ const
   },
   [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
       INSERT INTO ${"authors"} (${db.cols(author)})
-      VALUES(${db.vals(author)}) RETURNING *`
+      VALUES (${db.vals(author)}) RETURNING *`
     .run(pool);
 ```
 
@@ -135,7 +126,7 @@ In addition to `insert`, there are shortcuts for `select`, `selectOne` and `coun
 
 **Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed.**
 
-CRUD is our bread and butter, but the power of SQL is that it's _relational_ — it's in the `JOIN`s. And Postgres has some powerful JSON features that can deliver us sensibly-structured `JOIN` results without any post-processing (that's `json_agg`, `json_build_object`, and so on).
+CRUD is our bread and butter, but the power of SQL is that it's _relational_ — it's in the `JOIN`s. And Postgres has some powerful JSON features that can deliver us sensibly-structured `JOIN` results with minimal post-processing (that's `json_agg`, `json_build_object`, and so on).
 
 To demonstrate, let's say that `authors` have `books` and `books` have `tags`, adding two new tables to our simple schema:
 
@@ -223,18 +214,29 @@ try {
 Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
 
 
+### Why does it do those things?
+
+It is a truth universally acknowledged that [ORMs aren't very good](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). 
+
+I like SQL, and Postgres especially. In my experience, abstractions that obscure the underlying SQL, or that prioritise ease of switching to another database tomorrow over effective use of _this_ database _today_, are a source of misery.
+
+I've also come to love strongly typed languages, and TypeScript in particular. VS Code's type checking and autocomplete speed development, prevent bugs, and simplify refactoring. Especially when they _just happen_, they bring joy.
+
+Zapatos aims to minimise the misery of abstraction, intensify the joy of type inference, and represent a credible alternative to traditional ORMs.
+
+
 ### What doesn't it do?
 
 Zapatos doesn't handle schema migrations. Other tools can help you with this: check out [dbmate](https://github.com/amacneil/dbmate), for instance.
 
-It doesn't manage the `pg` connection pool for you, as some ORMs do — mainly because this is so trivially easy. For example, my `pgPool.ts` looks something like this:
+It also doesn't manage the `pg` connection pool for you, as some ORMs do — mainly because this is so easy. For example, my `pgPool.ts` looks something like this:
 
 ```typescript:norun
 import pg from 'pg';
 export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 ```
 
-Finally, it won't tell you how to structure your code. Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
+Finally, it won't tell you how to structure your code: Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
 
 
 ## How do I use it?
@@ -247,7 +249,7 @@ This generates the TypeScript schema for your database in a folder named `zapato
 
 **You *must* import the Zapatos source files from this copied/symlinked `zapatos/src` directory, *not* `from 'zapatos'` in the usual way (which would find them in `node_modules`).**
 
-That's because the source files depend on themselves importing your custom-generated `schema.ts`, which they cannot do if they're imported in the usual way.
+That's because the source files depend on importing your custom, Zapatos-generated `schema.ts`, which they cannot do if they're imported in the usual way.
 
 Of course, before you can run `npx zapatos`, you need to install and configure it.
 
@@ -397,10 +399,21 @@ But **don't** write
 
 ```typescript:noresult
 const title = await db.sql`
-  SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this!
+  SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this
 ```
 
-— even though the two produce the same result right now.
+— even if the two produce the same result right now.
+
+More critically, **never** override the type-checking so as to write:
+
+```typescript
+const 
+  nameSubmittedByUser = 'books"; DROP TABLE "authors"; --',
+  title = await db.sql<any>`
+    SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
+```
+
+If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-parameter), and in certain other places. If in doubt, check whether the generated SQL is using `$1`, `$2`, ... parameters).
 
 
 #### `cols()` and `vals()`
@@ -417,7 +430,7 @@ const
   },
   [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
     INSERT INTO ${"authors"} (${db.cols(author)})
-    VALUES(${db.vals(author)}) RETURNING *`.run(pool);
+    VALUES (${db.vals(author)}) RETURNING *`.run(pool);
 ```
 
 A second use for the `cols` function is in selecting only a subset of columns, in conjunction with the `OnlyCols` type. Pass an array of column names to `cols`, and they're compiled appropriately, as seen in this example:
@@ -441,7 +454,7 @@ For example:
 
 ```typescript
 const 
-  title = 'Pride and Prejudice',
+  title = 'Northern Lights',
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
 ```
@@ -452,11 +465,11 @@ For example:
 
 ```typescript
 const 
-  titleLike = `Pride%`,
+  titleLike = `Northern%`,
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ 
       title: db.sql<db.SQL>`${db.self} LIKE ${db.param(titleLike)}`,
-      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '200 years'`,
+      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '7 days'`,
     }}`.run(pool);
 ```
 
@@ -706,7 +719,7 @@ const
     createdAt: db.sql`now()`,
   }]).run(pool),
 
-  [...tags] = await db.insert('tags', [
+  tags = await db.insert('tags', [
     { bookId: time.id, tag: 'physics' },
     { bookId: me.id, tag: 'physicist' },
     { bookId: me.id, tag: 'autobiography' },
@@ -715,7 +728,7 @@ const
 
 You'll note that `Insertable`s can take `SQLFragment` values (from the `sql` tagged template function) as well as direct values (strings, numbers, and so on). 
 
-Note that Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
+Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
 
 => shortcuts.ts /* === update === */
 
@@ -789,7 +802,7 @@ ALTER TABLE "appleTransactions" ADD CONSTRAINT "appleTransPKey"
   PRIMARY KEY ("environment", "originalTransactionId");
 ```
 
-When we receive a purchase receipt, we need to either store a new record or update an existing record for each distinct(`environment`, `originalTransactionId`) it contains.
+When we receive a purchase receipt, we need to either store a new record or update an existing record for each distinct (`environment`, `originalTransactionId`) it contains.
 
 We can `map` the transaction data in the receipt into an `appleTransactions.Insertable[]`, and do what's needed with a single `upsert` call. In this example, though, we hard-code the `Insertable[]` for ease of exposition:
 
@@ -906,7 +919,7 @@ export interface CountSignatures {
 
 Yes, the signatures are beastly — and that's leaving out the horrors behind `FullSelectReturnTypeForTable<...>` — but don't panic! 
 
-The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), the appropriate `Whereable` for the target table, or a `SQLFragment` from a `sql` template string. Recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable), which means the `SQLFragment` variant will rarely be required.
+The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), the appropriate `Whereable` for the target table, or a `SQLFragment` from a `sql` template string. Recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable), which means the `SQLFragment` variant is rarely required.
 
 The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable>`, promising only a single object when run. The `count` function, finally, generates a query to count matching rows, and thus returns a `SQLFragment<number>`.
 
@@ -957,7 +970,7 @@ The return type is appropriately narrowed to the requested columns only, so VS C
 
 ##### `order`, `limit` and `offset`
 
-The `limit` and `offset` options take a number and pass it directly through to SQL `LIMIT` and `OFFSET` clauses. The `order` option takes an `OrderSpecForTable[]`, which has this shape:
+The `limit` and `offset` options each take a number and pass it directly through to SQL `LIMIT` and `OFFSET` clauses. The `order` option takes an `OrderSpecForTable[]`, which has this shape:
 
 ```typescript:norun
 interface OrderSpecForTable<T extends Table> {
@@ -1076,11 +1089,11 @@ Nevertheless, this is a handy, flexible — but still transparent and zero-abstr
 
 ##### `extras`
 
-The `extras` option allows us to include additional result keys that don't represent columns of our tables. That could be a computed quantity, such as a geographical distance via PostGIS. 
+The `extras` option allows us to include additional result keys that don't represent columns of our tables. That could be a computed quantity, such as a geographical distance via [PostGIS](https://postgis.net/). 
 
 The option takes a mapping of property names to `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variables of those template strings are significant, as they are passed through to the result type.
 
-Let's see `extras` in use, with an example that shows too how the `lateral` option can go well beyond simply mathcing a foreign key to a primary key.
+Let's see `extras` in use, with an example that shows too how the `lateral` option can go well beyond simply matching a foreign key to a primary key.
 
 Take this new table:
 

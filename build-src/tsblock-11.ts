@@ -23,13 +23,14 @@
         
 
         /* original script begins */
-        // the <const> prevents generalization to string[]
-const bookCols = <const>['id', 'title'];
-type BookDatum = s.books.OnlyCols<typeof bookCols>;
-
-const
-  bookData = await db.sql<s.books.SQL, BookDatum[]>`
-    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
+        const
+  author: s.authors.Insertable = {
+    name: 'Joseph Conrad',
+    isLiving: false,
+  },
+  [insertedAuthor] = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
+    INSERT INTO ${"authors"} (${db.cols(author)})
+    VALUES (${db.vals(author)}) RETURNING *`.run(pool);
 
         /* original script ends */
 

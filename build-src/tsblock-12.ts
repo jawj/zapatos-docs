@@ -23,10 +23,13 @@
         
 
         /* original script begins */
-        const 
-  title = 'Pride and Prejudice',
-  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
+        // the <const> prevents generalization to string[]
+const bookCols = <const>['id', 'title'];
+type BookDatum = s.books.OnlyCols<typeof bookCols>;
+
+const
+  bookData = await db.sql<s.books.SQL, BookDatum[]>`
+    SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 
         /* original script ends */
 

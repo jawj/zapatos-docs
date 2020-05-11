@@ -24,12 +24,9 @@
 
         /* original script begins */
         const 
-  titleLike = `Pride%`,
+  title = 'Northern Lights',
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${{ 
-      title: db.sql<db.SQL>`${db.self} LIKE ${db.param(titleLike)}`,
-      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '200 years'`,
-    }}`.run(pool);
+    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
 
         /* original script ends */
 
