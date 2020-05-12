@@ -1,4 +1,4 @@
 import pg from 'pg';
-export const pool = new pg.Pool({
+export default new pg.Pool({
   connectionString: `postgresql://localhost/${process.env.ZDBNAME}`,
 });

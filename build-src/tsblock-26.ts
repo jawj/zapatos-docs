@@ -19,7 +19,7 @@
         
           import * as db from './zapatos/src';
           import * as s from './zapatos/schema';
-          import { pool } from './pgPool';
+          import pool from './pgPool';
         
 
         /* original script begins */

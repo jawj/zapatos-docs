@@ -16,7 +16,7 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
-import { pool } from './pgPool';
+import pool from './pgPool';
 /* original script begins */
 const nameSubmittedByUser = 'books"; DROP TABLE "authors"; --', title = await db.sql `
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool); // NEVER do this!

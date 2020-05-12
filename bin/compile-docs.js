@@ -80,9 +80,9 @@ var jsdom_1 = require("jsdom");
         }, {});
         Object.assign(all, {
             // stubs for key pg types
-            'pg.ts': "\n      export interface Pool {}\n      export interface PoolClient {}\n      export interface QueryResult {\n        rows: any;\n      }",
+            'pg.ts': "\n      export class Pool {}\n      export class PoolClient {}\n      export class QueryResult {\n        rows: any;\n      }",
             // pretend pg.Pool
-            'pgPool.ts': "\n      import * as pg from 'pg';\n      export let pool: pg.Pool;",
+            'pgPool.ts': "\n      import * as pg from 'pg';\n      export default new pg.Pool();",
             // workaround for Monaco Editor not finding index.ts inside folders:
             'zapatos/src.ts': "\n      export * from './src/index';",
         });
@@ -144,7 +144,7 @@ var jsdom_1 = require("jsdom");
         runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
             .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
         runnableTags.forEach(function (runnableTag, i) {
-            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x != null && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any) => {\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import { pool } from './pgPool';\n        ") + "\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        await pool.end();\n      ";
+            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x != null && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any) => {\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import pool from './pgPool';\n        ") + "\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        await pool.end();\n      ";
             fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
         });
         console.info('Compiling TypeScript script blocks ..');
@@ -207,7 +207,7 @@ var jsdom_1 = require("jsdom");
                 ((script === null || script === void 0 ? void 0 : script.match(/\bs[.]/)) ?
                     "<span class=\"hljs-keyword\">import</span> * <span class=\"hljs-keyword\">as</span> s <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./zapatos/schema'</span>;\n" : '') +
                 ((script === null || script === void 0 ? void 0 : script.match(/\bpool\b/)) ?
-                    "<span class=\"hljs-keyword\">import</span> { pool } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./pgPool'</span>;\n" : '') +
+                    "<span class=\"hljs-keyword\">import</span> pool <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./pgPool'</span>;\n" : '') +
                 '</code>');
             runnableTag.className += ' runnable';
         });

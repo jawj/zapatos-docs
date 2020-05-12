@@ -229,11 +229,11 @@ Zapatos aims to minimise the misery of abstraction, intensify the joy of type in
 
 Zapatos doesn't handle schema migrations. Other tools can help you with this: check out [dbmate](https://github.com/amacneil/dbmate), for instance.
 
-It also doesn't manage the `pg` connection pool for you, as some ORMs do — mainly because this is so easy. For example, my `pgPool.ts` looks something like this:
+It also doesn't manage the connection pool for you, as some ORMs do — mainly because the `pg` module makes this so easy. For example, my `pgPool.ts` looks something like this:
 
 ```typescript:norun
 import pg from 'pg';
-export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+export default new pg.Pool({ connectionString: process.env.DATABASE_URL });
 ```
 
 Finally, it won't tell you how to structure your code: Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).

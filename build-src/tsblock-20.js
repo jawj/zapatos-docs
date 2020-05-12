@@ -16,7 +16,7 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
-import { pool } from './pgPool';
+import pool from './pgPool';
 const query = db.sql `
   SELECT ${"authors"}.*, bq.* 
   FROM ${"authors"} LEFT JOIN LATERAL (

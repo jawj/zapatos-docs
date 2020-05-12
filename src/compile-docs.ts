@@ -38,15 +38,15 @@ import { JSDOM } from 'jsdom';
   Object.assign(all, {
     // stubs for key pg types
     'pg.ts': `
-      export interface Pool {}
-      export interface PoolClient {}
-      export interface QueryResult {
+      export class Pool {}
+      export class PoolClient {}
+      export class QueryResult {
         rows: any;
       }`,
     // pretend pg.Pool
     'pgPool.ts': `
       import * as pg from 'pg';
-      export let pool: pg.Pool;`,
+      export default new pg.Pool();`,
     // workaround for Monaco Editor not finding index.ts inside folders:
     'zapatos/src.ts': `
       export * from './src/index';`,
@@ -187,7 +187,7 @@ import { JSDOM } from 'jsdom';
         ${ts?.match(/^\s*import\b/m) ? '' : `
           import * as db from './zapatos/src';
           import * as s from './zapatos/schema';
-          import { pool } from './pgPool';
+          import pool from './pgPool';
         `}
 
         /* original script begins */
@@ -268,7 +268,7 @@ import { JSDOM } from 'jsdom';
       (script?.match(/\bs[.]/) ?
         `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> s <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/schema'</span>;\n` : '') +
       (script?.match(/\bpool\b/) ?
-        `<span class="hljs-keyword">import</span> { pool } <span class="hljs-keyword">from</span> <span class="hljs-string">'./pgPool'</span>;\n` : '') +
+        `<span class="hljs-keyword">import</span> pool <span class="hljs-keyword">from</span> <span class="hljs-string">'./pgPool'</span>;\n` : '') +
       '</code>'
     );
 

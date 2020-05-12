@@ -16,7 +16,7 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
-import { pool } from './pgPool';
+import pool from './pgPool';
 /* original script begins */
 const [accountA, accountB] = await db.insert('bankAccounts', [{ balance: 50 }, { balance: 50 }]).run(pool);
 const transferMoney = (sendingAccountId, receivingAccountId, amount) => db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([

@@ -16,7 +16,7 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
-import { pool } from './pgPool';
+import pool from './pgPool';
 /* original script begins */
 const title = 'Northern Lights', books = await db.sql `
     SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);

@@ -16,7 +16,7 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
-import { pool } from './pgPool';
+import pool from './pgPool';
 /* original script begins */
 function dbNowQuery() {
     const query = db.sql `SELECT now()`;

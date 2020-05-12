@@ -16,7 +16,7 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
-import { pool } from './pgPool';
+import pool from './pgPool';
 const query = db.sql `
   SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
   FROM ${"books"} JOIN ${"authors"} 
