@@ -2,9 +2,10 @@
 
 # <b>Zap<span class="extra-vowels a">a</span>t<span class="extra-vowels o">o</span>s:</b> <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
 
+
 ## What does it do?
 
-[Postgres](https://www.postgresql.org/) and [TypeScript](https://www.typescriptlang.org/) are independently awesome. Zapatos is a library that aims to make them awesome together. 
+[Postgres](https://www.postgresql.org/) and [TypeScript](https://www.typescriptlang.org/) are both awesome. Zapatos is a library that aims to make it awesome to use them together.
 
 To achieve that, it does these five things:
 
@@ -558,7 +559,7 @@ Within `select`, `selectOne` or `count` queries passed as subqueries to the `lat
 
 You can [interpolate them](#sql-template-strings) into other `sql` tagged template strings, or call/access the following properties on them:
 
-=> core.ts async run(queryable: Queryable): Promise<RunResult> {
+=> core.ts run = async (queryable: Queryable): Promise<RunResult> => {
 
 #### `async run(queryable: Queryable): Promise<RunResult>`
 
@@ -574,7 +575,7 @@ Taking that one step at a a time:
 
 Examples of the `run` function are scattered throughout this documentation.
 
-=> core.ts compile(result: SQLQuery = { text: '', values: [] }, parentTable?: string, currentColumn?: Column) {
+=> core.ts compile = (result: SQLQuery = { text: '', values: [] }, parentTable?: string, currentColumn?: Column) => {
 
 #### `compile(): SQLQuery`
 

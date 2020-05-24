@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "",
   "scripts": {
-    "updateSchema": "npx zapatos",
     "compile": "tsc; node ./bin/compile-docs.js"
   },
   "author": "George MacKerron",

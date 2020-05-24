@@ -98,6 +98,7 @@ import { JSDOM } from 'jsdom';
       <head>
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Zapatos: Docs</title>
+        <meta name="google-site-verification" content="tN1ANkxDkpFanVNXNfGs0pOFnDVAZH6tkBCRW2fkV8I" />
         <!-- tocbot -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css">
