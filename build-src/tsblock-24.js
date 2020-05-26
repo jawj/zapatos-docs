@@ -22,12 +22,12 @@ const newTransactions = [{
         environment: 'PROD',
         originalTransactionId: '123456',
         accountId: 123,
-        latestReceiptData: "TWFuIGlzIGRpc3Rp",
+        latestReceiptData: 'TWFuIGlzIGRpc3Rp',
     }, {
         environment: 'PROD',
         originalTransactionId: '234567',
         accountId: 234,
-        latestReceiptData: "bmd1aXNoZWQsIG5v",
-    }], result = await db.upsert("appleTransactions", newTransactions, ["environment", "originalTransactionId"]).run(pool);
+        latestReceiptData: 'bmd1aXNoZWQsIG5v',
+    }], result = await db.upsert('appleTransactions', newTransactions, ['environment', 'originalTransactionId']).run(pool);
 /* original script ends */
 await pool.end();

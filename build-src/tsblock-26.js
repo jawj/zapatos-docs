@@ -18,6 +18,6 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import pool from './pgPool';
 /* original script begins */
-await db.truncate('bankAccounts').run(pool);
+await db.deletes('books', { title: 'Holes' }).run(pool);
 /* original script ends */
 await pool.end();

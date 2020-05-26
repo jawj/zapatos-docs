@@ -23,7 +23,7 @@
         
 
         /* original script begins */
-        await db.truncate('bankAccounts').run(pool);
+        await db.deletes('books', { title: 'Holes' }).run(pool);
 
         /* original script ends */
 

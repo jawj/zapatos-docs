@@ -777,16 +777,17 @@ await db.update("emailAuthentication", {
 ```typescript:norun
 interface UpsertAction { $action: 'INSERT' | 'UPDATE'; }
 type UpsertReturnableForTable<T extends Table> = JSONSelectableForTable<T> & UpsertAction;
+type UpsertConflictTargetForTable<T extends Table> = Constraint<T> | ColumnForTable<T> | ColumnForTable<T>[];
 
 interface UpsertSignatures {
-  <T extends Table>(table: T, values: InsertableForTable<T>, uniqueCols: ColumnForTable<T> | ColumnForTable<T>[], noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>>;
-  <T extends Table>(table: T, values: InsertableForTable<T>[], uniqueCols: ColumnForTable<T> | ColumnForTable<T>[], noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>[]>;
+  <T extends Table>(table: T, values: InsertableForTable<T>, conflictTarget: UpsertConflictTargetForTable<T>, noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>>;
+  <T extends Table>(table: T, values: InsertableForTable<T>[], conflictTarget: UpsertConflictTargetForTable<T>, noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>[]>;
 }
 ```
 
 The `upsert` shortcut issues an [`INSERT ... ON CONFLICT ... DO UPDATE`](https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT) query. Like `insert`, it takes a `Table` name and a corresponding `Insertable` or `Insertable[]`. 
 
-It then takes, in addition, an appropriate column name or array of column names as the 'arbiter index(es)' on which a conflict is to be detected. Optionally, it can also take a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+It then takes, in addition, a column name (or an array thereof) or an appropriate unique index as the conflict target: the 'arbiter index(es)' on which a conflict is to be detected. Optionally, it can also take a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
 
 It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row.
 
@@ -799,7 +800,7 @@ CREATE TABLE "appleTransactions"
 , "accountId" INTEGER REFERENCES "accounts"("id") NOT NULL
 , "latestReceiptData" TEXT );
 
-ALTER TABLE "appleTransactions" ADD CONSTRAINT "appleTransPKey" 
+ALTER TABLE "appleTransactions" ADD CONSTRAINT "appleTransactionsPrimaryKey" 
   PRIMARY KEY ("environment", "originalTransactionId");
 ```
 
@@ -813,16 +814,31 @@ const
     environment: 'PROD',
     originalTransactionId: '123456',
     accountId: 123,
-    latestReceiptData: "TWFuIGlzIGRpc3Rp",
+    latestReceiptData: 'TWFuIGlzIGRpc3Rp',
   }, {
     environment: 'PROD',
     originalTransactionId: '234567',
     accountId: 234,
-    latestReceiptData: "bmd1aXNoZWQsIG5v",
+    latestReceiptData: 'bmd1aXNoZWQsIG5v',
   }],
-  result = await db.upsert("appleTransactions", newTransactions, 
-    ["environment", "originalTransactionId"]).run(pool);
+  result = await db.upsert('appleTransactions', newTransactions, 
+    ['environment', 'originalTransactionId']).run(pool);
 ```
+
+And it's wholly equivalent here to use the unique index name instead of the column names for the conflict target, by using the `constraint` wrapper function:
+
+```typescript
+const 
+  anotherNewTransaction: s.appleTransactions.Insertable = {
+    environment: 'PROD',
+    originalTransactionId: '345678',
+    accountId: 345,
+    latestReceiptData: 'lALvEleO4Ehwk3T5',
+  },
+  result = await db.upsert('appleTransactions', anotherNewTransaction, 
+    db.constraint('appleTransactionsPrimaryKey')).run(pool);
+```
+
 
 => shortcuts.ts /* === delete === */
 

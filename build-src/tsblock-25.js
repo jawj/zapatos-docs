@@ -18,6 +18,11 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import pool from './pgPool';
 /* original script begins */
-await db.deletes('books', { title: 'Holes' }).run(pool);
+const anotherNewTransaction = {
+    environment: 'PROD',
+    originalTransactionId: '345678',
+    accountId: 345,
+    latestReceiptData: 'lALvEleO4Ehwk3T5',
+}, result = await db.upsert('appleTransactions', anotherNewTransaction, db.constraint('appleTransactionsPrimaryKey')).run(pool);
 /* original script ends */
 await pool.end();

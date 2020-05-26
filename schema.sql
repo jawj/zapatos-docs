@@ -38,7 +38,7 @@ CREATE TABLE "appleTransactions"
 );
 
 ALTER TABLE "appleTransactions" 
-  ADD CONSTRAINT "appleTransPKey" 
+  ADD CONSTRAINT "appleTransactionsPrimaryKey" 
   PRIMARY KEY ("environment", "originalTransactionId");
 
 CREATE TABLE "employees"
