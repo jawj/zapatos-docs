@@ -16,18 +16,17 @@
     "highlight.js": "^10.0.3",
     "jsdom": "^16.2.2",
     "markdown-it": "^11.0.0",
-    "markdown-it-github-headings": "^2.0.0",
     "monaco-editor": "^0.20.0",
     "pg": "^8.2.1",
     "pg-native": "^3.0.0",
     "ts-node": "^8.10.1",
-    "typescript": "^3.9.3",
-    "zapatos": "^0.1.33"
+    "typescript": "^3.9.3"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^3.0.1",
     "@typescript-eslint/parser": "^3.0.1",
     "eslint": "^7.1.0",
-    "eslint-config-prettier": "^6.11.0"
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.20.2"
   }
 }

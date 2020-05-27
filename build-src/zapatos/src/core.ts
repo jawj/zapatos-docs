@@ -7,10 +7,7 @@ Copyright (C) 2020 George MacKerron
 Released under the MIT licence: see LICENCE file
 */
 
-/* tslint:disable */
-
 import type * as pg from 'pg';
-import type { TxnClient } from './transaction';
 import type {
   Updatable,
   Whereable,
@@ -114,7 +111,7 @@ export type GenericSQLExpression = SQLFragment<any> | Parameter | DefaultType | 
 export type SQLExpression = Table | ColumnNames<Updatable | (keyof Updatable)[]> | ColumnValues<Updatable> | Whereable | Column | GenericSQLExpression;
 export type SQL = SQLExpression | SQLExpression[];
 
-export type Queryable = pg.Pool | TxnClient<any>;
+export type Queryable = pg.ClientBase | pg.Pool;
 
 
 // === SQL tagged template strings ===
