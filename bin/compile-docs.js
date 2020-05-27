@@ -53,7 +53,7 @@ var MarkdownIt = require("markdown-it");
 var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
-(function () { return __awaiter(void 0, void 0, void 0, function () {
+void (function () { return __awaiter(void 0, void 0, void 0, function () {
     var tmpdb, dbEnv, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_a) {
         tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, '');
@@ -216,7 +216,8 @@ var jsdom_1 = require("jsdom");
             var lines = code.innerHTML.trim().split('\n'), tagStack = [], 
             // here, we're closing any open spans at the end of a line, and reopening them on the next line ...
             mangledLines = lines.map(function (line) {
-                var re = /<[/]?span[^>]*>/g, openingSpans = tagStack.join(''), m;
+                var re = /<[/]?span[^>]*>/g, openingSpans = tagStack.join('');
+                var m;
                 while (m = re.exec(line)) {
                     if (m[0] == '</span>')
                         tagStack.pop();

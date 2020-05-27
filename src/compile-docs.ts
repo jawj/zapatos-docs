@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
 import * as hljs from 'highlight.js';
 import { JSDOM } from 'jsdom';
 
-(async () => {
+void (async () => {
 
   const tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`;
   const dbEnv = { ...process.env, ZDBNAME: tmpdb };
@@ -29,7 +29,7 @@ import { JSDOM } from 'jsdom';
       fs.readdirSync(node).reduce<string[]>((memo, n) =>
         memo.concat(recurseNodes(path.join(node, n))), []);
 
-  const all = recurseNodes('./build-src/zapatos').reduce<{ [k: string]: string; }>((memo, p) => {
+  const all = recurseNodes('./build-src/zapatos').reduce<{ [k: string]: string }>((memo, p) => {
     const localPath = p.replace(/^build-src[/]/, '');
     memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
     return memo;
@@ -220,7 +220,7 @@ import { JSDOM } from 'jsdom';
       } catch (err) {  // https://github.com/darold/pgFormatter/issues/183
         return sql.trim();
       }
-    }
+    };
 
   runnableTags.forEach((runnableTag, i) => {
     console.info(`Running script block ${i} ...`);
@@ -258,7 +258,7 @@ import { JSDOM } from 'jsdom';
           if (logs) output += `<pre class="console"><code>${logs}</code></pre>\n`;
         }
       }
-      output += '</div>'
+      output += '</div>';
       runnableTag.insertAdjacentHTML('afterend', output);
     }
 
@@ -279,25 +279,26 @@ import { JSDOM } from 'jsdom';
 
   console.info(`Wrapping code for nicely indented line breaks ...`);
   Array.from(content!.querySelectorAll('pre code')).forEach(function (code) {
-    var
+    const
       lines = code.innerHTML.trim().split('\n'),
       tagStack: string[] = [],
 
       // here, we're closing any open spans at the end of a line, and reopening them on the next line ...
       mangledLines = lines.map(function (line) {
-        var
+        const
           re = /<[/]?span[^>]*>/g,
-          openingSpans = tagStack.join(''),
-          m;
+          openingSpans = tagStack.join('');
+
+        let m;
         while (m = re.exec(line)) {
           if (m[0] == '</span>') tagStack.pop();
           else tagStack.push(m[0]);
         }
-        var closingSpans = '';
+        let closingSpans = '';
         for (var i = 0; i < tagStack.length; i++) closingSpans += '</span>';
 
         // ... so that we can then wrap the line in a new span that causes it to wrap with indent
-        var wrapIndent = line.replace(/<[^<]+>/g, '').match(/^\s*/)![0].length + 4;
+        const wrapIndent = line.replace(/<[^<]+>/g, '').match(/^\s*/)![0].length + 4;
 
         return '<span class="indent-line" style="padding-left: ' + wrapIndent + 'ch; text-indent: -' + wrapIndent + 'ch;">' +
           openingSpans + line + closingSpans +

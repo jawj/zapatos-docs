@@ -11,7 +11,7 @@ Released under the MIT licence: see LICENCE file
 
 export interface Config {
   transactionAttemptsMax: number;
-  transactionRetryDelay: { minMs: number, maxMs: number };
+  transactionRetryDelay: { minMs: number; maxMs: number };
   queryListener?(str: any): void;
   resultListener?(str: any): void;
   transactionListener?(str: any): void;

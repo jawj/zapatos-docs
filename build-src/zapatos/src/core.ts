@@ -10,8 +10,8 @@ Released under the MIT licence: see LICENCE file
 /* tslint:disable */
 
 import type * as pg from 'pg';
-
-import {
+import type { TxnClient } from './transaction';
+import type {
   Updatable,
   Whereable,
   Table,
@@ -19,7 +19,6 @@ import {
 } from '../schema';
 
 import { getConfig } from './config';
-import { TxnClient } from './transaction';
 
 
 // === symbols, types, wrapper classes and shortcuts ===
@@ -170,7 +169,7 @@ export class SQLFragment<RunResult = pg.QueryResult['rows']> {
     if (config.resultListener) config.resultListener(result);
 
     return result;
-  }
+  };
 
   /**
    * Compile this query, returning a `{ text: string, values: any[] }` object that could 
@@ -186,7 +185,7 @@ export class SQLFragment<RunResult = pg.QueryResult['rows']> {
       result.text += this.literals[i];
     }
     return result;
-  }
+  };
 
   compileExpression = (expression: SQL, result: SQLQuery = { text: '', values: [] }, parentTable?: string, currentColumn?: Column) => {
     if (this.parentTable) parentTable = this.parentTable;
@@ -280,7 +279,7 @@ export class SQLFragment<RunResult = pg.QueryResult['rows']> {
     } else {
       throw new Error(`Alien object while interpolating SQL: ${expression}`);
     }
-  }
+  };
 }
 
 
