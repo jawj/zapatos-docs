@@ -97,7 +97,6 @@ void (async () => {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>Zapatos: Docs</title>
         <meta name="google-site-verification" content="tN1ANkxDkpFanVNXNfGs0pOFnDVAZH6tkBCRW2fkV8I" />
         <!-- tocbot -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js"></script>
@@ -128,6 +127,9 @@ void (async () => {
   const
     dom = new JSDOM(html),
     document = dom.window.document;
+
+  console.info('Adding title ...');
+  document.head.insertAdjacentHTML('beforeend', `<title>${document.querySelector('h1')!.textContent}</title>`);
 
   console.info('Adding id attributes to headings...');
 

@@ -3,13 +3,16 @@
 # <b>Zap<span class="extra-vowels a">a</span>t<span class="extra-vowels o">o</span>s:</b> <br><span style="font-weight: normal;">Zero-Abstraction Postgres for TypeScript</span>
 
 
+[Postgres](https://www.postgresql.org/) and [TypeScript](https://www.typescriptlang.org/) are each, individually, fabulous. 
+
+Zapatos aims to make them work beautifully together. No abstractions, no distractions: just your database, with type safety.
+
+
 ## What does it do?
 
-[Postgres](https://www.postgresql.org/) and [TypeScript](https://www.typescriptlang.org/) are both awesome. Zapatos is a library that aims to make it awesome to use them together.
+To achieve this aim, Zapatos does these five things:
 
-To achieve that, it does these five things:
-
-* **Typescript schema** &nbsp; A command-line tool speaks to your Postgres database and writes up a detailed TypeScript schema for every table. This enables the next three things in this list. [Show me »](#typescript-schema)
+* **Typescript schema** &nbsp; A command-line tool speaks to your Postgres database and writes up a detailed TypeScript schema for every table. This is just a means to an end: it enables the next three things in this list. [Show me »](#typescript-schema)
 
 * **Arbitrary SQL** &nbsp; Simple building blocks help you write arbitrary SQL using [tagged templates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#Tagged_templates), and manually apply the right types to what goes in and what comes back. [Show me »](#arbitrary-sql)
 
@@ -63,9 +66,9 @@ The types are, I hope, pretty self-explanatory. `authors.Selectable` is what I'l
 
 ```typescript:norun
 export type SelectableForTable<T extends Table> = {
-  authors: authors.Selectable,
-  books: books.Selectable,
-  tags: tags.Selectable,
+  authors: authors.Selectable;
+  books: books.Selectable;
+  tags: tags.Selectable;
   /* ... */
 }[T];
 ```
@@ -90,7 +93,9 @@ const
     .run(pool);
 ```
 
-We've applied the appropriate type to the object we're trying to insert (`s.authors.Insertable`), giving us type-checking and autocompletion on that object. And we've specified both which types are allowed as interpolated values in the template string (`s.authors.SQL`) and what type is going to be returned (`s.authors.Selectable[]`) when the query runs.
+We apply the appropriate type to the object we're trying to insert (`s.authors.Insertable`), giving us type-checking and autocompletion on that object. And we specify both which types are allowed as interpolated values in the template string (`s.authors.SQL`) and what type is going to be returned (`s.authors.Selectable[]`) when the query runs.
+
+We also use the [`cols` and `vals` helper functions](#cols-and-vals). These compile, respectively, to the object's keys (which are the column names) and query placeholders (`$1`, `$2`, ...) for the corresponding values. 
 
 _You can click 'Explore types' above to open the code in an embedded Monaco (VS Code) editor, so you can check those typings for yourself._ 
 
@@ -145,7 +150,7 @@ CREATE TABLE "tags"
 CREATE UNIQUE INDEX "tagsUniqueIdx" ON "tags"("tag", "bookId");
 ```
 
-Now, let's say I want to show a list of books, each with its (one) author and (many) associated tags. We could knock up a manual query for this, of course, but it gets quite hairy. The `select` shortcut has an option called `lateral` that can nest other `select` queries and do it for us. 
+Now, let's say I want to show a list of books, each with its (one) author and (many) associated tags. We could knock up a manual query for this, of course, but [it gets quite hairy](#manual-joins-using-postgres-json-features). The `select` shortcut has an option called `lateral` that can nest other `select` queries and do it for us. 
 
 Let's try it:
 
@@ -221,9 +226,9 @@ It is a truth universally acknowledged that [ORMs aren't very good](https://en.w
 
 I like SQL, and Postgres especially. In my experience, abstractions that obscure the underlying SQL, or that prioritise ease of switching to another database tomorrow over effective use of _this_ database _today_, are a source of misery.
 
-I've also come to love strongly typed languages, and TypeScript in particular. VS Code's type checking and autocomplete speed development, prevent bugs, and simplify refactoring. Especially when they _just happen_, they bring joy.
+I've also come to love strongly typed languages, and TypeScript in particular. VS Code's type checking and autocomplete speed development, prevent bugs, and simplify refactoring. Especially when they _just happen_, they bring joy. But, traditionally, talking to the database is a place where they really don't _just happen_.
 
-Zapatos aims to minimise the misery of abstraction, intensify the joy of type inference, and represent a credible alternative to traditional ORMs.
+Zapatos aims to minimise the misery of abstraction, intensify the pleasures of type inference, and represent a credible alternative to traditional ORMs.
 
 
 ### What doesn't it do?
@@ -248,9 +253,9 @@ Zapatos provides a command line tool, which is run like so:
 
 This generates the TypeScript schema for your database in a folder named `zapatos/schema.ts`, and copies (or symlinks) the Zapatos source files into `zapatos/src`. 
 
-**You *must* import the Zapatos source files from this copied/symlinked `zapatos/src` directory, *not* `from 'zapatos'` in the usual way (which would find them in `node_modules`).**
+**You *must* import the Zapatos source files from this copied/symlinked directory, e.g. `from './zapatos/src'` , and *not* `from 'zapatos'` in the usual way (which would find them in `node_modules`).**
 
-That's because the source files depend on importing your custom, Zapatos-generated `schema.ts`, which they cannot do if they're imported in the usual way.
+That's because the source files depend on importing your custom, Zapatos-generated `schema.ts`, which they cannot do if they're imported direct from `node_modules` in the usual way.
 
 Of course, before you can run `npx zapatos`, you need to install and configure it.
 
@@ -333,12 +338,13 @@ This is likely most useful for the database connection details. For example, on 
 }
 ```
 
-#### `tslint`
+#### ESLint / tslint
 
-One general configuration suggestion: set up [tslint](https://palantir.github.io/tslint/) with the [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/) rules to avoid Promise-related pitfalls.
+One general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules `@typescript-eslint/await-thenable` and `@typescript-eslint/no-floating-promises` (or [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid `Promise`-related pitfalls.
 
 
 ## User guide
+
 
 => core.ts // === SQL tagged template strings ===
 
@@ -414,7 +420,7 @@ const
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 ```
 
-If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-parameter), and in certain other places. If in doubt, check whether the generated SQL is using `$1`, `$2`, ... parameters).
+If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-parameter), and in certain other places. If you're in any doubt, check whether the generated SQL is using `$1`, `$2`, ... parameters).
 
 
 #### `cols()` and `vals()`
@@ -1298,7 +1304,12 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 You might use one or more of the three listener functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
 
 
-## Metadata
+## About Zapatos
+
+### Alternatives
+
+If you're interested in Zapatos, you might also want to consider [Prisma](https://www.prisma.io/), [Mammoth](https://github.com/Ff00ff/mammoth), and [PgTyped](https://github.com/adelsz/pgtyped).
+
 
 ### This documentation
 
