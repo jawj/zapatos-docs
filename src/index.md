@@ -1064,7 +1064,7 @@ You'll note the use of the `parent` function to refer to a join column in the ta
 { authorId: sql`${"authors"}.${"id"}` }
 ```
 
-We can also nest `count` and `selectOne` calls, as you might expect. And we can join a table to itself, though in this case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity:
+We can also nest `count` and `selectOne` calls, as you might expect. And we can join a table to itself, though in this case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity.
 
 Take this new, self-referencing table:
 
@@ -1203,7 +1203,7 @@ As is implied above, for `REPEATABLE READ` or `SYNCHRONIZED` isolation modes the
 
 We already saw [one `transaction` example](#transactions). Here's another, adapted from [CockroachDB's write-up on `SERIALIZABLE`](https://www.cockroachlabs.com/docs/stable/demo-serializable.html).
 
-We have a table of `doctors`, and one of their assigned `shifts`.
+We have a table of `doctors`, and a table of their assigned `shifts`.
 
 ```sql
 CREATE TABLE "doctors"
@@ -1306,10 +1306,6 @@ You might use one or more of the three listener functions to implement logging. 
 
 ## About Zapatos
 
-### Alternatives
-
-If you're interested in Zapatos, you might also want to consider [Prisma](https://www.prisma.io/), [Mammoth](https://github.com/Ff00ff/mammoth), and [PgTyped](https://github.com/adelsz/pgtyped).
-
 
 ### This documentation
 
@@ -1334,6 +1330,11 @@ Some nice-to-haves would include:
 * **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in generated types and the shortcut functions that make use of them.
 
 * **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](http://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
+
+
+### Alternatives
+
+If you're interested in Zapatos, you might also want to consider [Prisma](https://www.prisma.io/), [Mammoth](https://github.com/Ff00ff/mammoth), and [PgTyped](https://github.com/adelsz/pgtyped).
 
 
 ### Licence
