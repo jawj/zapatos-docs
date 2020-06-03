@@ -11,7 +11,7 @@ import { completeKeysWithDefault, mapWithSeparator } from './utils';
 /**
  * Generate an `INSERT` query `SQLFragment`.
  * @param table The table into which to insert
- * @param values The `Insertable` values (or array thereof) to be inserted
+ * @param values The `Insertable` values (or array thereof) to be inserted
  */
 export const insert = function (table, values) {
     const completedValues = Array.isArray(values) ? completeKeysWithDefault(values) : values, colsSQL = cols(Array.isArray(completedValues) ? completedValues[0] : completedValues), valuesSQL = Array.isArray(completedValues) ?
@@ -40,7 +40,7 @@ export function constraint(x) { return new Constraint(x); }
 /**
  * Generate an 'upsert' (`INSERT ... ON CONFLICT ...`) query `SQLFragment`.
  * @param table The table to update or insert into
- * @param values An `Insertable` of values (or an array thereof) to be inserted or updated
+ * @param values An `Insertable` of values (or an array thereof) to be inserted or updated
  * @param conflictTarget A `UNIQUE` index or `UNIQUE`-indexed column (or array thereof) that determines
  * whether this is an `UPDATE` (when there's a matching existing value) or an `INSERT`
  * (when there isn't)
@@ -114,9 +114,9 @@ export var SelectResultMode;
  * @param where A `Whereable` or `SQLFragment` defining the rows to be selected, or `all`
  * @param options Options object. Keys (all optional) are:
  * * `columns` — an array of column names: only these columns will be returned
- * * `order` — an array of `OrderSpec` objects, such as `{ by: 'column', direction: 'ASC'
+ * * `order` – an array of `OrderSpec` objects, such as `{ by: 'column', direction: 'ASC'
  * }`
- * * `limit` and `offset` — numbers: apply this limit and offset to the query
+ * * `limit` and `offset` – numbers: apply this limit and offset to the query
  * * `lateral` — an object mapping key(s) to nested `select`/`selectOne`/`count` queries
  * to be `LATERAL JOIN`ed
  * * `alias` — table alias (string): required if using `lateral` to join a table to itself

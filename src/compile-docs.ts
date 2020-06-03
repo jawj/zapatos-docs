@@ -142,7 +142,7 @@ void (async () => {
     headings = content!.querySelectorAll('h1, h2, h3, h4, h5'),
     headingMap: { [k: string]: number } = {};
 
-  headings.forEach((heading, i) => {
+  headings.forEach(heading => {
     let id = heading.id ? heading.id : heading.textContent!
       .trim().toLowerCase()
       .split(/\s+/).join('-')
