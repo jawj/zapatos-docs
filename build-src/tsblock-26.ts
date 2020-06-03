@@ -22,10 +22,15 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         await db.deletes('books', { title: 'Holes' }).run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

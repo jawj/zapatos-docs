@@ -17,7 +17,13 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);
-/* original script ends */
+try {
+    /* original script begins */
+    await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

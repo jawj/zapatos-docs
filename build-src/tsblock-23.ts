@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         await db.update("emailAuthentication", { 
   consecutiveFailedLogins: db.sql`${db.self} + 1`,
@@ -29,6 +30,10 @@
 }, { email: 'me@privacy.net' }).run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

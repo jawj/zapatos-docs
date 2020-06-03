@@ -22,11 +22,16 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const title = await db.sql`
   SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

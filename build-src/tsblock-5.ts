@@ -22,11 +22,16 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
   SELECT * FROM ${"authors"}`.run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

@@ -17,26 +17,32 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const 
-// insert one
-steve = await db.insert('authors', {
-    name: 'Steven Hawking',
-    isLiving: false,
-}).run(pool), 
-// insert many
-[time, me] = await db.insert('books', [{
-        authorId: steve.id,
-        title: 'A Brief History of Time',
-        createdAt: db.sql `now()`,
-    }, {
-        authorId: steve.id,
-        title: 'My Brief History',
-        createdAt: db.sql `now()`,
-    }]).run(pool), tags = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-]).run(pool);
-/* original script ends */
+try {
+    /* original script begins */
+    const 
+    // insert one
+    steve = await db.insert('authors', {
+        name: 'Steven Hawking',
+        isLiving: false,
+    }).run(pool), 
+    // insert many
+    [time, me] = await db.insert('books', [{
+            authorId: steve.id,
+            title: 'A Brief History of Time',
+            createdAt: db.sql `now()`,
+        }, {
+            authorId: steve.id,
+            title: 'My Brief History',
+            createdAt: db.sql `now()`,
+        }]).run(pool), tags = await db.insert('tags', [
+        { bookId: time.id, tag: 'physics' },
+        { bookId: me.id, tag: 'physicist' },
+        { bookId: me.id, tag: 'autobiography' },
+    ]).run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

@@ -17,13 +17,19 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const author = {
-    name: 'Gabriel Garcia Marquez',
-    isLiving: false,
-}, [insertedAuthor] = await db.sql `
+try {
+    /* original script begins */
+    const author = {
+        name: 'Gabriel Garcia Marquez',
+        isLiving: false,
+    }, [insertedAuthor] = await db.sql `
       INSERT INTO ${"authors"} (${db.cols(author)})
       VALUES (${db.vals(author)}) RETURNING *`
-    .run(pool);
-/* original script ends */
+        .run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

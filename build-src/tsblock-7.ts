@@ -22,10 +22,15 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const [{ random }] = await db.sql`SELECT random()`.run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

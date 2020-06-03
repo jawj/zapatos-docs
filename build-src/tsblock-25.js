@@ -17,12 +17,18 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const anotherNewTransaction = {
-    environment: 'PROD',
-    originalTransactionId: '345678',
-    accountId: 345,
-    latestReceiptData: 'lALvEleO4Ehwk3T5',
-}, result = await db.upsert('appleTransactions', anotherNewTransaction, db.constraint('appleTransactionsPrimaryKey')).run(pool);
-/* original script ends */
+try {
+    /* original script begins */
+    const anotherNewTransaction = {
+        environment: 'PROD',
+        originalTransactionId: '345678',
+        accountId: 345,
+        latestReceiptData: 'lALvEleO4Ehwk3T5',
+    }, result = await db.upsert('appleTransactions', anotherNewTransaction, db.constraint('appleTransactionsPrimaryKey')).run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

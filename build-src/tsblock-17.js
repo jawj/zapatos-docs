@@ -17,13 +17,19 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-function dbNowQuery() {
-    const query = db.sql `SELECT now()`;
-    query.runResultTransform = qr => qr.rows[0].now;
-    return query;
+try {
+    /* original script begins */
+    function dbNowQuery() {
+        const query = db.sql `SELECT now()`;
+        query.runResultTransform = qr => qr.rows[0].now;
+        return query;
+    }
+    const dbNow = await dbNowQuery().run(pool);
+    // dbNow is a Date: the result you can toggle below has come via JSON.stringify
+    /* original script ends */
 }
-const dbNow = await dbNowQuery().run(pool);
-// dbNow is a Date: the result you can toggle below has come via JSON.stringify
-/* original script ends */
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

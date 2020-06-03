@@ -17,11 +17,17 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const titleLike = `Northern%`, books = await db.sql `
+try {
+    /* original script begins */
+    const titleLike = `Northern%`, books = await db.sql `
     SELECT * FROM ${"books"} WHERE ${{
-    title: db.sql `${db.self} LIKE ${db.param(titleLike)}`,
-    createdAt: db.sql `${db.self} > now() - INTERVAL '7 days'`,
-}}`.run(pool);
-/* original script ends */
+        title: db.sql `${db.self} LIKE ${db.param(titleLike)}`,
+        createdAt: db.sql `${db.self} > now() - INTERVAL '7 days'`,
+    }}`.run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

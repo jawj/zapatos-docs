@@ -17,11 +17,17 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-const query = db.sql `
+try {
+    const query = db.sql `
   SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
   FROM ${"authors"} JOIN ${"books"} 
   ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
   GROUP BY ${"authors"}.${"id"}`;
-const authorBooks = await query.run(pool);
-/* original script ends */
+    const authorBooks = await query.run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

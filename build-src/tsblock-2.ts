@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const bookAuthorTags = await db.select('books', db.all, {
   lateral: {
@@ -31,6 +32,10 @@
 }).run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

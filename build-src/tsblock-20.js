@@ -17,13 +17,19 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-const query = db.sql `
+try {
+    const query = db.sql `
   SELECT ${"authors"}.*, bq.* 
   FROM ${"authors"} LEFT JOIN LATERAL (
     SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
     FROM ${"books"}
     WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
   ) bq ON true`;
-const authorBooks = await query.run(pool);
-/* original script ends */
+    const authorBooks = await query.run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

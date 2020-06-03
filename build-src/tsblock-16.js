@@ -17,10 +17,16 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const authorId = 12, // from some untrusted source
-query = db.sql `
+try {
+    /* original script begins */
+    const authorId = 12, // from some untrusted source
+    query = db.sql `
     SELECT * FROM ${"books"} WHERE ${{ authorId }}`, compiled = query.compile();
-console.log(compiled);
-/* original script ends */
+    console.log(compiled);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

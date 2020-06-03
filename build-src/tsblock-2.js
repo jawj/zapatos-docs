@@ -17,12 +17,18 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const bookAuthorTags = await db.select('books', db.all, {
-    lateral: {
-        author: db.selectOne('authors', { id: db.parent('authorId') }),
-        tags: db.select('tags', { bookId: db.parent('id') }),
-    }
-}).run(pool);
-/* original script ends */
+try {
+    /* original script begins */
+    const bookAuthorTags = await db.select('books', db.all, {
+        lateral: {
+            author: db.selectOne('authors', { id: db.parent('authorId') }),
+            tags: db.select('tags', { bookId: db.parent('id') }),
+        }
+    }).run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();

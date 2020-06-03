@@ -890,7 +890,7 @@ await db.truncate('bankAccounts').run(pool);
 One context in which this may be useful is in emptying a testing database at the start of each test run. Zapatos provides an `AllTables` type to help you ensure that you've listed all your tables:
 
 ```typescript:noresult
-export const allTables: s.AllTables = [
+const allTables: s.AllTables = [
   'appleTransactions', 
   'authors', 
   'bankAccounts', 

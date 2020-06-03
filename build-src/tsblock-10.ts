@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const 
   nameSubmittedByUser = 'books"; DROP TABLE "authors"; --',
@@ -29,6 +30,10 @@
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

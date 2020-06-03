@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const 
   newTransactions: s.appleTransactions.Insertable[] = [{
@@ -39,6 +40,10 @@
     ['environment', 'originalTransactionId']).run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

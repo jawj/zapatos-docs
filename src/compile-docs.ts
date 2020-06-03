@@ -11,19 +11,25 @@ void (async () => {
   const tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`;
   const dbEnv = { ...process.env, ZDBNAME: tmpdb };
 
+
   console.info('Creating temporary DB...');
+
   execSync(`createdb ${tmpdb}`);
   execSync(`psql ${tmpdb} < schema.sql`);
 
+
   console.info('Running Zapatos ...');
+
   execSync(`npx zapatos`, { env: dbEnv });
 
-  // --- Monaco editor and Zapatos file bundle for it ---
 
   console.info('Copying Monaco editor ...');
+
   execSync(`cp -r ./node_modules/monaco-editor/min ./web/monaco`);
 
-  console.info('Bundling zapatos source for Monaco ...');
+
+  console.info('Bundling Zapatos source for Monaco ...');
+
   const recurseNodes = (node: string): string[] =>
     fs.statSync(node).isFile() ? [node] :
       fs.readdirSync(node).reduce<string[]>((memo, n) =>
@@ -54,27 +60,27 @@ void (async () => {
 
   fs.writeFileSync('./web/zapatos-bundle.js', `const zapatosBundle = ${JSON.stringify(all)};`);
 
-  // --- add source code links ---
 
   console.info('Adding source code links ...');
+
   const
     rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }),
     src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, (_dummy, srcFileName, targetLine) => {
       const
         srcPath = `./build-src/zapatos/src/${srcFileName}`,
         srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }),
-        targetRegEx = new RegExp('^\\s*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*$', 'm'),
+        targetRegEx = new RegExp('^[\t ]*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '[\t ]*$', 'm'),
         foundAtIndex = srcFile.match(targetRegEx)?.index;
 
       if (foundAtIndex === undefined) throw new Error(`"${targetLine}" not found in ${srcPath}`);
-      const lineNo = srcFile.slice(0, foundAtIndex).split('\n').length + 2;
+      const lineNo = srcFile.slice(0, foundAtIndex + 1).split('\n').length;
 
       return `<div style="height: 1px; clear: both;"></div><div class="src-link"><a href="https://github.com/jawj/zapatos/blob/master/src/${srcFileName}#L${lineNo}">Source code »</a></div>`;
     });
 
-  // --- transform and highlight Markdown ---
 
-  console.info('Transforming Markdown ...');
+  console.info('Transforming Markdown and highlighting code blocks...');
+
   const
     md = new MarkdownIt({
       html: true,
@@ -131,8 +137,11 @@ void (async () => {
     dom = new JSDOM(html),
     document = dom.window.document;
 
+
   console.info('Adding title ...');
+
   document.head.insertAdjacentHTML('beforeend', `<title>${document.querySelector('h1')!.textContent}</title>`);
+
 
   console.info('Adding id attributes to headings...');
 
@@ -155,6 +164,7 @@ void (async () => {
     heading.id = id;
   });
 
+
   console.log('Checking internal links ...');
 
   const links = content!.querySelectorAll('a');
@@ -163,6 +173,7 @@ void (async () => {
     if (href?.charAt(0) !== '#') return;
     if (!content?.querySelector(href)) console.error(` => No link target "${href}"`);
   });
+
 
   console.info('Collecting TypeScript scripts ..');
 
@@ -196,9 +207,14 @@ void (async () => {
           import pool from './pgPool';
         `}
 
+        try {
         /* original script begins */
         ${ts}
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       `;
@@ -206,7 +222,9 @@ void (async () => {
     fs.writeFileSync(`./build-src/tsblock-${i}.ts`, instrumentedTs, { encoding: 'utf8' });
   });
 
+
   console.info('Compiling TypeScript script blocks ..');
+
   try {
     execSync('tsc', { cwd: './build-src', encoding: 'utf8' });
   } catch (err) {
@@ -228,13 +246,12 @@ void (async () => {
     };
 
   runnableTags.forEach((runnableTag, i) => {
-    console.info(`Running script block ${i} ...`);
+    console.info(`- Running script block ${i} ...`);
 
-    const stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
-      { cwd: './build-src', encoding: 'utf8', env: dbEnv });
-    // console.log(stdout);
-
-    const parts = stdout.split(/%{2,}/);
+    const
+      stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
+        { cwd: './build-src', encoding: 'utf8', env: dbEnv }),
+      parts = stdout.split(/%{2,}/);
 
     if (!runnableTag.className.match(/\bnoresult\b/)) {
       let output = '<div class="sqlstuff">\n';
@@ -283,6 +300,7 @@ void (async () => {
 
 
   console.info(`Wrapping code for nicely indented line breaks ...`);
+
   Array.from(content!.querySelectorAll('pre code')).forEach(function (code) {
     const
       lines = code.innerHTML.trim().split('\n'),
@@ -313,10 +331,14 @@ void (async () => {
     code.innerHTML = mangledLines.join('\n');
   });
 
+
   console.info(`Writing HTML ...`);
+
   fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
 
+
   console.info('Dropping temporary DB...');
+
   execSync(`dropdb ${tmpdb}`);
 })();
 

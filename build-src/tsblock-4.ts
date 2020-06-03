@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
@@ -43,6 +44,10 @@ try {
 }
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

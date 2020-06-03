@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         function dbNowQuery() {
   const query = db.sql<never, Date>`SELECT now()`;
@@ -33,6 +34,10 @@ const dbNow = await dbNowQuery().run(pool);
 // dbNow is a Date: the result you can toggle below has come via JSON.stringify
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

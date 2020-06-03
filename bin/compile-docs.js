@@ -63,10 +63,9 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
         child_process_1.execSync("psql " + tmpdb + " < schema.sql");
         console.info('Running Zapatos ...');
         child_process_1.execSync("npx zapatos", { env: dbEnv });
-        // --- Monaco editor and Zapatos file bundle for it ---
         console.info('Copying Monaco editor ...');
         child_process_1.execSync("cp -r ./node_modules/monaco-editor/min ./web/monaco");
-        console.info('Bundling zapatos source for Monaco ...');
+        console.info('Bundling Zapatos source for Monaco ...');
         recurseNodes = function (node) {
             return fs.statSync(node).isFile() ? [node] :
                 fs.readdirSync(node).reduce(function (memo, n) {
@@ -87,18 +86,16 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
             'zapatos/src.ts': "\n      export * from './src/index';",
         });
         fs.writeFileSync('./web/zapatos-bundle.js', "const zapatosBundle = " + JSON.stringify(all) + ";");
-        // --- add source code links ---
         console.info('Adding source code links ...');
         rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }), src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, function (_dummy, srcFileName, targetLine) {
             var _a;
-            var srcPath = "./build-src/zapatos/src/" + srcFileName, srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }), targetRegEx = new RegExp('^\\s*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*$', 'm'), foundAtIndex = (_a = srcFile.match(targetRegEx)) === null || _a === void 0 ? void 0 : _a.index;
+            var srcPath = "./build-src/zapatos/src/" + srcFileName, srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }), targetRegEx = new RegExp('^[\t ]*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '[\t ]*$', 'm'), foundAtIndex = (_a = srcFile.match(targetRegEx)) === null || _a === void 0 ? void 0 : _a.index;
             if (foundAtIndex === undefined)
                 throw new Error("\"" + targetLine + "\" not found in " + srcPath);
-            var lineNo = srcFile.slice(0, foundAtIndex).split('\n').length + 2;
+            var lineNo = srcFile.slice(0, foundAtIndex + 1).split('\n').length;
             return "<div style=\"height: 1px; clear: both;\"></div><div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
         });
-        // --- transform and highlight Markdown ---
-        console.info('Transforming Markdown ...');
+        console.info('Transforming Markdown and highlighting code blocks...');
         md = new MarkdownIt({
             html: true,
             linkify: true,
@@ -121,7 +118,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
         document.head.insertAdjacentHTML('beforeend', "<title>" + document.querySelector('h1').textContent + "</title>");
         console.info('Adding id attributes to headings...');
         maxIdLength = 64, content = document.querySelector('#content'), headings = content.querySelectorAll('h1, h2, h3, h4, h5'), headingMap = {};
-        headings.forEach(function (heading, i) {
+        headings.forEach(function (heading) {
             var id = heading.id ? heading.id : heading.textContent
                 .trim().toLowerCase()
                 .split(/\s+/).join('-')
@@ -146,7 +143,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
         runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
             .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
         runnableTags.forEach(function (runnableTag, i) {
-            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x != null && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any) => {\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import pool from './pgPool';\n        ") + "\n\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n\n        await pool.end();\n      ";
+            var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any) => {\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any) => {\n            if (x != null && !(Array.isArray(x) && x.length === 0)) {\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any) => {\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import pool from './pgPool';\n        ") + "\n\n        try {\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n        } catch(e) {\n          console.log('error: ' + e.message);\n          console.error('  -> error: ' + e.message);\n        }\n\n        await pool.end();\n      ";
             fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
         });
         console.info('Compiling TypeScript script blocks ..');
@@ -169,10 +166,8 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
             }
         };
         runnableTags.forEach(function (runnableTag, i) {
-            console.info("Running script block " + i + " ...");
-            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv });
-            // console.log(stdout);
-            var parts = stdout.split(/%{2,}/);
+            console.info("- Running script block " + i + " ...");
+            var stdout = child_process_1.execSync("node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-" + i + ".js", { cwd: './build-src', encoding: 'utf8', env: dbEnv }), parts = stdout.split(/%{2,}/);
             if (!runnableTag.className.match(/\bnoresult\b/)) {
                 var output = '<div class="sqlstuff">\n';
                 for (var _i = 0, parts_1 = parts; _i < parts_1.length; _i++) {

@@ -22,6 +22,7 @@
           import pool from './pgPool';
         
 
+        try {
         /* original script begins */
         const
   author: s.authors.Insertable = {
@@ -33,6 +34,10 @@
     VALUES (${db.vals(author)}) RETURNING *`.run(pool);
 
         /* original script ends */
+        } catch(e) {
+          console.log('error: ' + e.message);
+          console.error('  -> error: ' + e.message);
+        }
 
         await pool.end();
       

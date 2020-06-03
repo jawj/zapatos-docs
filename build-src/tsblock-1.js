@@ -17,10 +17,16 @@ xyz.setConfig({
 });
 import * as db from './zapatos/src';
 import pool from './pgPool';
-/* original script begins */
-const [doug, janey] = await db.insert('authors', [
-    { name: 'Douglas Adams', isLiving: false },
-    { name: 'Jane Austen', isLiving: false },
-]).run(pool);
-/* original script ends */
+try {
+    /* original script begins */
+    const [doug, janey] = await db.insert('authors', [
+        { name: 'Douglas Adams', isLiving: false },
+        { name: 'Jane Austen', isLiving: false },
+    ]).run(pool);
+    /* original script ends */
+}
+catch (e) {
+    console.log('error: ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
 await pool.end();
