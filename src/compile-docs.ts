@@ -1,6 +1,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { Config, generate } from 'zapatos/dist/generate';
 import MarkdownIt = require('markdown-it');
 import { execSync } from 'child_process';
 import * as hljs from 'highlight.js';
@@ -11,8 +12,7 @@ void (async () => {
   const tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`;
   const dbEnv = { ...process.env, ZDBNAME: tmpdb };
 
-
-  console.info('Creating temporary DB...');
+  console.info(`Creating temporary DB (${tmpdb}) ...`);
 
   execSync(`createdb ${tmpdb}`);
   execSync(`psql ${tmpdb} < schema.sql`);
@@ -20,7 +20,24 @@ void (async () => {
 
   console.info('Running Zapatos ...');
 
-  execSync(`npx zapatos`, { env: dbEnv });
+  const zapCfg: Config = {
+    "db": { "connectionString": `postgresql://localhost/${tmpdb}` },
+    "srcMode": "copy",
+    "outDir": "./build-src",
+    "schemas": {
+      "public": {
+        "include": "*",
+        "exclude": [
+          "geography_columns",
+          "geometry_columns",
+          "raster_columns",
+          "raster_overviews",
+          "spatial_ref_sys"
+        ]
+      }
+    }
+  };
+  await generate(zapCfg);
 
 
   console.info('Copying Monaco editor ...');
