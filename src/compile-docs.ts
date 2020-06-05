@@ -1,7 +1,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { Config, generate } from 'zapatos/dist/generate';
+import * as z from 'zapatos';
 import MarkdownIt = require('markdown-it');
 import { execSync } from 'child_process';
 import * as hljs from 'highlight.js';
@@ -20,7 +20,7 @@ void (async () => {
 
   console.info('Running Zapatos ...');
 
-  const zapCfg: Config = {
+  const zapCfg: z.Config = {
     "db": { "connectionString": `postgresql://localhost/${tmpdb}` },
     "srcMode": "copy",
     "outDir": "./build-src",
@@ -37,7 +37,7 @@ void (async () => {
       }
     }
   };
-  await generate(zapCfg);
+  await z.generate(zapCfg);
 
 
   console.info('Copying Monaco editor ...');

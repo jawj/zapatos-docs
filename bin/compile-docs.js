@@ -49,7 +49,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
-var generate_1 = require("zapatos/dist/generate");
+var z = require("zapatos");
 var MarkdownIt = require("markdown-it");
 var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
@@ -82,7 +82,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                         }
                     }
                 };
-                return [4 /*yield*/, generate_1.generate(zapCfg)];
+                return [4 /*yield*/, z.generate(zapCfg)];
             case 1:
                 _a.sent();
                 console.info('Copying Monaco editor ...');
