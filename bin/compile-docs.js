@@ -55,18 +55,18 @@ var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
 void (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var tmpdb, dbEnv, zapCfg, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
+    var tmpdb, dbURL, dbEnv, zapCfg, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, '');
-                dbEnv = __assign(__assign({}, process.env), { ZDBNAME: tmpdb });
+                tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, ''), dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'UTF8' })
+                    .trim().replace('{{ZDBNAME}}', tmpdb), dbEnv = __assign(__assign({}, process.env), { ZDBURL: dbURL });
                 console.info("Creating temporary DB (" + tmpdb + ") ...");
                 child_process_1.execSync("createdb " + tmpdb);
                 child_process_1.execSync("psql " + tmpdb + " < schema.sql");
                 console.info('Running Zapatos ...');
                 zapCfg = {
-                    "db": { "connectionString": "postgresql://localhost/" + tmpdb },
+                    "db": { "connectionString": dbURL },
                     "srcMode": "copy",
                     "outDir": "./build-src",
                     "schemas": {

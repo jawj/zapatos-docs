@@ -1,0 +1,9 @@
+To provide DB connection details, create a file named 'pgURLTemplate' 
+alongside this one, containing only a Postgres connection string with
+the token {{ZDBNAME}} embedded as appropriate. For example:
+
+postgresql://localhost/{{ZDBNAME}}
+
+or
+
+postgres:///{{ZDBNAME}}?host=/var/run/postgresql

@@ -9,8 +9,11 @@ import { JSDOM } from 'jsdom';
 
 void (async () => {
 
-  const tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`;
-  const dbEnv = { ...process.env, ZDBNAME: tmpdb };
+  const
+    tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`,
+    dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'UTF8' })
+      .trim().replace('{{ZDBNAME}}', tmpdb),
+    dbEnv = { ...process.env, ZDBURL: dbURL };
 
   console.info(`Creating temporary DB (${tmpdb}) ...`);
 
@@ -21,7 +24,7 @@ void (async () => {
   console.info('Running Zapatos ...');
 
   const zapCfg: z.Config = {
-    "db": { "connectionString": `postgresql://localhost/${tmpdb}` },
+    "db": { "connectionString": dbURL },
     "srcMode": "copy",
     "outDir": "./build-src",
     "schemas": {
