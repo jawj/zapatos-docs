@@ -296,35 +296,35 @@ This file has up to four top-level keys:
 
 * `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
-  Note that schemas are not fully supported by Zapatos, since they are not included in the output types, but they will work by using Postgres's search path if none of your table names is duplicated across different schemas.
+Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if** all of your table names are unique across all schemas (to make this work, you'll need to run a query something like this: `ALTER DATABASE "mydb" SET "search_path" TO "$user", "public", "additionalSchema1", "additionalSchema2";`).
 
-  If not specified, the default value for `"schemas"` includes all tables in the `public` schema, i.e.:
+If not specified, the default value for `"schemas"` includes all tables in the `public` schema, i.e.:
 
-  ```json
-  "schemas": {
-    "public": {
-      "include": "*",
-      "exclude: []
-    }
+```json
+"schemas": {
+  "public": {
+    "include": "*",
+    "exclude: []
   }
-  ```
+}
+```
 
-  One more example: if you use PostGIS, you'll likely want to exclude its system tables:
+One more example: if you use PostGIS, you'll likely want to exclude its system tables:
 
-  ```json
-  "schemas": {
-    "public": {
-      "include": "*",
-      "exclude": [
-        "geography_columns", 
-        "geometry_columns", 
-        "raster_columns", 
-        "raster_overviews", 
-        "spatial_ref_sys"
-      ]
-    }
+```json
+"schemas": {
+  "public": {
+    "include": "*",
+    "exclude": [
+      "geography_columns", 
+      "geometry_columns", 
+      "raster_columns", 
+      "raster_overviews", 
+      "spatial_ref_sys"
+    ]
   }
-  ```
+}
+```
 
 #### Environment variables
 
