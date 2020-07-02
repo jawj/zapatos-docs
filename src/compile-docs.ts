@@ -45,7 +45,7 @@ void (async () => {
 
   console.info('Copying Monaco editor ...');
 
-  execSync(`cp -r ./node_modules/monaco-editor/min ./web/monaco`);
+  execSync(`cp -r ./node_modules/@typescript-deploys/monaco-editor/min ./web/monaco`);
 
 
   console.info('Bundling Zapatos source for Monaco ...');

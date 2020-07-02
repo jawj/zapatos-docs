@@ -101,6 +101,7 @@ export const truncate = function (table, ...opts) {
     const tables = mapWithSeparator(table, sql `, `, t => t), query = sql `TRUNCATE ${tables}${raw((opts.length ? ' ' : '') + opts.join(' '))}`;
     return query;
 };
+;
 export var SelectResultMode;
 (function (SelectResultMode) {
     SelectResultMode[SelectResultMode["Many"] = 0] = "Many";

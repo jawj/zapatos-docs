@@ -86,7 +86,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
             case 1:
                 _a.sent();
                 console.info('Copying Monaco editor ...');
-                child_process_1.execSync("cp -r ./node_modules/monaco-editor/min ./web/monaco");
+                child_process_1.execSync("cp -r ./node_modules/@typescript-deploys/monaco-editor/min ./web/monaco");
                 console.info('Bundling Zapatos source for Monaco ...');
                 recurseNodes = function (node) {
                     return fs.statSync(node).isFile() ? [node] :
