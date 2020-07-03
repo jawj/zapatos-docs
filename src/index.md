@@ -277,6 +277,9 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
     "connectionString": "postgresql://localhost/example_db"
   },
   "outDir": "./src",
+  "srcMode": "copy",
+  "progressListener": false,
+  "warningListener": true,
   "schemas": {
     "public": {
       "include": "*",
@@ -286,13 +289,17 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
 }
 ```
 
-This file has up to four top-level keys:
+This file has up to six top-level keys:
 
-* `"db"` gives Postgres connection details. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here. This key is required.
+* `"db"` gives Postgres connection details. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here. **This is the only required key.**
 
 * `"outDir"` defines where your `zapatos` folder will be created, relative to the project root. If not specified, it defaults to the project root, i.e. `"."`.
 
 * `"srcMode"` can take the values `"copy"` (the default) or `"symlink"`, determining whether `zapatos/src` will be a copy of the folder `node_modules/zapatos/src` or just a symlink to it. The symlink option can cause enormous headaches with tools like `ts-node` and `ts-jest`, which refuse to compile anything inside `node_modules`, and is not recommended.
+
+* `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema, copying files, and so on. It defaults to `false`.
+
+* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when an unknown Postgres type is converted to a TypeScript `any`. If `true`, which is the default, it does.
 
 * `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
@@ -337,6 +344,19 @@ This is likely most useful for the database connection details. For example, on 
   "connectionString": "{{DATABASE_URL}}"
 }
 ```
+
+#### Programmatic generation
+
+As an alternative to the command line tool, it's also possible to generate the schema and copy (or symlink) the source files programmatically. This is the only case when you _should_ import directly from `node_modules`. For example:
+
+```typescript:norun
+import * as z from 'zapatos';  // direct import in this case only
+
+const zapCfg: z.Config = { db: { connectionString: 'postgres://localhost/mydb' } };
+await z.generate(zapCfg);
+```
+
+Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above. In this case the `progressListener` and `warningListener` keys can each take `true` or `false` (as in the JSON case) or a function with the signature `(s: string) => void`, which you can use to implement your own logging.
 
 #### ESLint / tslint
 

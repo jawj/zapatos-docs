@@ -24,13 +24,13 @@ void (async () => {
   console.info('Running Zapatos ...');
 
   const zapCfg: z.Config = {
-    "db": { "connectionString": dbURL },
-    "srcMode": "copy",
-    "outDir": "./build-src",
-    "schemas": {
-      "public": {
-        "include": "*",
-        "exclude": [
+    db: { connectionString: dbURL },
+    srcMode: "copy",
+    outDir: "./build-src",
+    schemas: {
+      public: {
+        include: "*",
+        exclude: [
           "geography_columns",
           "geometry_columns",
           "raster_columns",
