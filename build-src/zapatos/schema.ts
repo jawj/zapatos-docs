@@ -243,12 +243,12 @@ export namespace stores {
   export interface Selectable {
     id: number;
     name: string;
-    geom: /* pg: geometry */ any;
+    geom: any;
   }
   export interface Insertable {
     id?: number | DefaultType | SQLFragment;
     name: string | SQLFragment;
-    geom: /* pg: geometry */ any | SQLFragment;
+    geom: any | SQLFragment;
   }
   export interface Updatable extends Partial<Insertable> { }
   export type Whereable = { [K in keyof Insertable]?: Exclude<Insertable[K] | ParentColumn, null | DefaultType> };
