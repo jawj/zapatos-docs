@@ -6,6 +6,7 @@ import MarkdownIt = require('markdown-it');
 import { execSync } from 'child_process';
 import * as hljs from 'highlight.js';
 import { JSDOM } from 'jsdom';
+import * as pgcs from 'pg-connection-string';
 
 void (async () => {
 
@@ -17,8 +18,16 @@ void (async () => {
 
   console.info(`Creating temporary DB (${tmpdb}) ...`);
 
-  execSync(`createdb ${tmpdb}`);
-  execSync(`psql ${tmpdb} < schema.sql`);
+  const { host, port, user, password } = pgcs.parse(dbURL);
+  if (password) throw new Error('No support for Postgres password auth');
+
+  const connOpts =
+    (host ? ` -h '${host}'` : '') +
+    (port ? ` -p ${port}` : '') +
+    (user ? ` -U '${user}'` : '');
+
+  execSync(`createdb${connOpts} ${tmpdb}`);
+  execSync(`psql${connOpts} ${tmpdb} < schema.sql`);
 
 
   console.info('Running Zapatos ...');
@@ -359,6 +368,6 @@ void (async () => {
 
   console.info('Dropping temporary DB...');
 
-  execSync(`dropdb ${tmpdb}`);
+  execSync(`dropdb${connOpts} ${tmpdb}`);
 })();
 

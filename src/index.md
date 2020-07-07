@@ -530,7 +530,7 @@ The `default` symbol simply compiles to the SQL `DEFAULT` keyword. This may be u
 
 `sql` template strings (resulting in `SQLFragment`s) can be interpolated within other `sql` template strings (`SQLFragment`s). This provides flexibility in building queries programmatically.
 
-For example, the [`select` shortcut](#select-selectone-and-count) makes extensive use of nested `sql` templates to build its queries:
+For example, the [`select` shortcut](#select-selectone-selectexactlyone-and-count) makes extensive use of nested `sql` templates to build its queries:
  
 ```typescript:norun
 const
@@ -551,7 +551,7 @@ const
 
 Items in an interpolated array are treated just the same as if they had been interpolated directly. This, again, can be useful for building queries programmatically.
 
-To take the [`select` shortcut](#select-selectone-and-count) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
+To take the [`select` shortcut](#select-selectone-selectexactlyone-and-count) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
 
 ```typescript:norun
 const
@@ -701,7 +701,7 @@ const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
 const authorBooks = await query.run(pool);
 ```
 
-Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select-selectone-and-count) and its [`lateral` option](#lateral-and-alias) can make this much less painful.
+Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select-selectone-selectexactlyone-and-count) and its [`lateral` option](#lateral-and-alias) can make this much less painful.
 
 
 ### Shortcut functions and lateral joins
@@ -933,38 +933,17 @@ await db.truncate(allTables, 'CASCADE').run(pool);
 
 => shortcuts.ts /* === select === */
 
-#### `select`, `selectOne` and `count`
+#### `select`, `selectOne`, `selectExactlyOne` and `count`
 
-```typescript:norun
-export interface SelectSignatures {
-  <T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap, M extends SelectResultMode = SelectResultMode.Many> (
-    table: T,
-    where: WhereableForTable<T> | SQLFragment | AllType,
-    options?: SelectOptionsForTable<T, C, L, E>,
-    mode?: M,
-  ): SQLFragment<FullSelectReturnTypeForTable<T, C, L, E, M>>;
-}
-export interface SelectOneSignatures {
-  <T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap>(
-    table: T,
-    where: WhereableForTable<T> | SQLFragment | AllType,
-    options?: SelectOptionsForTable<T, C, L, E>,
-  ): SQLFragment<FullSelectReturnTypeForTable<T, C, L, E, SelectResultMode.One>>;
-}
-export interface CountSignatures {
-  <T extends Table>(
-    table: T, 
-    where: WhereableForTable<T> | SQLFragment | AllType, 
-    options?: { columns?: ColumnForTable<T>[], alias?: string },
-  ): SQLFragment<number>;
-}
-```
-
-Yes, the signatures are beastly — and that's leaving out the horrors behind `FullSelectReturnTypeForTable<...>` — but don't panic! 
+(If you want to see the full horror of these type signatures, follow the above link to the code).
 
 The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), the appropriate `Whereable` for the target table, or a `SQLFragment` from a `sql` template string. Recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable), which means the `SQLFragment` variant is rarely required.
 
-The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable>`, promising only a single object when run. The `count` function, finally, generates a query to count matching rows, and thus returns a `SQLFragment<number>`.
+The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable | undefined>`, promising _only a single object_ (or `undefined`) when run. 
+
+The `selectExactlyOne` function does the same as `selectOne` but eliminates the `undefined` option (giving `SQLFragment<JSONSelectable>`), because it will instead throw an error if it doesn't find a row.
+
+The `count` function, finally, generates a query to count matching rows, and thus returns a `SQLFragment<number>`.
 
 In use, they look like this:
 
@@ -977,8 +956,17 @@ const
   authorBooks = await db.select('books', { authorId: 1000 }).run(pool),
 
   // selectOne (since authors.id is a primary key), Whereable
-  oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool),
+  oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool);
 
+  // selectExactlyOne
+  // for a more useful example, see the section on `lateral`, below
+  try {
+    const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
+  } catch {
+    console.log("There wasn't an author after all");
+  }
+
+const
   // count
   numberOfAuthors = await db.count('authors', db.all).run(pool),
 
@@ -1058,11 +1046,13 @@ We achieve this with an additional `options` key, `lateral`, which takes a mappi
 ```typescript
 const booksAuthorTags = await db.select('books', db.all, {
   lateral: {
-    author: db.selectOne('authors', { id: db.parent('authorId') }),
+    author: db.selectExactlyOne('authors', { id: db.parent('authorId') }),
     tags: db.select('tags', { bookId: db.parent('id') }),
   }
 }).run(pool);
 ```
+
+(Note that we use `selectExactlyOne` in the nested author query here because a book's `authorId` is defined as `NOT NULL REFERENCES authors(id)`, and we can therefore be 100% certain that we'll get back a row here).
 
 Or we can turn this around, nesting more deeply to retrieve authors, each with their books, each with their tags:
 

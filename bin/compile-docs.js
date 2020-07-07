@@ -54,16 +54,23 @@ var MarkdownIt = require("markdown-it");
 var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
+var pgcs = require("pg-connection-string");
 void (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var tmpdb, dbURL, dbEnv, zapCfg, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var tmpdb, dbURL, dbEnv, _a, host, port, user, password, connOpts, zapCfg, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, ''), dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'UTF8' })
                     .trim().replace('{{ZDBNAME}}', tmpdb), dbEnv = __assign(__assign({}, process.env), { ZDBURL: dbURL });
                 console.info("Creating temporary DB (" + tmpdb + ") ...");
-                child_process_1.execSync("createdb " + tmpdb);
-                child_process_1.execSync("psql " + tmpdb + " < schema.sql");
+                _a = pgcs.parse(dbURL), host = _a.host, port = _a.port, user = _a.user, password = _a.password;
+                if (password)
+                    throw new Error('No support for Postgres password auth');
+                connOpts = (host ? " -h '" + host + "'" : '') +
+                    (port ? " -p " + port : '') +
+                    (user ? " -U '" + user + "'" : '');
+                child_process_1.execSync("createdb" + connOpts + " " + tmpdb);
+                child_process_1.execSync("psql" + connOpts + " " + tmpdb + " < schema.sql");
                 console.info('Running Zapatos ...');
                 zapCfg = {
                     db: { connectionString: dbURL },
@@ -84,7 +91,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 };
                 return [4 /*yield*/, z.generate(zapCfg)];
             case 1:
-                _a.sent();
+                _b.sent();
                 console.info('Copying Monaco editor ...');
                 child_process_1.execSync("cp -r ./node_modules/@typescript-deploys/monaco-editor/min ./web/monaco");
                 console.info('Bundling Zapatos source for Monaco ...');
@@ -257,7 +264,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.info("Writing HTML ...");
                 fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
                 console.info('Dropping temporary DB...');
-                child_process_1.execSync("dropdb " + tmpdb);
+                child_process_1.execSync("dropdb" + connOpts + " " + tmpdb);
                 return [2 /*return*/];
         }
     });

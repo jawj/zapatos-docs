@@ -227,7 +227,12 @@ interface OrderSpecForTable<T extends Table> {
   nulls?: 'FIRST' | 'LAST';
 }
 
-export interface SelectOptionsForTable<T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap> {
+export interface SelectOptionsForTable<
+  T extends Table,
+  C extends ColumnForTable<T>[] | undefined,
+  L extends SQLFragmentsMap | undefined,
+  E extends SQLFragmentsMap | undefined,
+  > {
   order?: OrderSpecForTable<T>[];
   limit?: number;
   offset?: number;
@@ -235,32 +240,66 @@ export interface SelectOptionsForTable<T extends Table, C extends ColumnForTable
   extras?: E;
   lateral?: L;
   alias?: string;
-}
+};
 
 export interface SQLFragmentsMap { [k: string]: SQLFragment<any> }
 export type PromisedType<P> = P extends Promise<infer U> ? U : never;
 export type PromisedSQLFragmentReturnType<R extends SQLFragment<any>> = PromisedType<ReturnType<R['run']>>;
-export type PromisedSQLFragmentReturnTypeMap<L extends SQLFragmentsMap> = { [K in keyof L]: PromisedSQLFragmentReturnType<L[K]> };
 
-export type JSONOnlyColsForTable<T extends Table, C extends any[] /* TS can't manage being more specific here */> = Pick<JSONSelectableForTable<T>, C[number]>;
+// yes, the next two types are identical, but distinct names make complex inferred types more readable
+export type Lateral<L extends SQLFragmentsMap> = { [K in keyof L]: PromisedSQLFragmentReturnType<L[K]> };
+export type Extras<L extends SQLFragmentsMap> = { [K in keyof L]: PromisedSQLFragmentReturnType<L[K]> };
 
-type BaseSelectReturnTypeForTable<T extends Table, C extends ColumnForTable<T>[]> = C extends undefined ? JSONSelectableForTable<T> : JSONOnlyColsForTable<T, C>;
+export type JSONOnlyColsForTable<T extends Table, C extends any[] /* `ColumnForTable<T>[]` gives errors here for reasons I haven't got to the bottom of */> = Pick<JSONSelectableForTable<T>, C[number]>;
 
-type EnhancedSelectReturnTypeForTable<T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap> =
-  L extends undefined ?
-  (E extends undefined ? BaseSelectReturnTypeForTable<T, C> : BaseSelectReturnTypeForTable<T, C> & PromisedSQLFragmentReturnTypeMap<E>) :
-  (E extends undefined ?
-    BaseSelectReturnTypeForTable<T, C> & PromisedSQLFragmentReturnTypeMap<L> :
-    BaseSelectReturnTypeForTable<T, C> & PromisedSQLFragmentReturnTypeMap<L> & PromisedSQLFragmentReturnTypeMap<E>);
+type BaseSelectReturnTypeForTable<T extends Table, C extends ColumnForTable<T>[] | undefined> =
+  undefined extends C ? JSONSelectableForTable<T> :
+  C extends ColumnForTable<T>[] ? JSONOnlyColsForTable<T, C> :
+  never;
 
-export type FullSelectReturnTypeForTable<T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap, M extends SelectResultMode> =
-  M extends SelectResultMode.Many ? EnhancedSelectReturnTypeForTable<T, C, L, E>[] :
-  M extends SelectResultMode.One ? EnhancedSelectReturnTypeForTable<T, C, L, E> | undefined : number;
+type EnhancedSelectReturnTypeForTable<
+  T extends Table,
+  C extends ColumnForTable<T>[] | undefined,
+  L extends SQLFragmentsMap | undefined,
+  E extends SQLFragmentsMap | undefined,
+  > =
+  undefined extends L ?
+  (undefined extends E ? BaseSelectReturnTypeForTable<T, C> :
+    E extends SQLFragmentsMap ? BaseSelectReturnTypeForTable<T, C> & Extras<E> :
+    never) :
+  L extends SQLFragmentsMap ?
+  (undefined extends E ? BaseSelectReturnTypeForTable<T, C> & Lateral<L> :
+    E extends SQLFragmentsMap ? BaseSelectReturnTypeForTable<T, C> & Lateral<L> & Extras<E> :
+    never) :
+  never;
 
-export enum SelectResultMode { Many, One, Count }
+export enum SelectResultMode { Many, One, ExactlyOne, Count }
+
+export type FullSelectReturnTypeForTable<
+  T extends Table,
+  C extends ColumnForTable<T>[] | undefined,
+  L extends SQLFragmentsMap | undefined,
+  E extends SQLFragmentsMap | undefined,
+  M extends SelectResultMode,
+  > =
+  // M extends SelectResultMode.Many ? EnhancedSelectReturnTypeForTable<T, C, L, E>[] :
+  // M extends SelectResultMode.One ? EnhancedSelectReturnTypeForTable<T, C, L, E> | undefined :
+  // M extends SelectResultMode.ExactlyOne ? EnhancedSelectReturnTypeForTable<T, C, L, E> :
+  // number;
+  {
+    [SelectResultMode.Many]: EnhancedSelectReturnTypeForTable<T, C, L, E>[];
+    [SelectResultMode.ExactlyOne]: EnhancedSelectReturnTypeForTable<T, C, L, E>;
+    [SelectResultMode.One]: EnhancedSelectReturnTypeForTable<T, C, L, E> | undefined;
+    [SelectResultMode.Count]: number;
+  }[M];
 
 export interface SelectSignatures {
-  <T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap, M extends SelectResultMode = SelectResultMode.Many>(
+  <T extends Table,
+    C extends ColumnForTable<T>[] | undefined,
+    L extends SQLFragmentsMap | undefined,
+    E extends SQLFragmentsMap | undefined,
+    M extends SelectResultMode = SelectResultMode.Many
+    >(
     table: T,
     where: WhereableForTable<T> | SQLFragment | AllType,
     options?: SelectOptionsForTable<T, C, L, E>,
@@ -288,12 +327,13 @@ export interface SelectSignatures {
 export const select: SelectSignatures = function (
   table: Table,
   where: Whereable | SQLFragment | AllType = all,
-  options: SelectOptionsForTable<Table, ColumnForTable<Table>[], SQLFragmentsMap, SQLFragmentsMap> = {},
+  options: SelectOptionsForTable<Table, ColumnForTable<Table>[] | undefined, SQLFragmentsMap | undefined, SQLFragmentsMap | undefined> = {},
   mode: SelectResultMode = SelectResultMode.Many,
 ) {
 
   const
-    allOptions = mode === SelectResultMode.One ? { ...options, limit: 1 } : options,
+    limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne,
+    allOptions = limit1 ? { ...options, limit: 1 } : options,
     aliasedTable = allOptions.alias || table,
     lateralOpt = allOptions.lateral,
     extrasOpt = allOptions.extras,
@@ -332,11 +372,25 @@ export const select: SelectSignatures = function (
       // we need the aggregate to sit in a sub-SELECT in order to keep ORDER and LIMIT working as usual
       sql<SQL, any>`SELECT coalesce(jsonb_agg(result), '[]') AS result FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
 
-  query.runResultTransform = mode === SelectResultMode.Count ?
-    // note: pg deliberately returns strings for int8 in case 64-bit numbers overflow
-    // (see https://github.com/brianc/node-pg-types#use), but we assume counts aren't that big
-    (qr) => Number(qr.rows[0].result) :
-    (qr) => qr.rows[0]?.result;
+  query.runResultTransform =
+
+    mode === SelectResultMode.Count ?
+      // note: pg deliberately returns strings for int8 in case 64-bit numbers overflow
+      // (see https://github.com/brianc/node-pg-types#use), but we assume our counts aren't that big
+      (qr) => Number(qr.rows[0].result) :
+
+      mode === SelectResultMode.ExactlyOne ?
+        (qr) => {
+          const result = qr.rows[0]?.result;
+          if (result === undefined) {
+            const queryDetail = JSON.stringify(query.compile());
+            throw new Error(`Exactly one result expected, but none found. Query: ${queryDetail}).`);
+          }
+          return result;
+        } :
+
+        // SelectResultMode.One or SelectResultMode.Many
+        (qr) => qr.rows[0]?.result;
 
   return query;
 };
@@ -345,7 +399,12 @@ export const select: SelectSignatures = function (
 /* === selectOne === */
 
 export interface SelectOneSignatures {
-  <T extends Table, C extends ColumnForTable<T>[], L extends SQLFragmentsMap, E extends SQLFragmentsMap>(
+  <
+    T extends Table,
+    C extends ColumnForTable<T>[] | undefined,
+    L extends SQLFragmentsMap | undefined,
+    E extends SQLFragmentsMap | undefined
+    >(
     table: T,
     where: WhereableForTable<T> | SQLFragment | AllType,
     options?: SelectOptionsForTable<T, C, L, E>,
@@ -360,17 +419,42 @@ export interface SelectOneSignatures {
  * @param where A `Whereable` or `SQLFragment` defining the rows to be selected, or `all`
  * @param options Options object. See documentation for `select` for details.
  */
-export const selectOne: SelectOneSignatures = function (
-  table: any,
-  where: any,
-  options: any = {},
-) {
+export const selectOne: SelectOneSignatures = function (table, where, options = {}) {
   // you might argue that 'selectOne' offers little that you can't get with destructuring assignment 
   // and plain 'select' -- e.g. let [x] = async select(...).run(pool); -- but a thing that is definitely worth 
   // having is '| undefined' in the return signature, because the result of indexing never includes undefined
   // (see e.g. https://github.com/Microsoft/TypeScript/issues/13778)
 
   return select(table, where, options, SelectResultMode.One);
+};
+
+
+/* === selectExactlyOne === */
+
+export interface SelectExactlyOneSignatures {
+  <
+    T extends Table,
+    C extends ColumnForTable<T>[] | undefined,
+    L extends SQLFragmentsMap | undefined,
+    E extends SQLFragmentsMap | undefined
+    >(
+    table: T,
+    where: WhereableForTable<T> | SQLFragment | AllType,
+    options?: SelectOptionsForTable<T, C, L, E>,
+  ): SQLFragment<FullSelectReturnTypeForTable<T, C, L, E, SelectResultMode.ExactlyOne>>;
+}
+
+/**
+ * Generate a `SELECT` query `SQLFragment` that returns a single result or throws an error. 
+ * A `LIMIT 1` clause is added automatically. This can be nested with other 
+ * `select`/`selectOne`/`count` queries using the `lateral` option.
+ * @param table The table to select from
+ * @param where A `Whereable` or `SQLFragment` defining the rows to be selected, or `all`
+ * @param options Options object. See documentation for `select` for details.
+ */
+
+export const selectExactlyOne: SelectExactlyOneSignatures = function (table, where, options = {}) {
+  return select(table, where, options, SelectResultMode.ExactlyOne);
 };
 
 
@@ -391,11 +475,6 @@ export interface CountSignatures {
  * @param where A `Whereable` or `SQLFragment` defining the rows to be counted, or `all`
  * @param options Options object. Keys are: `columns`, `alias`.
  */
-export const count: CountSignatures = function (
-  table: any,
-  where: any,
-  options?: any,
-) {
-
+export const count: CountSignatures = function (table, where, options?) {
   return select(table, where, options, SelectResultMode.Count);
 };

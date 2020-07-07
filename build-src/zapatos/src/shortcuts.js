@@ -101,11 +101,13 @@ export const truncate = function (table, ...opts) {
     const tables = mapWithSeparator(table, sql `, `, t => t), query = sql `TRUNCATE ${tables}${raw((opts.length ? ' ' : '') + opts.join(' '))}`;
     return query;
 };
+;
 export var SelectResultMode;
 (function (SelectResultMode) {
     SelectResultMode[SelectResultMode["Many"] = 0] = "Many";
     SelectResultMode[SelectResultMode["One"] = 1] = "One";
-    SelectResultMode[SelectResultMode["Count"] = 2] = "Count";
+    SelectResultMode[SelectResultMode["ExactlyOne"] = 2] = "ExactlyOne";
+    SelectResultMode[SelectResultMode["Count"] = 3] = "Count";
 })(SelectResultMode || (SelectResultMode = {}));
 /**
  * Generate a `SELECT` query `SQLFragment`. This can be nested with other `select`/
@@ -125,7 +127,7 @@ export var SelectResultMode;
  * @param mode Used internally by `selectOne` and `count`
  */
 export const select = function (table, where = all, options = {}, mode = SelectResultMode.Many) {
-    const allOptions = mode === SelectResultMode.One ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, aliasedTable = allOptions.alias || table, lateralOpt = allOptions.lateral, extrasOpt = allOptions.extras, tableAliasSQL = aliasedTable === table ? [] : sql ` AS ${aliasedTable}`, colsSQL = mode === SelectResultMode.Count ?
+    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, aliasedTable = allOptions.alias || table, lateralOpt = allOptions.lateral, extrasOpt = allOptions.extras, tableAliasSQL = aliasedTable === table ? [] : sql ` AS ${aliasedTable}`, colsSQL = mode === SelectResultMode.Count ?
         (allOptions.columns ? sql `count(${cols(allOptions.columns)})` : sql `count(${aliasedTable}.*)`) :
         allOptions.columns ?
             sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => sql `${param(c)}::text, ${c}`)})` :
@@ -147,11 +149,23 @@ export const select = function (table, where = all, options = {}, mode = SelectR
     const rowsQuery = sql `SELECT ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
         // we need the aggregate to sit in a sub-SELECT in order to keep ORDER and LIMIT working as usual
         sql `SELECT coalesce(jsonb_agg(result), '[]') AS result FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
-    query.runResultTransform = mode === SelectResultMode.Count ?
-        // note: pg deliberately returns strings for int8 in case 64-bit numbers overflow
-        // (see https://github.com/brianc/node-pg-types#use), but we assume counts aren't that big
-        (qr) => Number(qr.rows[0].result) :
-        (qr) => { var _a; return (_a = qr.rows[0]) === null || _a === void 0 ? void 0 : _a.result; };
+    query.runResultTransform =
+        mode === SelectResultMode.Count ?
+            // note: pg deliberately returns strings for int8 in case 64-bit numbers overflow
+            // (see https://github.com/brianc/node-pg-types#use), but we assume our counts aren't that big
+            (qr) => Number(qr.rows[0].result) :
+            mode === SelectResultMode.ExactlyOne ?
+                (qr) => {
+                    var _a;
+                    const result = (_a = qr.rows[0]) === null || _a === void 0 ? void 0 : _a.result;
+                    if (result === undefined) {
+                        const queryDetail = JSON.stringify(query.compile());
+                        throw new Error(`Exactly one result expected, but none found. Query: ${queryDetail}).`);
+                    }
+                    return result;
+                } :
+                // SelectResultMode.One or SelectResultMode.Many
+                (qr) => { var _a; return (_a = qr.rows[0]) === null || _a === void 0 ? void 0 : _a.result; };
     return query;
 };
 /**
@@ -168,6 +182,17 @@ export const selectOne = function (table, where, options = {}) {
     // having is '| undefined' in the return signature, because the result of indexing never includes undefined
     // (see e.g. https://github.com/Microsoft/TypeScript/issues/13778)
     return select(table, where, options, SelectResultMode.One);
+};
+/**
+ * Generate a `SELECT` query `SQLFragment` that returns a single result or throws an error.
+ * A `LIMIT 1` clause is added automatically. This can be nested with other
+ * `select`/`selectOne`/`count` queries using the `lateral` option.
+ * @param table The table to select from
+ * @param where A `Whereable` or `SQLFragment` defining the rows to be selected, or `all`
+ * @param options Options object. See documentation for `select` for details.
+ */
+export const selectExactlyOne = function (table, where, options = {}) {
+    return select(table, where, options, SelectResultMode.ExactlyOne);
 };
 /**
  * Generate a `SELECT` query `SQLFragment` that returns a count. This can be nested in
