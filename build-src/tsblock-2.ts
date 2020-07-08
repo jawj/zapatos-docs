@@ -33,7 +33,7 @@
 
         /* original script ends */
         } catch(e) {
-          console.log('error: ' + e.message);
+          console.log(e.name + ': ' + e.message);
           console.error('  -> error: ' + e.message);
         }
 

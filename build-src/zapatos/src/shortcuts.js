@@ -109,6 +109,15 @@ export var SelectResultMode;
     SelectResultMode[SelectResultMode["ExactlyOne"] = 2] = "ExactlyOne";
     SelectResultMode[SelectResultMode["Count"] = 3] = "Count";
 })(SelectResultMode || (SelectResultMode = {}));
+export class NotExactlyOneError extends Error {
+    constructor(query, ...params) {
+        super(...params);
+        if (Error.captureStackTrace)
+            Error.captureStackTrace(this, NotExactlyOneError); // V8 only
+        this.name = 'NotExactlyOneError';
+        this.query = query; // custom property
+    }
+}
 /**
  * Generate a `SELECT` query `SQLFragment`. This can be nested with other `select`/
  * `selectOne`/`count` queries using the `lateral` option.
@@ -158,10 +167,8 @@ export const select = function (table, where = all, options = {}, mode = SelectR
                 (qr) => {
                     var _a;
                     const result = (_a = qr.rows[0]) === null || _a === void 0 ? void 0 : _a.result;
-                    if (result === undefined) {
-                        const queryDetail = JSON.stringify(query.compile());
-                        throw new Error(`Exactly one result expected, but none found. Query: ${queryDetail}).`);
-                    }
+                    if (result === undefined)
+                        throw new NotExactlyOneError(query, 'One result expected but none returned (hint: check `.query.compile()` on this Error)');
                     return result;
                 } :
                 // SelectResultMode.One or SelectResultMode.Many

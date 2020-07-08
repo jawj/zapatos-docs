@@ -941,7 +941,7 @@ The `select` shortcut function, in its basic form, takes a `Table` name and some
 
 The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable | undefined>`, promising _only a single object_ (or `undefined`) when run. 
 
-The `selectExactlyOne` function does the same as `selectOne` but eliminates the `undefined` option (giving `SQLFragment<JSONSelectable>`), because it will instead throw an error if it doesn't find a row.
+The `selectExactlyOne` function does the same as `selectOne` but eliminates the `undefined` option (giving `SQLFragment<JSONSelectable>`), because it will instead throw an error (with a helpful `query` property) if it doesn't find a row.
 
 The `count` function, finally, generates a query to count matching rows, and thus returns a `SQLFragment<number>`.
 
@@ -958,12 +958,14 @@ const
   // selectOne (since authors.id is a primary key), Whereable
   oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool);
 
-  // selectExactlyOne
+  // selectExactlyOne, Whereable
   // for a more useful example, see the section on `lateral`, below
   try {
     const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
-  } catch {
-    console.log("There wasn't an author after all");
+    // ... do something with this author ...
+  } catch (err) {
+    if (err instanceof db.NotExactlyOneError) console.log(`${err.name}: ${err.message}`);
+    else throw err;
   }
 
 const
