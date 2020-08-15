@@ -26,9 +26,8 @@
         /* original script begins */
         const 
   authorIds = [1, 2, 123],
-  authors = await db.select("authors", { 
-    id: db.sql<db.SQL>`${db.self} IN (${db.vals(authorIds)})` 
-  }).run(pool);
+  authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>` 
+    SELECT * FROM ${"authors"} WHERE ${"id"} IN (${db.vals(authorIds)})`.run(pool);
 
         /* original script ends */
         } catch(e) {

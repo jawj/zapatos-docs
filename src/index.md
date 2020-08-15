@@ -479,9 +479,8 @@ For the `vals` function, this can help with `IN (...)` queries, such as the foll
 ```typescript
 const 
   authorIds = [1, 2, 123],
-  authors = await db.select("authors", { 
-    id: db.sql<db.SQL>`${db.self} IN (${db.vals(authorIds)})` 
-  }).run(pool);
+  authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>` 
+    SELECT * FROM ${"authors"} WHERE ${"id"} IN (${db.vals(authorIds)})`.run(pool);
 ```
 
 
