@@ -1087,7 +1087,7 @@ You'll note the use of the `parent` function to refer to a join column in the ta
 { authorId: sql`${"authors"}.${"id"}` }
 ```
 
-We can also nest `count` and `selectOne` calls, as you might expect. And we can join a table to itself, though in this case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity.
+We can also nest `count` calls, of course. And we can join a table to itself, though in this case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity.
 
 Take this new, self-referencing table:
 
@@ -1128,7 +1128,7 @@ const people = await db.select('employees', db.all, {
 
 As usual, this is fully typed. If, for example, you were to forget that `directReports` is a count rather than an array of employees, VS Code would soon disabuse you.
 
-There are still a couple of limitations to type inference for nested queries. First, there's no check that your join makes sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, the result type of a nested `selectOne` always includes `undefined` even if the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint (in which case we know that Postgres will have enforced the existence of a record).
+There are still a couple of limitations to type inference for nested queries. First, there's no check that your join makes sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, we need to manually specify `selectExactlyOne` instead of `selectOne` when we know that a join will always produce a result — such as when the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint — which in principle might be inferred for us.
 
 Nevertheless, this is a handy, flexible — but still transparent and zero-abstraction — way to generate and run complex join queries. 
 
