@@ -24,16 +24,15 @@
 
         try {
         /* original script begins */
-        type authorBooksSQL = s.authors.SQL | s.books.SQL;
-type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
+        type bookAuthorSQL = s.books.SQL | s.authors.SQL | "author";
+type bookAuthorSelectable = s.books.Selectable & { author: s.authors.Selectable };
 
-const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
-  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
-  FROM ${"authors"} JOIN ${"books"} 
-  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
-  GROUP BY ${"authors"}.${"id"}`;
+const query = db.sql<bookAuthorSQL, bookAuthorSelectable[]>`
+  SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
+  FROM ${"books"} JOIN ${"authors"} 
+  ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
 
-const authorBooks = await query.run(pool);
+const bookAuthors = await query.run(pool);
 
         /* original script ends */
         } catch(e) {

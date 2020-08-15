@@ -445,9 +445,9 @@ If you override type-checking to pass untrusted data to Zapatos in unexpected pl
 
 #### `cols()` and `vals()`
 
-The `cols` and `vals` wrapper functions (which return `ColumnNames` and `ColumnValues` class instances respectively) are intended to help with `INSERT` queries.
+The `cols` and `vals` wrapper functions (which return `ColumnNames` and `ColumnValues` class instances respectively) are intended to help with certain `INSERT` and `SELECT` queries.
 
-Pass them each the same `Insertable` object: `cols` is compiled to a comma-separated list of the object's keys, which are the column names, and `vals` is compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values, in matching order. To return to (approximately) an earlier example:
+In the `INSERT` context, pass them each the same `Insertable` object: `cols` is compiled to a comma-separated list of the object's keys, which are the column names, and `vals` is compiled to a comma-separated list of SQL placeholders (`$1`, `$2`, ...) associated with the corresponding values, in matching order. To return to (approximately) an earlier example:
 
 ```typescript
 const
@@ -460,7 +460,9 @@ const
     VALUES (${db.vals(author)}) RETURNING *`.run(pool);
 ```
 
-A second use for the `cols` function is in selecting only a subset of columns, in conjunction with the `OnlyCols` type. Pass an array of column names to `cols`, and they're compiled appropriately, as seen in this example:
+The `cols` and `vals` wrappers can also each take an array instead of an object.
+
+For the `cols` function, this can help us select only a subset of columns, in conjunction with the `OnlyCols` type. Pass an array of column names to `cols` to have them compiled appropriately, as seen in this example:
 
 ```typescript
 // the <const> prevents generalization to string[]
@@ -470,6 +472,16 @@ type BookDatum = s.books.OnlyCols<typeof bookCols>;
 const
   bookData = await db.sql<s.books.SQL, BookDatum[]>`
     SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
+```
+
+For the `vals` function, this can help with `IN (...)` queries, such as the following:
+
+```typescript
+const 
+  authorIds = [1, 2, 123],
+  authors = await db.select("authors", { 
+    id: db.sql<db.SQL>`${db.self} IN (${db.vals(authorIds)})` 
+  }).run(pool);
 ```
 
 

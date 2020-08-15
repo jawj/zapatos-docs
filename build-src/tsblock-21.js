@@ -18,27 +18,14 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
-    /* original script begins */
-    const 
-    // insert one
-    steve = await db.insert('authors', {
-        name: 'Steven Hawking',
-        isLiving: false,
-    }).run(pool), 
-    // insert many
-    [time, me] = await db.insert('books', [{
-            authorId: steve.id,
-            title: 'A Brief History of Time',
-            createdAt: db.sql `now()`,
-        }, {
-            authorId: steve.id,
-            title: 'My Brief History',
-            createdAt: db.sql `now()`,
-        }]).run(pool), tags = await db.insert('tags', [
-        { bookId: time.id, tag: 'physics' },
-        { bookId: me.id, tag: 'physicist' },
-        { bookId: me.id, tag: 'autobiography' },
-    ]).run(pool);
+    const query = db.sql `
+  SELECT ${"authors"}.*, bq.* 
+  FROM ${"authors"} LEFT JOIN LATERAL (
+    SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
+    FROM ${"books"}
+    WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
+  ) bq ON true`;
+    const authorBooks = await query.run(pool);
     /* original script ends */
 }
 catch (e) {

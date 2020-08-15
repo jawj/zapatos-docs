@@ -24,7 +24,15 @@
 
         try {
         /* original script begins */
-        await db.deletes('books', { title: 'Holes' }).run(pool);
+        const 
+  anotherNewTransaction: s.appleTransactions.Insertable = {
+    environment: 'PROD',
+    originalTransactionId: '345678',
+    accountId: 345,
+    latestReceiptData: 'lALvEleO4Ehwk3T5',
+  },
+  result = await db.upsert('appleTransactions', anotherNewTransaction, 
+    db.constraint('appleTransactionsPrimaryKey')).run(pool);
 
         /* original script ends */
         } catch(e) {

@@ -19,8 +19,9 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    const title = 'Northern Lights', books = await db.sql `
-    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
+    const authorIds = [1, 2, 123], authors = await db.select("authors", {
+        id: db.sql `${db.self} IN (${db.vals(authorIds)})`
+    }).run(pool);
     /* original script ends */
 }
 catch (e) {

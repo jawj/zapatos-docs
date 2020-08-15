@@ -25,9 +25,10 @@
         try {
         /* original script begins */
         const 
-  title = 'Northern Lights',
-  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
-    SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
+  authorIds = [1, 2, 123],
+  authors = await db.select("authors", { 
+    id: db.sql<db.SQL>`${db.self} IN (${db.vals(authorIds)})` 
+  }).run(pool);
 
         /* original script ends */
         } catch(e) {
