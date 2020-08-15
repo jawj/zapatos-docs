@@ -986,7 +986,7 @@ const
 
 Similar to our earlier shortcut examples, once I've typed in `'books'` or `'authors'` as the first argument to the function, TypeScript and VS Code know both how to type-check and auto-complete both the `WHERE` argument and the type that will returned by `run`.
 
-The `select` and `selectOne` shortcuts can also take an `options` object as their third argument, which has these possible keys: `columns`, `order`, `limit`, `offset`, `extras`, `lateral` and `alias`.
+The `select` and `selectOne` shortcuts can also take an `options` object as their third argument, which has these possible keys: `columns`, `order`, `limit`, `offset`, `extras`, `lateral`, `alias` and `lock`.
 
 
 ##### `columns`
@@ -1179,6 +1179,33 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
   }
 }).run(pool);
 ```
+
+##### `lock`
+
+The `lock` option defines a [locking clause](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE). It takes a `SelectLockingOptions` object or `SelectLockingOptions[]` array, defined as:
+
+```typescript:norun
+export interface SelectLockingOptions {
+  for: 'UPDATE' | 'NO KEY UPDATE' | 'SHARE' | 'KEY SHARE';
+  of?: Table | Table[];
+  wait?: 'NOWAIT' | 'SKIP LOCKED';
+}
+```
+
+(And yes, this allows for arbitrary locking scenarios that a shorcut `select` can't yet need).
+
+A couple of examples:
+
+```typescript
+const authors1 = await db.select("authors", db.all, { 
+  lock: { for: "NO KEY UPDATE" } 
+}).run(pool);
+
+const authors2 = await db.select("authors", db.all, { 
+  lock: { for: "UPDATE", of: "authors", wait: "NOWAIT" } 
+}).run(pool);
+```
+
 
 => transaction.ts export async function transaction<T, M extends Isolation>(
 
