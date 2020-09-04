@@ -613,7 +613,7 @@ Taking that one step at a time:
 
 Examples of the `run` function are scattered throughout this documentation.
 
-The `force` parameter is relevant only if this `SQLFragment` has been marked as a no-op (Zapatos does this when you pass an empty array to `insert` or `upsert`). By default, the database will not be disturbed in such cases, but you can force the no-op query to be run (perhaps for logging or triggering reasons) by setting `force` to `true`.
+The `force` parameter is relevant only if this `SQLFragment` has been marked as a [no-op](https://en.wiktionary.org/wiki/no-op#Etymology_2): at present, Zapatos does this automatically if you pass an empty array to `insert` or `upsert`. By default, the database will not be disturbed in such cases, but you can force a no-op query to actually be run against the database — (perhaps for logging or triggering reasons — by setting `force` to `true`.
 
 
 => core.ts compile = (result: SQLQuery = { text: '', values: [] }, parentTable?: string, currentColumn?: Column) => {
@@ -991,6 +991,7 @@ const oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool);
 try {
   const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
   // ... do something with this author ...
+
 } catch (err) {
   if (err instanceof db.NotExactlyOneError) console.log(`${err.name}: ${err.message}`);
   else throw err;
@@ -1001,10 +1002,10 @@ try {
 const numberOfAuthors = await db.count('authors', db.all).run(pool);
 ```
 ```typescript
-// select, Whereable with an embedded SQLFragment
+// select, Whereable with embedded SQLFragment
 const recentAuthorBooks = await db.select('books', { 
   authorId: 1001,
-  createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '7 days'` 
+  createdAt: db.sql<s.books.SQL>`${db.self} > now() - INTERVAL '7 days'` 
 }).run(pool);
 ```
 ```typescript
