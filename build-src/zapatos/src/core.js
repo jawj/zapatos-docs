@@ -115,16 +115,25 @@ export class SQLFragment {
          */
         this.runResultTransform = qr => qr.rows;
         this.parentTable = undefined; // used for nested shortcut select queries
+        this.noop = false; // if true, bypass actually running the query unless forced to e.g. for empty INSERTs
         /**
          * Compile and run this query using the provided database connection. What's returned
          * is piped via `runResultTransform` before being returned.
          * @param queryable A database client or pool
+         * @param force If true, force this query to hit the DB even if it's marked as a no-op
          */
-        this.run = async (queryable) => {
+        this.run = async (queryable, force = false) => {
             const query = this.compile(), config = getConfig();
             if (config.queryListener)
                 config.queryListener(query);
-            const qr = await queryable.query(query), result = this.runResultTransform(qr);
+            let result;
+            if (!this.noop || force) {
+                const qr = await queryable.query(query);
+                result = this.runResultTransform(qr);
+            }
+            else {
+                result = this.noopResult;
+            }
             if (config.resultListener)
                 config.resultListener(result);
             return result;
@@ -137,6 +146,8 @@ export class SQLFragment {
         this.compile = (result = { text: '', values: [] }, parentTable, currentColumn) => {
             if (this.parentTable)
                 parentTable = this.parentTable;
+            if (this.noop)
+                result.text += "/* marked no-op: won't hit DB unless forced -> */ ";
             result.text += this.literals[0];
             for (let i = 1, len = this.literals.length; i < len; i++) {
                 this.compileExpression(this.expressions[i - 1], result, parentTable, currentColumn);

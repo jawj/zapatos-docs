@@ -596,13 +596,14 @@ Within `select`, `selectOne` or `count` queries passed as subqueries to the `lat
 
 You can [interpolate them](#sql-template-strings) into other `sql` tagged template strings, or call/access the following properties on them:
 
-=> core.ts run = async (queryable: Queryable): Promise<RunResult> => {
 
-#### `async run(queryable: Queryable): Promise<RunResult>`
+=> core.ts run = async (queryable: Queryable, force = false): Promise<RunResult> => {
+
+#### `async run(queryable: Queryable, force = false): Promise<RunResult>`
 
 The `run` function compiles, executes, and returns the transformed result of the query represented by this `SQLFragment`. The `awaited` return value is typed according to the `SQLFragment`'s `RunResult` type variable.
 
-Taking that one step at a a time:
+Taking that one step at a time:
 
 1. First, [the `compile` function](#compile-sqlquery) is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
 
@@ -611,6 +612,9 @@ Taking that one step at a a time:
 3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform-qr-pgqueryresult--any) function, whose default implementation simply returns the `rows` property of the result. If a `resultListener` function [has been configured](#run-time-configuration), it is called with the transformed result as its argument now.
 
 Examples of the `run` function are scattered throughout this documentation.
+
+The `force` parameter is relevant only if this `SQLFragment` has been marked as a no-op (Zapatos does this when you pass an empty array to `insert` or `upsert`). By default, the database will not be disturbed in such cases, but you can force the no-op query to be run (perhaps for logging or triggering reasons) by setting `force` to `true`.
+
 
 => core.ts compile = (result: SQLQuery = { text: '', values: [] }, parentTable?: string, currentColumn?: Column) => {
 
@@ -631,6 +635,7 @@ console.log(compiled);
 ```
 
 You may never need this function. Use it if and when you want to see the SQL that would be executed by the `run` function, without in fact executing it. 
+
 
 => core.ts runResultTransform: (qr: pg.QueryResult) => any = qr => qr.rows;
 
@@ -768,6 +773,14 @@ You'll note that `Insertable`s can take `SQLFragment` values (from the `sql` tag
 
 Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
 
+If you provide an empty array to `insert`, this is identified as a no-op, and the database will not actually be queried unless you set the `force` option on `run` to true.
+
+```typescript:showempty
+await db.insert("authors", []).run(pool);  // never reaches DB
+await db.insert("authors", []).run(pool, true);  // does reach DB, for same result
+```
+
+
 => shortcuts.ts /* === update === */
 
 #### `update`
@@ -875,6 +888,8 @@ const
   result = await db.upsert('appleTransactions', anotherNewTransaction, 
     db.constraint('appleTransactionsPrimaryKey')).run(pool);
 ```
+
+The same as for `insert`, an empty array provided to `upsert` is identified as a no-op, and the database will not actually be queried unless you set the `force` option on `run` to true.
 
 
 => shortcuts.ts /* === delete === */

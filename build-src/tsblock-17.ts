@@ -8,7 +8,7 @@
             }
           },
           resultListener: (x: any) => {
-            if (x != null && !(Array.isArray(x) && x.length === 0)) {
+            if (x != null && (false || !(Array.isArray(x) && x.length === 0))) {
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }
           },

@@ -14,10 +14,19 @@ import { completeKeysWithDefault, mapWithSeparator } from './utils';
  * @param values The `Insertable` values (or array thereof) to be inserted
  */
 export const insert = function (table, values) {
-    const completedValues = Array.isArray(values) ? completeKeysWithDefault(values) : values, colsSQL = cols(Array.isArray(completedValues) ? completedValues[0] : completedValues), valuesSQL = Array.isArray(completedValues) ?
-        mapWithSeparator(completedValues, sql `, `, v => sql `(${vals(v)})`) :
-        sql `(${vals(completedValues)})`, query = sql `INSERT INTO ${table} (${colsSQL}) VALUES ${valuesSQL} RETURNING to_jsonb(${table}.*) AS result`;
-    query.runResultTransform = Array.isArray(completedValues) ?
+    let query;
+    if (Array.isArray(values) && values.length === 0) {
+        query = sql `INSERT INTO ${table} SELECT null WHERE false`;
+        query.noop = true;
+        query.noopResult = [];
+    }
+    else {
+        const completedValues = Array.isArray(values) ? completeKeysWithDefault(values) : values, colsSQL = cols(Array.isArray(completedValues) ? completedValues[0] : completedValues), valuesSQL = Array.isArray(completedValues) ?
+            mapWithSeparator(completedValues, sql `, `, v => sql `(${vals(v)})`) :
+            sql `(${vals(completedValues)})`;
+        query = sql `INSERT INTO ${table} (${colsSQL}) VALUES ${valuesSQL} RETURNING to_jsonb(${table}.*) AS result`;
+    }
+    query.runResultTransform = Array.isArray(values) ?
         (qr) => qr.rows.map(r => r.result) :
         (qr) => qr.rows[0].result;
     return query;
@@ -48,6 +57,8 @@ export function constraint(x) { return new Constraint(x); }
  * overwritten with `NULL` values during an update
  */
 export const upsert = function (table, values, conflictTarget, noNullUpdateCols = []) {
+    if (Array.isArray(values) && values.length === 0)
+        return insert(table, values); // punt a no-op to plain insert
     if (typeof conflictTarget === 'string')
         conflictTarget = [conflictTarget]; // now either Column[] or Constraint
     if (!Array.isArray(noNullUpdateCols))

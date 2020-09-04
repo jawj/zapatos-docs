@@ -7,7 +7,7 @@ xyz.setConfig({
         }
     },
     resultListener: (x) => {
-        if (x != null && !(Array.isArray(x) && x.length === 0)) {
+        if (x != null && (false || !(Array.isArray(x) && x.length === 0))) {
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
         }
     },
@@ -19,10 +19,7 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    await db.update("emailAuthentication", {
-        consecutiveFailedLogins: db.sql `${db.self} + 1`,
-        lastFailedLogin: db.sql `now()`,
-    }, { email: 'me@privacy.net' }).run(pool);
+    await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);
     /* original script ends */
 }
 catch (e) {
