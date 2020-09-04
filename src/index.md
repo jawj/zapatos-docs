@@ -963,7 +963,7 @@ await db.truncate(allTables, 'CASCADE').run(pool);
 
 (If you want to see the full horror of these type signatures, follow the above link to the code).
 
-The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), the appropriate `Whereable` for the target table, or a `SQLFragment` from a `sql` template string. Recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable), which means the `SQLFragment` variant is rarely required.
+The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), a `SQLFragment` from a `sql` template string, or the appropriate `Whereable` for the target table (recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable)).
 
 The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable | undefined>`, promising _only a single object_ (or `undefined`) when run. 
 
@@ -974,40 +974,44 @@ The `count` function, finally, generates a query to count matching rows, and thu
 In use, they look like this:
 
 ```typescript
-const 
-  // select, no WHERE clause
-  allBooks = await db.select('books', db.all).run(pool),
-
-  // select, Whereable
-  authorBooks = await db.select('books', { authorId: 1000 }).run(pool),
-
-  // selectOne (since authors.id is a primary key), Whereable
-  oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool);
-
-  // selectExactlyOne, Whereable
-  // for a more useful example, see the section on `lateral`, below
-  try {
-    const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
-    // ... do something with this author ...
-  } catch (err) {
-    if (err instanceof db.NotExactlyOneError) console.log(`${err.name}: ${err.message}`);
-    else throw err;
-  }
-
-const
-  // count
-  numberOfAuthors = await db.count('authors', db.all).run(pool),
-
-  // select, Whereable with an embedded SQLFragment
-  recentAuthorBooks = await db.select('books', { 
-    authorId: 1001,
-    createdAt: db.sql<db.SQL>`
-      ${db.self} > now() - INTERVAL '7 days'` 
-  }).run(pool),
-
-  // select, SQLFragment (but a Whereable might be preferable)
-  allRecentBooks = await db.select('books', db.sql<s.books.SQL>`
-    ${"createdAt"} > now() - INTERVAL '7 days'`).run(pool);
+// select, no WHERE clause
+const allBooks = await db.select('books', db.all).run(pool);
+```
+```typescript
+// select, Whereable
+const authorBooks = await db.select('books', { authorId: 1000 }).run(pool);
+```
+```typescript
+// selectOne (since authors.id is a primary key), Whereable
+const oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool);
+```
+```typescript
+// selectExactlyOne, Whereable
+// for a more useful example, see the section on `lateral`, below
+try {
+  const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
+  // ... do something with this author ...
+} catch (err) {
+  if (err instanceof db.NotExactlyOneError) console.log(`${err.name}: ${err.message}`);
+  else throw err;
+}
+```
+```typescript
+// count
+const numberOfAuthors = await db.count('authors', db.all).run(pool);
+```
+```typescript
+// select, Whereable with an embedded SQLFragment
+const recentAuthorBooks = await db.select('books', { 
+  authorId: 1001,
+  createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '7 days'` 
+}).run(pool);
+```
+```typescript
+// select, SQLFragment with embedded Whereables
+const anOddSelectionOfBooksToDemonstrateAnOrCondition = await db.select('books', 
+  db.sql<s.books.SQL>`${{ id: 1 }} OR ${{ authorId: 2 }}`
+).run(pool);
 ```
 
 Similar to our earlier shortcut examples, once I've typed in `'books'` or `'authors'` as the first argument to the function, TypeScript and VS Code know both how to type-check and auto-complete both the `WHERE` argument and the type that will returned by `run`.
