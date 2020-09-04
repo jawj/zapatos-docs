@@ -9,6 +9,8 @@ Released under the MIT licence: see LICENCE file
 let config = {
     transactionAttemptsMax: 5,
     transactionRetryDelay: { minMs: 25, maxMs: 250 },
+    castArrayParamsToJson: false,
+    castObjectParamsToJson: false,
 };
 /**
  * Get (a copy of) the current configuration.

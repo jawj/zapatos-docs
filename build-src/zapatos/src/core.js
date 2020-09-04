@@ -7,6 +7,7 @@ Copyright (C) 2020 George MacKerron
 Released under the MIT licence: see LICENCE file
 */
 import { getConfig } from './config';
+import { isPOJO } from './utils';
 // === symbols, types, wrapper classes and shortcuts ===
 /**
  * Compiles to `DEFAULT` for use in `INSERT`/`UPDATE` queries.
@@ -22,19 +23,34 @@ export const self = Symbol('self');
 export const all = Symbol('all');
 /**
  * Compiles to a numbered query parameter (`$1`, `$2`, etc) and adds the wrapped value
- * at the appropriate position of the values array passed to pg
+ * at the appropriate position of the values array passed to `pg`.
+ * @param x The value to be wrapped
+ * @param cast Optional cast type. If a string, the parameter will be cast to this type
+ * within the query e.g. `CAST($1 AS type)` instead of plain `$1`. If `true`, the value
+ * will be JSON stringified and cast to `json` (irrespective of the configuration parameters
+ * `castArrayParamsToJson` and `castObjectParamsToJson`). If `false`, the value will **not**
+ * be JSON stringified or cast to `json` (again irrespective of the configuration parameters
+ * `castArrayParamsToJson` and `castObjectParamsToJson`).
  */
 export class Parameter {
-    constructor(value) {
+    constructor(value, cast) {
         this.value = value;
+        this.cast = cast;
     }
 }
 /**
  * Returns a `Parameter` instance, which compiles to a numbered query parameter (`$1`,
  * `$2`, etc) and adds its wrapped value at the appropriate position of the values array
- * passed to pg
+ * passed to `pg`.
+ * @param x The value to be wrapped
+ * @param cast Optional cast type. If a string, the parameter will be cast to this type
+ * within the query e.g. `CAST($1 AS type)` instead of plain `$1`. If `true`, the value
+ * will be JSON stringified and cast to `json` (irrespective of the configuration parameters
+ * `castArrayParamsToJson` and `castObjectParamsToJson`). If `false`, the value will **not**
+ * be JSON stringified or cast to `json` (again irrespective of the configuration parameters
+ * `castArrayParamsToJson` and `castObjectParamsToJson`).
  */
-export function param(x) { return new Parameter(x); }
+export function param(x, cast) { return new Parameter(x, cast); }
 /**
  * Compiles to the wrapped string value, as is. Dangerous: https://xkcd.com/327/.
  */
@@ -177,8 +193,23 @@ export class SQLFragment {
             }
             else if (expression instanceof Parameter) {
                 // parameters become placeholders, and a corresponding entry in the values array
-                result.values.push(expression.value);
-                result.text += '$' + String(result.values.length); // 1-based indexing
+                const placeholder = '$' + String(result.values.length + 1), // 1-based indexing
+                config = getConfig();
+                if (((expression.cast !== false && (expression.cast === true || config.castArrayParamsToJson)) &&
+                    Array.isArray(expression.value)) ||
+                    ((expression.cast !== false && (expression.cast === true || config.castObjectParamsToJson)) &&
+                        isPOJO(expression.value))) {
+                    result.values.push(JSON.stringify(expression.value));
+                    result.text += `CAST(${placeholder} AS "json")`;
+                }
+                else if (typeof expression.cast === 'string') {
+                    result.values.push(expression.value);
+                    result.text += `CAST(${placeholder} AS "${expression.cast}")`;
+                }
+                else {
+                    result.values.push(expression.value);
+                    result.text += placeholder;
+                }
             }
             else if (expression === Default) {
                 // a column default
@@ -224,7 +255,9 @@ export class SQLFragment {
                         const columnName = columnNames[i], columnValue = columnValues[i];
                         if (i > 0)
                             result.text += ', ';
-                        if (columnValue instanceof SQLFragment || columnValue === Default)
+                        if (columnValue instanceof SQLFragment ||
+                            columnValue instanceof Parameter ||
+                            columnValue === Default)
                             this.compileExpression(columnValue, result, parentTable, columnName);
                         else
                             this.compileExpression(new Parameter(columnValue), result, parentTable, columnName);
