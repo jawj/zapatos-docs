@@ -26,7 +26,7 @@
         /* original script begins */
         const bookAuthorTags = await db.select('books', db.all, {
   lateral: {
-    author: db.selectOne('authors', { id: db.parent('authorId') }),
+    author: db.selectExactlyOne('authors', { id: db.parent('authorId') }),
     tags: db.select('tags', { bookId: db.parent('id') }),
   }
 }).run(pool);

@@ -64,6 +64,7 @@ CREATE TABLE "shifts"
 , "doctorId" INTEGER NOT NULL REFERENCES "doctors"("id")
 , PRIMARY KEY ("day", "doctorId") );
 
+CREATE TABLE "arrays" ("jsonValue" jsonb, "textArray" text[]);
 
 INSERT INTO "authors" VALUES (1000, 'Philip Pullman', true);
 INSERT INTO "books" VALUES (1000, 1000, 'Northern Lights');

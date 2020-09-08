@@ -73,6 +73,8 @@ export type SelectableForTable<T extends Table> = {
 }[T];
 ```
 
+Postgres enumerated types (e.g. `CREATE TYPE "size" AS ENUM ('miniscule', 'monumental');`) are exported appropriately (`'miniscule' | 'monumental'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its underlying type, but can also be customised. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can be customised from there.
+
 [Tell me more about the command line tool »](#how-do-i-use-it)
 
 #### Arbitrary SQL
@@ -115,7 +117,7 @@ Let's use one of them — `insert` — to add two more authors:
 ```typescript
 const [doug, janey] = await db.insert('authors', [
   { name: 'Douglas Adams', isLiving: false },
-  { name: 'Jane Austen', isLiving: false},
+  { name: 'Jane Austen', isLiving: false },
 ]).run(pool);
 ```
 
@@ -123,7 +125,7 @@ The `insert` shortcut accepts a single `Insertable` or an `Insertable[]` array, 
 
 _Again, click 'Explore types' to play around and check those typings._ 
 
-In addition to `insert`, there are shortcuts for `select`, `selectOne` and `count`, and for `update`, `upsert`, `delete` and `truncate`. 
+In addition to `insert`, there are shortcuts for `select`, `selectOne`, `selectExactlyOne` and `count`, and for `update`, `upsert`, `delete` and `truncate`. 
 
 [Tell me more about the shortcut functions »](#shortcut-functions-and-lateral-joins)
 
@@ -157,7 +159,7 @@ Let's try it:
 ```typescript
 const bookAuthorTags = await db.select('books', db.all, {
   lateral: {
-    author: db.selectOne('authors', { id: db.parent('authorId') }),
+    author: db.selectExactlyOne('authors', { id: db.parent('authorId') }),
     tags: db.select('tags', { bookId: db.parent('id') }),
   }
 }).run(pool);
@@ -251,9 +253,9 @@ Zapatos provides a command line tool, which is run like so:
     
     npx zapatos
 
-This generates the TypeScript schema for your database in a folder named `zapatos/schema.ts`, and copies (or symlinks) the Zapatos source files into `zapatos/src`. 
+This generates the TypeScript schema for your database in a folder named `zapatos/schema.ts`, and copies (or symlinks) the Zapatos source files into `zapatos/src`. Any user-defined or domain types encountered get defined in their own files under `zapatos/custom`, which you can subsequently customise.
 
-**You *must* import the Zapatos source files from this copied/symlinked directory, e.g. `from './zapatos/src'` , and *not* `from 'zapatos'` in the usual way (which would find them in `node_modules`).**
+**You *must* import the Zapatos source files from the copied/symlinked Zapatos directory, e.g. `from './zapatos/src'`, and *not* `from 'zapatos'` in the usual way (which would find them in `node_modules`).**
 
 That's because the source files depend on importing your custom, Zapatos-generated `schema.ts`, which they cannot do if they're imported direct from `node_modules` in the usual way.
 
@@ -303,7 +305,11 @@ This file has up to six top-level keys:
 
 * `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
-Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if** all of your table names are unique across all schemas (to make this work, you'll need to run a query something like this: `ALTER DATABASE "mydb" SET "search_path" TO "$user", "public", "additionalSchema1", "additionalSchema2";`).
+Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if and only if** all of your table names are unique across all schemas. To make this work, you'll need to set something like this: 
+
+```sql
+ALTER DATABASE "mydb" SET "search_path" TO "$user", "public", "additionalSchema1", "additionalSchema2";`
+```
 
 If not specified, the default value for `"schemas"` includes all tables in the `public` schema, i.e.:
 
@@ -337,7 +343,7 @@ One more example: if you use PostGIS, you'll likely want to exclude its system t
 
 All values in `zapatosconfig.json` can have environment variables (Node's `process.env.SOMETHING`) interpolated via [handlebars](https://handlebarsjs.com/)-style doubly-curly-brackets `{{variables}}`. 
 
-This is likely most useful for the database connection details. For example, on Heroku you'd probably configure your database as:
+This is likely most useful for the database connection details. For example, on Heroku you might configure your database as:
 
 ```json
 "db": {
@@ -356,11 +362,11 @@ const zapCfg: z.Config = { db: { connectionString: 'postgres://localhost/mydb' }
 await z.generate(zapCfg);
 ```
 
-Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above. In this case the `progressListener` and `warningListener` keys can each take `true` or `false` (as in the JSON case) or a function with the signature `(s: string) => void`, which you can use to implement your own logging.
+Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above. In this case the `progressListener` and `warningListener` keys can each take `true` or `false` (as in the JSON case) or alternatively a function with the signature `(s: string) => void`, which you can use to implement your own logging.
 
 #### ESLint / tslint
 
-One general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid `Promise`-related pitfalls.
+One general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid `Promise`-related pitfalls.
 
 
 ## User guide
@@ -440,7 +446,7 @@ const
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 ```
 
-If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-parameter), and in certain other places. If you're in any doubt, check whether the generated SQL is using `$1`, `$2`, ... parameters).
+If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-cast-boolean--string-parameter), and in certain other places. If you're in any doubt, check whether the generated SQL is using `$1`, `$2`, ... parameters for all untrusted data).
 
 
 #### `cols()` and `vals()`
@@ -486,7 +492,7 @@ const
 
 #### `Whereable`
 
-Any plain JavaScript object interpolated into a `sql` template string is type-checked as a `Whereable`, and compiled into one or more conditions joined with `AND` (but, for flexibility, no `WHERE`). The object's keys represent column names, and the corresponding values are compiled as (injection-safe) parameters.
+Any plain JavaScript object interpolated into a `sql` template string is type-checked as a `Whereable`, and compiled into one or more conditions joined with `AND` (but, for flexibility, no `WHERE`). The object's keys represent column names, and the corresponding values are automatically compiled as (injection-safe) [`Parameter`](#paramvalue-any-cast-boolean--string-parameter) instances.
 
 For example:
 
@@ -497,7 +503,9 @@ const
     SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
 ```
 
-A `Whereable`'s values can also be `SQLFragments`, however, and this makes them extremely flexible. In a `SQLFragment` inside a `Whereable`, the special symbol `self` can be used to refer to the column name. This arrangement enables us to use any operator or function we want — not just `=`.
+(If you need to specify a `CAST` of a parameter to a specific SQL type, you can also manually wrap `Whereable` values using [`param`](#paramvalue-any-cast-boolean--string-parameter) — this is useful primarily when using [the shortcut functions](#shortcut-functions-and-lateral-joins)).
+
+A `Whereable`'s values can alternatively be `SQLFragments`, and this makes them extremely flexible. In a `SQLFragment` inside a `Whereable`, the special symbol `self` can be used to refer to the column name. This arrangement enables us to use any operator or function we want — not just `=`.
 
 For example:
 
@@ -510,13 +518,14 @@ const
       createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '7 days'`,
     }}`.run(pool);
 ```
+ 
 
 #### `self`
 
 The use of the `self` symbol is explained in [the section on `Whereable`s](#whereable).
 
 
-#### `param(value: any): Parameter`
+#### `param(value: any, cast?: boolean | string): Parameter`
 
 In general, Zapatos' type-checking won't let us [pass user-supplied data unsafely into a query](https://xkcd.com/327/) by accident. The `param` wrapper function exists to enable the safe passing of user-supplied data into a query using numbered query parameters (`$1`, `$2`, ...). 
 
@@ -530,6 +539,8 @@ const
 ```
 
 This same mechanism is applied automatically when we use [a `Whereable` object](#whereable) (and in this example, using a `Whereable` would be more readable and more concise). It's also applied when we use [the `vals` function](#cols-and-vals) to create a `ColumnValues` wrapper object.
+
+The optional second argument to `param`, `cast`, allows us to specify a SQL `CAST` type for the wrapped value. If `cast` is a string, it's interpreted as a Postgres type, so `param(someValue, 'text')` comes out in the compiled query as as `CAST($1 TO "text")`. If `cast` is `true`, the parameter value will be JSON stringified and cast to `json`, and if `cast` is `false`, the parameter will **not** be JSON stringified or cast to `json` (regardless, in both cases, of [the `castArrayParamsToJson` and `castObjectParamsToJson` configuration options](#casting-parameters-to-json)).
 
 
 #### `default`
@@ -570,7 +581,7 @@ const
   lateralSQL = lateralOpt === undefined ? [] :
     Object.keys(lateralOpt).map(k => {
       const subQ = lateralOpt[k];
-      subQ.parentTable = aliasedTable;  // enables `parent()` in subquery's Wherables
+      subQ.parentTable = aliasedTable;  // enables `parent()` in subquery's Whereables
       return sql<SQL>` LEFT JOIN LATERAL (${subQ}) AS ${raw(`"cj_${k}"`)} ON true`;
     });
 ```
@@ -613,7 +624,7 @@ Taking that one step at a time:
 
 Examples of the `run` function are scattered throughout this documentation.
 
-The `force` parameter is relevant only if this `SQLFragment` has been marked as a [no-op](https://en.wiktionary.org/wiki/no-op#Etymology_2): at present, Zapatos does this automatically if you pass an empty array to `insert` or `upsert`. By default, the database will not be disturbed in such cases, but you can force a no-op query to actually be run against the database — (perhaps for logging or triggering reasons — by setting `force` to `true`.
+The `force` parameter is relevant only if this `SQLFragment` has been marked as a [no-op](https://en.wiktionary.org/wiki/no-op#Etymology_2): at present, Zapatos does this automatically if you pass an empty array to `insert` or `upsert`. By default, the database will not be disturbed in such cases, but you can force a no-op query to actually be run against the database — perhaps for logging or triggering reasons — by setting `force` to `true`.
 
 
 => core.ts compile = (result: SQLQuery = { text: '', values: [] }, parentTable?: string, currentColumn?: Column) => {
@@ -938,6 +949,7 @@ One context in which this may be useful is in emptying a testing database at the
 ```typescript:noresult
 const allTables: s.AllTables = [
   'appleTransactions', 
+  'arrays',
   'authors', 
   'bankAccounts', 
   'books', 
@@ -1017,7 +1029,7 @@ const anOddSelectionOfBooksToDemonstrateAnOrCondition = await db.select('books',
 
 Similar to our earlier shortcut examples, once I've typed in `'books'` or `'authors'` as the first argument to the function, TypeScript and VS Code know both how to type-check and auto-complete both the `WHERE` argument and the type that will returned by `run`.
 
-The `select` and `selectOne` shortcuts can also take an `options` object as their third argument, which has these possible keys: `columns`, `order`, `limit`, `offset`, `extras`, `lateral`, `alias` and `lock`.
+The `select` and `selectOne` shortcuts can also take an `options` object as their third argument, which has a large set of potential keys: `columns`, `order`, `limit`, `offset`, `lateral`, `alias`, `extras`, `groupBy`, `having`, `distinct` and `lock`.
 
 
 ##### `columns`
@@ -1211,6 +1223,41 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
 }).run(pool);
 ```
 
+##### `groupBy` and `having`
+
+The `groupBy` and `having` options work as you'd probably expect. The value of `groupBy` should be a single `Column`, a `Column[]` array or a `SQLFragment`. The value of `having` should be a `Whereable` or `SQLFragment`. 
+
+You'll likely want to use these in conjunction with [`columns`](#columns) and [`extras`](#extras). To take a rather contrived example:
+
+```typescript
+const multiBookAuthorTitleData = await db.select('books', db.all, {
+  columns: ['authorId'],
+  extras: {
+    titleCount: db.sql<s.books.SQL, number>`count(${"title"})`,
+    titleChars: db.sql<s.books.SQL, number>`sum(char_length(${"title"}))`
+  },
+  groupBy: 'authorId',
+  having: db.sql<s.books.SQL>`count(${"title"}) > 1`,
+}).run(pool);
+```
+
+##### `distinct`
+
+The `distinct` option, unsurprisingly, adds [`DISTINCT`](https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT) to your query. If `true` it adds only `DISTINCT`. If a single `Column`, a `Column[]` array, or a `SQLFragment`, it adds the appropriate `DISTINCT ON (/* ... */)` clause.
+
+For instance:
+
+```typescript
+const 
+  books1 = await db.select('books', db.all, { distinct: true }).run(pool),
+  books2 = await db.select('books', db.all, { distinct: 'title' }).run(pool),
+  books3 = await db.select('books', db.all, { distinct: ['title', 'authorId'] }).run(pool),
+  books4 = await db.select('books', db.all, { distinct: db.sql`upper(${"title"})` }).run(pool);
+```
+
+(For the `DISTINCT ON` variants, you should really use [`order`](#order-limit-and-offset) too, or you don't really know which rows you'll get).
+
+
 ##### `lock`
 
 The `lock` option defines a [locking clause](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE). It takes a `SelectLockingOptions` object or `SelectLockingOptions[]` array, defined as:
@@ -1355,6 +1402,8 @@ There are a few configuration options you can set at runtime:
 export interface Config {
   transactionAttemptsMax: number;
   transactionRetryDelay: { minMs: number, maxMs: number };
+  castArrayParamsToJson: boolean;
+  castObjectParamsToJson: boolean;
   queryListener?(str: any): void;
   resultListener?(str: any): void;
   transactionListener?(str: any): void;
@@ -1367,11 +1416,67 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 
 * `transactionRetryDelay` determines the range within which the `transaction` helper will pick a random delay before each retry. It's expressed in milliseconds and defaults to `{ minMs: 25, maxMs: 250 }`. 
 
+* `castArrayParamsToJson` and `castObjectParamsToJson` control whether `Parameter` objects containing arrays and objects, respectively, are to be automatically stringified and cast as Postgres `json` when interpolated into a query. Both default to `false`. See further discussion below.
+
 * `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query.
 
 * `transactionListener`, similarly, is called with messages about transaction retries.
 
 You might use one or more of the three listener functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
+
+
+#### Casting `Parameters` to JSON
+
+There's [a longstanding gotcha in the `pg` module's treatment of JSON parameters](https://github.com/brianc/node-postgres/issues/2012). For `json` and `jsonb` values, you can pass a JavaScript object directly: `pg` automatically calls `JSON.stringify` for you behind the scenes. But try the same thing with a JavaScript array, and that doesn't happen.
+
+Using `pg` directly here, from Node:
+
+```
+> const pg = require('pg');
+> const pool = new pg.Pool(/* ... */);
+BoundPool { /* ... */ }
+> pool.query('INSERT INTO jsontest (data) VALUES ($1)', [{ a: 1, b: 2, c: 3 }]);
+Promise { <pending> }
+> pool.query('INSERT INTO jsontest (data) VALUES ($1)', [[1, 2, 3]]);
+Promise { <pending> }
+> (node:59488) UnhandledPromiseRejectionWarning: error: invalid input syntax for type json
+```
+
+In this second case, `pg` can't tell whether you're trying to pass a JSON array or a native Postgres array, and it assumes the latter.
+
+But if you know you'll more often be passing JSON arrays than native Postgres arrays to `pg`, you can reverse this assumption by setting the Zapatos `castArrayParamsToJson` config option to `true`. When interpolating a `Parameter` instance (as returned by the `param` call) that wraps an array, Zapatos will then default to calling `JSON.stringify` on the array and casting it to `json`. Whether or not `castArrayParamsToJson` is set, you can always specify the desired stringifying and casting behaviour using the [optional second argument to `param`](#paramvalue-any-cast-boolean--string-parameter).
+
+To clarify, take this table:
+
+```sql
+CREATE TABLE "arrays" ("jsonValue" jsonb, "textArray" text[]);
+```
+
+When `castArrayParamsToJson` is `false` (the default):
+
+```typescript
+db.setConfig({ castArrayParamsToJson: false });  // the default
+
+await db.insert("arrays", { 
+  jsonValue: db.param(['a', 'b', 'c'], true),  // true -> manual cast to JSON
+  textArray: ['a', 'b', 'c'],
+}).run(pool);
+```
+
+Or with `castArrayParamsToJson` set to `true`:
+
+```typescript
+db.setConfig({ castArrayParamsToJson: true });
+
+await db.insert("arrays", { 
+  jsonValue: ['a', 'b', 'c'],
+  textArray: db.param(['a', 'b', 'c'], false),  // false -> prevent automatic cast to JSON
+}).run(pool);
+```
+
+The `castObjectParamsToJson` option has a fairly similar effect. As seen above, `pg` already stringifies JavaScript objects, but it does not explicitly cast them to `json`, and instead passes implicitly them as `text`. This matters in the (probably rare) case that the parameter then requires an onward cast from `json` to another type.
+
+For example, when working with recent PostGIS, casting `geometry` values to JSON produces handy [GeoJSON](https://geojson.org/) output, and you can [define your own cast](https://trac.osgeo.org/postgis/ticket/3687#comment:9) in the opposite direction too. However, when doing a GeoJSON `INSERT` into or `UPDATE` of a `geometry` column, the stringified JSON input parameter must be explicitly cast to JSON, otherwise it's assumed to be [Well-Known Text](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) and fails to parse. In Zapatos, you can specify the cast manually with the [optional second argument to `param`](#paramvalue-any-cast-boolean--string-parameter)), or you can set `castObjectParamsToJson` to `true`, and any JSON objects interpolated as a `Parameter` will be cast to `json` automatically.
 
 
 ## About Zapatos

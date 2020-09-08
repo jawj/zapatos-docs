@@ -63,6 +63,30 @@ export namespace appleTransactions {
   export type SQL = SQLExpression | SQLExpression[];
 }
 
+export namespace arrays {
+  export type Table = 'arrays';
+  export interface Selectable {
+    jsonValue: JSONValue | null;
+    textArray: string[] | null;
+  }
+  export interface Insertable {
+    jsonValue?: JSONValue | Parameter<JSONValue> | null | DefaultType | SQLFragment;
+    textArray?: string[] | Parameter<string[]> | null | DefaultType | SQLFragment;
+  }
+  export interface Updatable extends Partial<Insertable> { }
+  export type Whereable = { [K in keyof Insertable]?: Exclude<Insertable[K] | ParentColumn, null | DefaultType> };
+  export type JSONSelectable = { [K in keyof Selectable]:
+    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | DateString :
+    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | DateString[] :
+    Selectable[K]
+  };
+  export type UniqueIndex = never;
+  export type Column = keyof Selectable;
+  export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+  export type SQLExpression = GenericSQLExpression | Table | Whereable | Column | ColumnNames<Updatable | (keyof Updatable)[]> | ColumnValues<Updatable>;
+  export type SQL = SQLExpression | SQLExpression[];
+}
+
 export namespace authors {
   export type Table = 'authors';
   export interface Selectable {
@@ -293,18 +317,19 @@ export namespace tags {
 
 /* === cross-table types === */
 
-export type Table = appleTransactions.Table | authors.Table | bankAccounts.Table | books.Table | doctors.Table | emailAuthentication.Table | employees.Table | shifts.Table | stores.Table | tags.Table;
-export type Selectable = appleTransactions.Selectable | authors.Selectable | bankAccounts.Selectable | books.Selectable | doctors.Selectable | emailAuthentication.Selectable | employees.Selectable | shifts.Selectable | stores.Selectable | tags.Selectable;
-export type Whereable = appleTransactions.Whereable | authors.Whereable | bankAccounts.Whereable | books.Whereable | doctors.Whereable | emailAuthentication.Whereable | employees.Whereable | shifts.Whereable | stores.Whereable | tags.Whereable;
-export type Insertable = appleTransactions.Insertable | authors.Insertable | bankAccounts.Insertable | books.Insertable | doctors.Insertable | emailAuthentication.Insertable | employees.Insertable | shifts.Insertable | stores.Insertable | tags.Insertable;
-export type Updatable = appleTransactions.Updatable | authors.Updatable | bankAccounts.Updatable | books.Updatable | doctors.Updatable | emailAuthentication.Updatable | employees.Updatable | shifts.Updatable | stores.Updatable | tags.Updatable;
-export type UniqueIndex = appleTransactions.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | tags.UniqueIndex;
-export type Column = appleTransactions.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | shifts.Column | stores.Column | tags.Column;
-export type AllTables = [appleTransactions.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, shifts.Table, stores.Table, tags.Table];
+export type Table = appleTransactions.Table | arrays.Table | authors.Table | bankAccounts.Table | books.Table | doctors.Table | emailAuthentication.Table | employees.Table | shifts.Table | stores.Table | tags.Table;
+export type Selectable = appleTransactions.Selectable | arrays.Selectable | authors.Selectable | bankAccounts.Selectable | books.Selectable | doctors.Selectable | emailAuthentication.Selectable | employees.Selectable | shifts.Selectable | stores.Selectable | tags.Selectable;
+export type Whereable = appleTransactions.Whereable | arrays.Whereable | authors.Whereable | bankAccounts.Whereable | books.Whereable | doctors.Whereable | emailAuthentication.Whereable | employees.Whereable | shifts.Whereable | stores.Whereable | tags.Whereable;
+export type Insertable = appleTransactions.Insertable | arrays.Insertable | authors.Insertable | bankAccounts.Insertable | books.Insertable | doctors.Insertable | emailAuthentication.Insertable | employees.Insertable | shifts.Insertable | stores.Insertable | tags.Insertable;
+export type Updatable = appleTransactions.Updatable | arrays.Updatable | authors.Updatable | bankAccounts.Updatable | books.Updatable | doctors.Updatable | emailAuthentication.Updatable | employees.Updatable | shifts.Updatable | stores.Updatable | tags.Updatable;
+export type UniqueIndex = appleTransactions.UniqueIndex | arrays.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | tags.UniqueIndex;
+export type Column = appleTransactions.Column | arrays.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | shifts.Column | stores.Column | tags.Column;
+export type AllTables = [appleTransactions.Table, arrays.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, shifts.Table, stores.Table, tags.Table];
 
 
 export type SelectableForTable<T extends Table> = {
   appleTransactions: appleTransactions.Selectable;
+  arrays: arrays.Selectable;
   authors: authors.Selectable;
   bankAccounts: bankAccounts.Selectable;
   books: books.Selectable;
@@ -318,6 +343,7 @@ export type SelectableForTable<T extends Table> = {
 
 export type WhereableForTable<T extends Table> = {
   appleTransactions: appleTransactions.Whereable;
+  arrays: arrays.Whereable;
   authors: authors.Whereable;
   bankAccounts: bankAccounts.Whereable;
   books: books.Whereable;
@@ -331,6 +357,7 @@ export type WhereableForTable<T extends Table> = {
 
 export type InsertableForTable<T extends Table> = {
   appleTransactions: appleTransactions.Insertable;
+  arrays: arrays.Insertable;
   authors: authors.Insertable;
   bankAccounts: bankAccounts.Insertable;
   books: books.Insertable;
@@ -344,6 +371,7 @@ export type InsertableForTable<T extends Table> = {
 
 export type UpdatableForTable<T extends Table> = {
   appleTransactions: appleTransactions.Updatable;
+  arrays: arrays.Updatable;
   authors: authors.Updatable;
   bankAccounts: bankAccounts.Updatable;
   books: books.Updatable;
@@ -357,6 +385,7 @@ export type UpdatableForTable<T extends Table> = {
 
 export type UniqueIndexForTable<T extends Table> = {
   appleTransactions: appleTransactions.UniqueIndex;
+  arrays: arrays.UniqueIndex;
   authors: authors.UniqueIndex;
   bankAccounts: bankAccounts.UniqueIndex;
   books: books.UniqueIndex;
@@ -370,6 +399,7 @@ export type UniqueIndexForTable<T extends Table> = {
 
 export type ColumnForTable<T extends Table> = {
   appleTransactions: appleTransactions.Column;
+  arrays: arrays.Column;
   authors: authors.Column;
   bankAccounts: bankAccounts.Column;
   books: books.Column;
@@ -383,6 +413,7 @@ export type ColumnForTable<T extends Table> = {
 
 export type SQLForTable<T extends Table> = {
   appleTransactions: appleTransactions.SQL;
+  arrays: arrays.SQL;
   authors: authors.SQL;
   bankAccounts: bankAccounts.SQL;
   books: books.SQL;

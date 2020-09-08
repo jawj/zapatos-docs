@@ -6,7 +6,7 @@ Zapatos: https://jawj.github.io/zapatos/
 Copyright (C) 2020 George MacKerron
 Released under the MIT licence: see LICENCE file
 */
-import { all, sql, cols, vals, raw, param, } from './core';
+import { all, SQLFragment, sql, cols, vals, raw, param, } from './core';
 import { completeKeysWithDefault, mapWithSeparator } from './utils';
 /**
  * Generate an `INSERT` query `SQLFragment`.
@@ -147,31 +147,32 @@ export class NotExactlyOneError extends Error {
  * @param mode Used internally by `selectOne` and `count`
  */
 export const select = function (table, where = all, options = {}, mode = SelectResultMode.Many) {
-    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, aliasedTable = allOptions.alias || table, lateralOpt = allOptions.lateral, extrasOpt = allOptions.extras, lockOpt = allOptions.lock === undefined || Array.isArray(allOptions.lock) ? allOptions.lock : [allOptions.lock], tableAliasSQL = aliasedTable === table ? [] : sql ` AS ${aliasedTable}`, colsSQL = mode === SelectResultMode.Count ?
-        (allOptions.columns ? sql `count(${cols(allOptions.columns)})` : sql `count(${aliasedTable}.*)`) :
+    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, alias = allOptions.alias || table, { distinct, groupBy, having, lateral, extras } = allOptions, lock = allOptions.lock === undefined || Array.isArray(allOptions.lock) ? allOptions.lock : [allOptions.lock], tableAliasSQL = alias === table ? [] : sql ` AS ${alias}`, distinctSQL = !distinct ? [] : sql ` DISTINCT${distinct instanceof SQLFragment || typeof distinct === 'string' ? sql ` ON (${distinct})` :
+        Array.isArray(distinct) ? sql ` ON (${cols(distinct)})` : []}`, colsSQL = mode === SelectResultMode.Count ?
+        (allOptions.columns ? sql `count(${cols(allOptions.columns)})` : sql `count(${alias}.*)`) :
         allOptions.columns ?
             sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => sql `${param(c)}::text, ${c}`)})` :
-            sql `to_jsonb(${aliasedTable}.*)`, colsLateralSQL = lateralOpt === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateralOpt), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, colsExtraSQL = extrasOpt === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extrasOpt), sql `, `, k => sql `${param(k)}::text, ${extrasOpt[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, orderSQL = !allOptions.order ? [] :
+            sql `to_jsonb(${alias}.*)`, colsLateralSQL = lateral === undefined ? [] :
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateral), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, colsExtraSQL = extras === undefined ? [] :
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extras), sql `, `, k => sql `${param(k)}::text, ${extras[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, groupBySQL = !groupBy ? [] : sql ` GROUP BY ${groupBy instanceof SQLFragment || typeof groupBy === 'string' ? groupBy : cols(groupBy)}`, havingSQL = !having ? [] : sql ` HAVING ${having}`, orderSQL = !allOptions.order ? [] :
         sql ` ORDER BY ${mapWithSeparator(allOptions.order, sql `, `, o => {
             if (!['ASC', 'DESC'].includes(o.direction))
                 throw new Error(`Direction must be ASC/DESC, not '${o.direction}'`);
             if (o.nulls && !['FIRST', 'LAST'].includes(o.nulls))
                 throw new Error(`Nulls must be FIRST/LAST/undefined, not '${o.nulls}'`);
             return sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`;
-        })}`, limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${param(allOptions.limit)}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${param(allOptions.offset)}`, lockSQL = lockOpt === undefined ? [] : lockOpt.map(lock => {
+        })}`, limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${param(allOptions.limit)}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${param(allOptions.offset)}`, lockSQL = lock === undefined ? [] : lock.map(lock => {
         const ofTables = lock.of === undefined || Array.isArray(lock.of) ? lock.of : [lock.of], ofClause = ofTables === undefined ? [] : sql ` OF ${mapWithSeparator(ofTables, sql `, `, t => t)}`;
         return sql ` FOR ${raw(lock.for)}${ofClause}${lock.wait ? sql ` ${raw(lock.wait)}` : []}`;
-    }), lateralSQL = lateralOpt === undefined ? [] :
-        Object.keys(lateralOpt).map((k, i) => {
-            const subQ = lateralOpt[k];
-            subQ.parentTable = aliasedTable; // enables `parent('column')` in subquery's Wherables
+    }), lateralSQL = lateral === undefined ? [] :
+        Object.keys(lateral).map((k, i) => {
+            const subQ = lateral[k];
+            subQ.parentTable = alias; // enables `parent('column')` in subquery's Wherables
             return sql ` LEFT JOIN LATERAL (${subQ}) AS "ljoin_${raw(String(i))}" ON true`;
         });
-    const rowsQuery = sql `SELECT ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${orderSQL}${limitSQL}${offsetSQL}${lockSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
+    const rowsQuery = sql `SELECT${distinctSQL} ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${groupBySQL}${havingSQL}${orderSQL}${limitSQL}${offsetSQL}${lockSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
         // we need the aggregate to sit in a sub-SELECT in order to keep ORDER and LIMIT working as usual
-        sql `SELECT coalesce(jsonb_agg(result), '[]') AS result FROM (${rowsQuery}) AS ${raw(`"sq_${aliasedTable}"`)}`;
+        sql `SELECT coalesce(jsonb_agg(result), '[]') AS result FROM (${rowsQuery}) AS ${raw(`"sq_${alias}"`)}`;
     query.runResultTransform =
         mode === SelectResultMode.Count ?
             // note: pg deliberately returns strings for int8 in case 64-bit numbers overflow
