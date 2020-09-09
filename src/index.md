@@ -8,6 +8,76 @@
 Zapatos aims to make them work beautifully together. No abstractions, no distractions: just your database, with type safety.
 
 
+<div class="testimonials-window"><div class="testimonials">
+
+<div class="testimonial">
+<div class="quote">
+
+Wow this is amazing. [...] Exactly the kind of 'use SQL in typescript code with type-safety' non-ORM that I've always wanted.
+
+</div>
+<div class="attribution">
+    
+[ummonk, HN](https://news.ycombinator.com/item?id=24371212)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
+Probably the most underrated #TypeScript #PostgreSQL package right now.
+
+</div>
+<div class="attribution">
+
+[@andywritescode, Twitter](https://twitter.com/andywritescode/status/1265196222782070784)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
+Zapatos is amazing. [...] I think its design is wonderful.
+
+</div>
+<div class="attribution">
+
+[skrebbel, HN](https://news.ycombinator.com/item?id=24367867)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
+OK just ran the sample on my own schema, whoa, this is fire.
+  
+</div>
+<div class="attribution">
+
+[mrjjwright, GitHub](https://github.com/jawj/zapatos/issues/19#issuecomment-642740212)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
+Am I crazy for thinking this seems really good?
+
+</div>
+<div class="attribution">
+
+[@hughevans, Twitter](https://twitter.com/hughevans/status/1295914249420550144)
+
+</div>
+</div>
+
+</div></div>
+
+
 ## What does it do?
 
 To achieve this aim, Zapatos does these five things:
