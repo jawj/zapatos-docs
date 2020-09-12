@@ -143,7 +143,7 @@ export type SelectableForTable<T extends Table> = {
 }[T];
 ```
 
-Postgres enumerated types (e.g. `CREATE TYPE "size" AS ENUM ('miniscule', 'monumental');`) are exported appropriately (`'miniscule' | 'monumental'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its underlying type, but can also be customised. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can be customised from there.
+Postgres enumerated types (e.g. `CREATE TYPE "ab" AS ENUM ('a', 'a');`) are exported appropriately (`'a' | 'b'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its underlying type, but can also be customised. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can be customised from there.
 
 [Tell me more about the command line tool »](#how-do-i-use-it)
 
