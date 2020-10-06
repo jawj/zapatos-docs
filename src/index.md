@@ -624,7 +624,7 @@ const
     }}`.run(pool);
 ```
  
-Finally, there's a set of helper functions you can use to create appropriate `SQLFragment`s like these for use as `Whereable` values. The advantages are: (1) there's slighly less to type, and (2) type-checking on their arguments (so you're not tempted to compare incomparable things). 
+Finally, there's a set of helper functions you can use to create appropriate `SQLFragment`s like these for use as `Whereable` values. The advantages are: (1) there's slighly less to type, and (2) you get type-checking on their arguments (so you're not tempted to compare incomparable things). 
 
 They're exported under `conditions` on the main object, and the full set can be seen in [conditions.ts](https://github.com/jawj/zapatos/blob/master/src/conditions.ts). Using two of them, we'd rewrite the above example as:
 
