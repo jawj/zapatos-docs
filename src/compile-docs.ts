@@ -232,6 +232,7 @@ void (async () => {
         });
         ${ts?.match(/^\s*import\b/m) ? '' : `
           import * as db from './zapatos/src';
+          import { conditions as dc } from './zapatos/src';
           import * as s from './zapatos/schema';
           import pool from './pgPool';
         `}
@@ -317,6 +318,8 @@ void (async () => {
     runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
       (script?.match(/\bdb[.]/) ?
         `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> db <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/src'</span>;\n` : '') +
+      (script?.match(/\bdc[.]/) ?
+        `<span class="hljs-keyword">import</span> { conditions <span class="hljs-keyword">as</span> dc } <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/src'</span>;\n` : '') +
       (script?.match(/\bs[.]/) ?
         `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> s <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/schema'</span>;\n` : '') +
       (script?.match(/\bpool\b/) ?

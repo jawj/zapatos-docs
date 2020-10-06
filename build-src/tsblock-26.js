@@ -19,17 +19,10 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    const newTransactions = [{
-            environment: 'PROD',
-            originalTransactionId: '123456',
-            accountId: 123,
-            latestReceiptData: 'TWFuIGlzIGRpc3Rp',
-        }, {
-            environment: 'PROD',
-            originalTransactionId: '234567',
-            accountId: 234,
-            latestReceiptData: 'bmd1aXNoZWQsIG5v',
-        }], result = await db.upsert('appleTransactions', newTransactions, ['environment', 'originalTransactionId']).run(pool);
+    await db.update("emailAuthentication", {
+        consecutiveFailedLogins: db.sql `${db.self} + 1`,
+        lastFailedLogin: db.sql `now()`,
+    }, { email: 'me@privacy.net' }).run(pool);
     /* original script ends */
 }
 catch (e) {

@@ -9,7 +9,7 @@ Released under the MIT licence: see LICENCE file
 
 import type * as pg from 'pg';
 import { getConfig } from './config';
-import { isPOJO } from './utils';
+import { isPOJO, NoInfer } from './utils';
 
 import type {
   Updatable,
@@ -124,7 +124,8 @@ export class ParentColumn<T extends Column = Column> { constructor(public value:
  */
 export function parent<T extends Column = Column>(x: T) { return new ParentColumn<T>(x); }
 
-export type GenericSQLExpression = SQLFragment<any> | Parameter | DefaultType | DangerousRawString | SelfType;
+
+export type GenericSQLExpression = SQLFragment<any, any> | Parameter | DefaultType | DangerousRawString | SelfType;
 export type SQLExpression = Table | ColumnNames<Updatable | (keyof Updatable)[]> | ColumnValues<Updatable | any[]> | Whereable | Column | GenericSQLExpression;
 export type SQL = SQLExpression | SQLExpression[];
 
@@ -147,12 +148,13 @@ interface SQLQuery {
 export function sql<
   Interpolations = SQL,
   RunResult = pg.QueryResult['rows'],
-  InferredInterpolations extends Interpolations = Interpolations
->(literals: TemplateStringsArray, ...expressions: InferredInterpolations[]) {
-  return new SQLFragment<RunResult>(Array.prototype.slice.apply(literals), expressions);
+  Constraint = never,
+  >(literals: TemplateStringsArray, ...expressions: NoInfer<Interpolations>[]) {
+  return new SQLFragment<RunResult, Constraint>(Array.prototype.slice.apply(literals), expressions);
 }
 
-export class SQLFragment<RunResult = pg.QueryResult['rows']> {
+export class SQLFragment<RunResult = pg.QueryResult['rows'], Constraint = never> {
+  private constraint?: Constraint;
 
   /**
    * When calling `run`, this function is applied to the object returned by `pg` to 
@@ -167,7 +169,7 @@ export class SQLFragment<RunResult = pg.QueryResult['rows']> {
   noop = false;  // if true, bypass actually running the query unless forced to e.g. for empty INSERTs
   noopResult: any;  // if noop is true and DB is bypassed, what should be returned?
 
-  constructor(private literals: string[], private expressions: SQLExpression[]) { }
+  constructor(private literals: string[], private expressions: SQL[]) { }
 
   /**
    * Compile and run this query using the provided database connection. What's returned 
@@ -340,5 +342,3 @@ export class SQLFragment<RunResult = pg.QueryResult['rows']> {
     }
   };
 }
-
-

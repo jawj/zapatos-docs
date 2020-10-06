@@ -19,12 +19,10 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     const query = db.sql `
-  SELECT ${"authors"}.*, bq.* 
-  FROM ${"authors"} LEFT JOIN LATERAL (
-    SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
-    FROM ${"books"}
-    WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
-  ) bq ON true`;
+  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
+  FROM ${"authors"} JOIN ${"books"} 
+  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
+  GROUP BY ${"authors"}.${"id"}`;
     const authorBooks = await query.run(pool);
     /* original script ends */
 }

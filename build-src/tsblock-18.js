@@ -19,13 +19,10 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    function dbNowQuery() {
-        const query = db.sql `SELECT now()`;
-        query.runResultTransform = qr => qr.rows[0].now;
-        return query;
-    }
-    const dbNow = await dbNowQuery().run(pool);
-    // dbNow is a Date: the result you can toggle below has come via JSON.stringify
+    const authorId = 12, // from some untrusted source
+    query = db.sql `
+    SELECT * FROM ${"books"} WHERE ${{ authorId }}`, compiled = query.compile();
+    console.log(compiled);
     /* original script ends */
 }
 catch (e) {

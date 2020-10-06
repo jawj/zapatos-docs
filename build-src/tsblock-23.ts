@@ -8,7 +8,7 @@
             }
           },
           resultListener: (x: any) => {
-            if (x != null && (true || !(Array.isArray(x) && x.length === 0))) {
+            if (x != null && (false || !(Array.isArray(x) && x.length === 0))) {
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }
           },
@@ -18,14 +18,36 @@
         });
         
           import * as db from './zapatos/src';
+          import { conditions as dc } from './zapatos/src';
           import * as s from './zapatos/schema';
           import pool from './pgPool';
         
 
         try {
         /* original script begins */
-        await db.insert("authors", []).run(pool);  // never reaches DB
-await db.insert("authors", []).run(pool, true);  // does reach DB, for same result
+        const 
+  // insert one
+  steve = await db.insert('authors', { 
+    name: 'Steven Hawking', 
+    isLiving: false,
+  }).run(pool),
+
+  // insert many
+  [time, me] = await db.insert('books', [{ 
+    authorId: steve.id, 
+    title: 'A Brief History of Time',
+    createdAt: db.sql`now()`,
+  }, { 
+    authorId: steve.id, 
+    title: 'My Brief History',
+    createdAt: db.sql`now()`,
+  }]).run(pool),
+
+  tags = await db.insert('tags', [
+    { bookId: time.id, tag: 'physics' },
+    { bookId: me.id, tag: 'physicist' },
+    { bookId: me.id, tag: 'autobiography' },
+  ]).run(pool);
 
         /* original script ends */
         } catch(e) {

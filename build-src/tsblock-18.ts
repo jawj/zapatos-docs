@@ -18,20 +18,20 @@
         });
         
           import * as db from './zapatos/src';
+          import { conditions as dc } from './zapatos/src';
           import * as s from './zapatos/schema';
           import pool from './pgPool';
         
 
         try {
         /* original script begins */
-        function dbNowQuery() {
-  const query = db.sql<never, Date>`SELECT now()`;
-  query.runResultTransform = qr => qr.rows[0].now;
-  return query;
-}
+        const 
+  authorId = 12,  // from some untrusted source
+  query = db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{authorId}}`,
+  compiled = query.compile();
 
-const dbNow = await dbNowQuery().run(pool);
-// dbNow is a Date: the result you can toggle below has come via JSON.stringify
+console.log(compiled);
 
         /* original script ends */
         } catch(e) {

@@ -11,3 +11,4 @@ export * from './shortcuts';
 export * from './transaction';
 export * from './config';
 export * from './pgErrors';
+export * as conditions from './conditions';

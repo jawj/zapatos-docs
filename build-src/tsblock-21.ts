@@ -18,6 +18,7 @@
         });
         
           import * as db from './zapatos/src';
+          import { conditions as dc } from './zapatos/src';
           import * as s from './zapatos/schema';
           import pool from './pgPool';
         
@@ -28,12 +29,10 @@
 type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
 
 const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
-  SELECT ${"authors"}.*, bq.* 
-  FROM ${"authors"} LEFT JOIN LATERAL (
-    SELECT coalesce(json_agg(${"books"}.*), '[]') AS ${"books"}
-    FROM ${"books"}
-    WHERE ${"books"}.${"authorId"} = ${"authors"}.${"id"}
-  ) bq ON true`;
+  SELECT ${"authors"}.*, jsonb_agg(${"books"}.*) AS ${"books"}
+  FROM ${"authors"} JOIN ${"books"} 
+  ON ${"authors"}.${"id"} = ${"books"}.${"authorId"}
+  GROUP BY ${"authors"}.${"id"}`;
 
 const authorBooks = await query.run(pool);
 

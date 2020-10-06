@@ -18,6 +18,7 @@
         });
         
           import * as db from './zapatos/src';
+          import { conditions as dc } from './zapatos/src';
           import * as s from './zapatos/schema';
           import pool from './pgPool';
         
@@ -30,10 +31,10 @@
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
   db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
     db.update('bankAccounts',
-      { balance: db.sql<db.SQL>`${db.self} - ${db.param(amount)}` },
+      { balance: db.sql`${db.self} - ${db.param(amount)}` },
       { id: sendingAccountId }).run(txnClient),
     db.update('bankAccounts',
-      { balance: db.sql<db.SQL>`${db.self} + ${db.param(amount)}` },
+      { balance: db.sql`${db.self} + ${db.param(amount)}` },
       { id: receivingAccountId }).run(txnClient),
   ]));
 

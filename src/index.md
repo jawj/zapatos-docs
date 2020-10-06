@@ -111,7 +111,7 @@ CREATE TABLE "authors"
 We run `npx zapatos` to generate a file named `schema.ts`, including table definitions like this one:
 
 ```typescript:norun
-export namespace authors {
+export declare namespace authors {
   /* ... */
   export interface Selectable {
     id: number;
@@ -195,7 +195,7 @@ The `insert` shortcut accepts a single `Insertable` or an `Insertable[]` array, 
 
 _Again, click 'Explore types' to play around and check those typings._ 
 
-In addition to `insert`, there are shortcuts for `select`, `selectOne`, `selectExactlyOne` and `count`, and for `update`, `upsert`, `delete` and `truncate`. 
+In addition to `insert`, there are shortcuts for `select` (and `selectOne`, `selectExactlyOne` and `count`), and for `update`, `upsert`, `delete` and `truncate`. 
 
 [Tell me more about the shortcut functions »](#shortcut-functions-and-lateral-joins)
 
@@ -275,10 +275,10 @@ const [accountA, accountB] = await db.insert('bankAccounts',
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
   db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
     db.update('bankAccounts',
-      { balance: db.sql<db.SQL>`${db.self} - ${db.param(amount)}` },
+      { balance: db.sql`${db.self} - ${db.param(amount)}` },
       { id: sendingAccountId }).run(txnClient),
     db.update('bankAccounts',
-      { balance: db.sql<db.SQL>`${db.self} + ${db.param(amount)}` },
+      { balance: db.sql`${db.self} + ${db.param(amount)}` },
       { id: receivingAccountId }).run(txnClient),
   ]));
 
@@ -434,6 +434,41 @@ await z.generate(zapCfg);
 
 Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above. In this case the `progressListener` and `warningListener` keys can each take `true` or `false` (as in the JSON case) or alternatively a function with the signature `(s: string) => void`, which you can use to implement your own logging.
 
+
+#### Custom types and domains
+
+As mentioned previously, any user-defined or domain types encountered during schema generation get defined in their own files under `zapatos/custom`, which you can subsequently customise.
+
+You can use domain types in order to specify custom types on the TypeScript side for certain Postgres columns. Say, for example, that you have a Postgres `jsonb` column on which you want to impose a particular structure. You could do the following:
+
+```sql
+CREATE DOMAIN "mySpecialJsonb" AS "jsonb";
+```
+
+Since you've done nothing else with this domain, it's effectively just a simple alias to `jsonb` on the Postgres side. Now you can use that in place of `jsonb` in your table definition:
+
+```sql
+ALTER TABLE "myTable" ALTER COLUMN "myExistingJsonbColumn" TYPE "mySpecialJsonb";
+```
+
+When you next regenerate the TypeScript schema, you'll find a custom type for `PgMySpecialJsonb` in `zapatos/custom/PgMySpecialJsonb.ts`, defined like so:
+
+```typescript:norun
+export type PgMySpecialJsonb = JSONValue;
+```
+
+You can of course replace this definition with whatever TypeScript type or interface you choose. The file will not be overwritten on future schema generations. For example, perhaps this column holds blog article data:
+
+```typescript:norun
+export interface PgMySpecialJsonb {
+  title: string;
+  text: string;
+  tags: string[];
+  version: number;
+};
+```
+
+
 #### ESLint / tslint
 
 One general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid `Promise`-related pitfalls.
@@ -455,9 +490,9 @@ const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
   SELECT * FROM ${"authors"}`.run(pool);
 ```
 
-The first type variable, `Interpolations` (above: `s.authors.SQL`), defines allowable interpolation values. If we were joining the `authors` and `books` tables, say, then we could specify `s.authors.SQL | s.books.SQL` here.
+The first type variable, `Interpolations` (above: `s.authors.SQL`), defines allowable interpolation values. If not specified, it defaults to `db.SQL`: this is the union of all the per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations (some of which would throw runtime errors in this case).
 
-The `Interpolations` type variable defaults to `db.SQL` if not specified. This is the union of all per-table `SQL` types, and thus allows all table and column names present in the database as string interpolations. However, TypeScript will infer a more specific type from the first interpolated value, and if you have multiple interpolated values of different types then you may need to specify a value explicitly (either `db.SQL` or something more precise).
+As another example, imagine we were joining the `authors` and `books` tables. Then we could specify `s.authors.SQL | s.books.SQL` for `Interpolations` here.
 
 The second type variable, `RunResult` (above: `s.authors.Selectable[]`), describes what will be returned if we call `run()` on the query (after any transformations performed in [`runResultTransform()`](#runresulttransform-qr-pgqueryresult--any)), or if we embed it within the [`extras`](#extras) or [`lateral`](#lateral-and-alias) query options. Its default value if not specified is `any[]`.
 
@@ -581,14 +616,28 @@ For example:
 
 ```typescript
 const 
-  titleLike = `Northern%`,
+  titleLike = 'Northern%',
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ 
-      title: db.sql<db.SQL>`${db.self} LIKE ${db.param(titleLike)}`,
-      createdAt: db.sql<db.SQL>`${db.self} > now() - INTERVAL '7 days'`,
+      title: db.sql`${db.self} LIKE ${db.param(titleLike)}`,
+      createdAt: db.sql`${db.self} > now() - INTERVAL '7 days'`,
     }}`.run(pool);
 ```
  
+Finally, there's a set of helper functions you can use to create appropriate `SQLFragment`s like these for use as `Whereable` values. The advantages are: (1) there's slighly less to type, and (2) type-checking on their arguments (so you're not tempted to compare incomparable things). 
+
+They're exported under `conditions` on the main object, and the full set can be seen in [conditions.ts](https://github.com/jawj/zapatos/blob/master/src/conditions.ts). Using two of them, we'd rewrite the above example as:
+
+```typescript
+const 
+  titleLike = 'Northern%',
+  books = await db.sql<s.books.SQL, s.books.Selectable[]>`
+    SELECT * FROM ${"books"} WHERE ${{ 
+      title: dc.like(titleLike),
+      createdAt: dc.gt(db.sql`now() - INTERVAL '7 days'`),
+    }}`.run(pool);
+```
+
 
 #### `self`
 
@@ -1087,7 +1136,14 @@ const numberOfAuthors = await db.count('authors', db.all).run(pool);
 // select, Whereable with embedded SQLFragment
 const recentAuthorBooks = await db.select('books', { 
   authorId: 1001,
-  createdAt: db.sql<s.books.SQL>`${db.self} > now() - INTERVAL '7 days'` 
+  createdAt: db.sql`${db.self} > now() - INTERVAL '7 days'`,
+}).run(pool);
+```
+```typescript
+// select, Whereables with conditions helper
+const alsoRecentAuthorBooks = await db.select('books', {
+  authorId: 1001,
+  createdAt: dc.gt(db.sql`now() - INTERVAL '7 days'`),
 }).run(pool);
 ```
 ```typescript
@@ -1275,7 +1331,7 @@ And now query my local store (Brighton) plus its three nearest alternatives, wit
 const localStore = await db.selectOne('stores', { id: 1 }, {
   columns: ['name'],
   lateral: {
-    alternatives: db.select('stores', db.sql`${"id"} <> ${db.parent("id")}`, {
+    alternatives: db.select('stores', { id: dc.ne(db.parent("id")) }, {
       alias: 'nearby',
       columns: ['name'],
       extras: {  // <-- here it is!
@@ -1425,7 +1481,7 @@ The important business logic is that there must always be _at least one doctor_ 
 const requestLeaveForDoctorOnDay = async (doctorId: number, day: string) =>
   db.transaction(pool, db.Isolation.Serializable, async txnClient => {
     const otherDoctorsOnShift = await db.count('shifts', {
-      doctorId: db.sql<db.SQL>`${db.self} != ${db.param(doctorId)}`,
+      doctorId: db.sql`${db.self} != ${db.param(doctorId)}`,
       day,
     }).run(txnClient);
     if (otherDoctorsOnShift === 0) return false;
@@ -1450,7 +1506,7 @@ Expanding the results, we see that one of the requests is retried and then fails
 #### `TxnSatisfying` types
 
 ```typescript:norun
-export namespace TxnSatisfying {
+export declare namespace TxnSatisfying {
   export type Serializable = Isolation.Serializable;
   export type RepeatableRead = Serializable | Isolation.RepeatableRead;
   export type ReadCommitted = RepeatableRead | Isolation.ReadCommitted;
@@ -1462,6 +1518,20 @@ export namespace TxnSatisfying {
 ```
 
 If you find yourself passing transaction clients around, you may find the `TxnSatisfying` types useful. For example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
+
+#### Transaction shortcuts
+
+To help save keystrokes and line noise, there is a family of transaction shortcut functions named after each isolation mode. For example, instead of:
+
+```typescript:noresult
+const result = await db.transaction(pool, db.Isolation.Serializable, async txnClient => { /* ... */ });
+```
+
+You can use the equivalent:
+
+```typescript:noresult
+const result = await db.serializable(pool, async txnClient => { /* ... */ });
+```
 
 
 ### Run-time configuration

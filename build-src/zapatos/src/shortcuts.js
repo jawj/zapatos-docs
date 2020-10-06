@@ -147,21 +147,22 @@ export class NotExactlyOneError extends Error {
  * @param mode Used internally by `selectOne` and `count`
  */
 export const select = function (table, where = all, options = {}, mode = SelectResultMode.Many) {
-    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, alias = allOptions.alias || table, { distinct, groupBy, having, lateral, extras } = allOptions, lock = allOptions.lock === undefined || Array.isArray(allOptions.lock) ? allOptions.lock : [allOptions.lock], tableAliasSQL = alias === table ? [] : sql ` AS ${alias}`, distinctSQL = !distinct ? [] : sql ` DISTINCT${distinct instanceof SQLFragment || typeof distinct === 'string' ? sql ` ON (${distinct})` :
+    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, alias = allOptions.alias || table, { distinct, groupBy, having, lateral, extras } = allOptions, lock = allOptions.lock === undefined || Array.isArray(allOptions.lock) ? allOptions.lock : [allOptions.lock], order = allOptions.order === undefined || Array.isArray(allOptions.order) ? allOptions.order : [allOptions.order], tableAliasSQL = alias === table ? [] : sql ` AS ${alias}`, distinctSQL = !distinct ? [] : sql ` DISTINCT${distinct instanceof SQLFragment || typeof distinct === 'string' ? sql ` ON (${distinct})` :
         Array.isArray(distinct) ? sql ` ON (${cols(distinct)})` : []}`, colsSQL = mode === SelectResultMode.Count ?
         (allOptions.columns ? sql `count(${cols(allOptions.columns)})` : sql `count(${alias}.*)`) :
         allOptions.columns ?
             sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => sql `${param(c)}::text, ${c}`)})` :
             sql `to_jsonb(${alias}.*)`, colsLateralSQL = lateral === undefined ? [] :
         sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateral), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, colsExtraSQL = extras === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extras), sql `, `, k => sql `${param(k)}::text, ${extras[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, groupBySQL = !groupBy ? [] : sql ` GROUP BY ${groupBy instanceof SQLFragment || typeof groupBy === 'string' ? groupBy : cols(groupBy)}`, havingSQL = !having ? [] : sql ` HAVING ${having}`, orderSQL = !allOptions.order ? [] :
-        sql ` ORDER BY ${mapWithSeparator(allOptions.order, sql `, `, o => {
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extras), sql `, `, k => sql `${param(k)}::text, ${extras[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, groupBySQL = !groupBy ? [] : sql ` GROUP BY ${groupBy instanceof SQLFragment || typeof groupBy === 'string' ? groupBy : cols(groupBy)}`, havingSQL = !having ? [] : sql ` HAVING ${having}`, orderSQL = order === undefined ? [] :
+        sql ` ORDER BY ${mapWithSeparator(order, sql `, `, o => {
             if (!['ASC', 'DESC'].includes(o.direction))
                 throw new Error(`Direction must be ASC/DESC, not '${o.direction}'`);
             if (o.nulls && !['FIRST', 'LAST'].includes(o.nulls))
                 throw new Error(`Nulls must be FIRST/LAST/undefined, not '${o.nulls}'`);
             return sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`;
-        })}`, limitSQL = allOptions.limit === undefined ? [] : sql ` LIMIT ${param(allOptions.limit)}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${param(allOptions.offset)}`, lockSQL = lock === undefined ? [] : lock.map(lock => {
+        })}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${param(allOptions.offset)} ROWS`, limitSQL = allOptions.limit === undefined ? [] :
+        sql ` FETCH FIRST ${param(allOptions.limit)} ROWS ${allOptions.withTies ? sql `WITH TIES` : sql `ONLY`}`, lockSQL = lock === undefined ? [] : lock.map(lock => {
         const ofTables = lock.of === undefined || Array.isArray(lock.of) ? lock.of : [lock.of], ofClause = ofTables === undefined ? [] : sql ` OF ${mapWithSeparator(ofTables, sql `, `, t => t)}`;
         return sql ` FOR ${raw(lock.for)}${ofClause}${lock.wait ? sql ` ${raw(lock.wait)}` : []}`;
     }), lateralSQL = lateral === undefined ? [] :
@@ -170,7 +171,7 @@ export const select = function (table, where = all, options = {}, mode = SelectR
             subQ.parentTable = alias; // enables `parent('column')` in subquery's Wherables
             return sql ` LEFT JOIN LATERAL (${subQ}) AS "ljoin_${raw(String(i))}" ON true`;
         });
-    const rowsQuery = sql `SELECT${distinctSQL} ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${groupBySQL}${havingSQL}${orderSQL}${limitSQL}${offsetSQL}${lockSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
+    const rowsQuery = sql `SELECT${distinctSQL} ${allColsSQL} AS result FROM ${table}${tableAliasSQL}${lateralSQL}${whereSQL}${groupBySQL}${havingSQL}${orderSQL}${offsetSQL}${limitSQL}${lockSQL}`, query = mode !== SelectResultMode.Many ? rowsQuery :
         // we need the aggregate to sit in a sub-SELECT in order to keep ORDER and LIMIT working as usual
         sql `SELECT coalesce(jsonb_agg(result), '[]') AS result FROM (${rowsQuery}) AS ${raw(`"sq_${alias}"`)}`;
     query.runResultTransform =

@@ -16,11 +16,15 @@ xyz.setConfig({
     },
 });
 import * as db from './zapatos/src';
+import { conditions as dc } from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    const title = 'Pride and Prejudice', books = await db.sql `
-    SELECT * FROM ${"books"} WHERE ${"title"} = ${db.param(title)}`.run(pool);
+    const titleLike = 'Northern%', books = await db.sql `
+    SELECT * FROM ${"books"} WHERE ${{
+        title: dc.like(titleLike),
+        createdAt: dc.gt(db.sql `now() - INTERVAL '7 days'`),
+    }}`.run(pool);
     /* original script ends */
 }
 catch (e) {

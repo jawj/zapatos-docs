@@ -19,7 +19,7 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    const titleLike = `Northern%`, books = await db.sql `
+    const titleLike = 'Northern%', books = await db.sql `
     SELECT * FROM ${"books"} WHERE ${{
         title: db.sql `${db.self} LIKE ${db.param(titleLike)}`,
         createdAt: db.sql `${db.self} > now() - INTERVAL '7 days'`,

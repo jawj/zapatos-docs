@@ -18,16 +18,17 @@
         });
         
           import * as db from './zapatos/src';
+          import { conditions as dc } from './zapatos/src';
           import * as s from './zapatos/schema';
           import pool from './pgPool';
         
 
         try {
         /* original script begins */
-        await db.update("emailAuthentication", { 
-  consecutiveFailedLogins: db.sql`${db.self} + 1`,
-  lastFailedLogin: db.sql`now()`,
-}, { email: 'me@privacy.net' }).run(pool);
+        await db.update('authors', 
+  { name: 'Stephen Hawking' },
+  { name: 'Steven Hawking' }
+).run(pool);
 
         /* original script ends */
         } catch(e) {

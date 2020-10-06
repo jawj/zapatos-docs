@@ -18,11 +18,14 @@ xyz.setConfig({
 import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
-    const query = db.sql `
-  SELECT ${"books"}.*, to_jsonb(${"authors"}.*) as ${"author"}
-  FROM ${"books"} JOIN ${"authors"} 
-  ON ${"books"}.${"authorId"} = ${"authors"}.${"id"}`;
-    const bookAuthors = await query.run(pool);
+    /* original script begins */
+    function dbNowQuery() {
+        const query = db.sql `SELECT now()`;
+        query.runResultTransform = qr => qr.rows[0].now;
+        return query;
+    }
+    const dbNow = await dbNowQuery().run(pool);
+    // dbNow is a Date: the result you can toggle below has come via JSON.stringify
     /* original script ends */
 }
 catch (e) {

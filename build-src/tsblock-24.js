@@ -7,7 +7,7 @@ xyz.setConfig({
         }
     },
     resultListener: (x) => {
-        if (x != null && (false || !(Array.isArray(x) && x.length === 0))) {
+        if (x != null && (true || !(Array.isArray(x) && x.length === 0))) {
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
         }
     },
@@ -19,7 +19,8 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);
+    await db.insert("authors", []).run(pool); // never reaches DB
+    await db.insert("authors", []).run(pool, true); // does reach DB, for same result
     /* original script ends */
 }
 catch (e) {
