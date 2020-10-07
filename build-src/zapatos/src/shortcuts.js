@@ -163,7 +163,7 @@ export const select = function (table, where = all, options = {}, mode = SelectR
             return sql `${o.by} ${raw(o.direction)}${o.nulls ? sql ` NULLS ${raw(o.nulls)}` : []}`;
         })}`, offsetSQL = allOptions.offset === undefined ? [] : sql ` OFFSET ${param(allOptions.offset)} ROWS`, limitSQL = allOptions.limit === undefined ? [] :
         sql ` FETCH FIRST ${param(allOptions.limit)} ROWS ${allOptions.withTies ? sql `WITH TIES` : sql `ONLY`}`, lockSQL = lock === undefined ? [] : lock.map(lock => {
-        const ofTables = lock.of === undefined || Array.isArray(lock.of) ? lock.of : [lock.of], ofClause = ofTables === undefined ? [] : sql ` OF ${mapWithSeparator(ofTables, sql `, `, t => t)}`;
+        const ofTables = lock.of === undefined || Array.isArray(lock.of) ? lock.of : [lock.of], ofClause = ofTables === undefined ? [] : sql ` OF ${mapWithSeparator(ofTables, sql `, `, t => t)}`; // `as` clause is required when TS not strict
         return sql ` FOR ${raw(lock.for)}${ofClause}${lock.wait ? sql ` ${raw(lock.wait)}` : []}`;
     }), lateralSQL = lateral === undefined ? [] :
         Object.keys(lateral).map((k, i) => {

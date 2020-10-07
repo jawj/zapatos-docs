@@ -27,7 +27,7 @@ export const notLike = (a) => sql `${self} NOT LIKE ${conditionalParam(a)}`;
 export const ilike = (a) => sql `${self} ILIKE ${conditionalParam(a)}`;
 export const notIlike = (a) => sql `${self} NOT ILIKE ${conditionalParam(a)}`;
 export const similarTo = (a) => sql `${self} SIMILAR TO ${conditionalParam(a)}`;
-export const notSimilarTo = (a) => sql `${self} SIMILAR TO ${conditionalParam(a)}`;
+export const notSimilarTo = (a) => sql `${self} NOT SIMILAR TO ${conditionalParam(a)}`;
 export const reMatch = (a) => sql `${self} ~ ${conditionalParam(a)}`;
 export const reImatch = (a) => sql `${self} ~* ${conditionalParam(a)}`;
 export const notReMatch = (a) => sql `${self} !~ ${conditionalParam(a)}`;

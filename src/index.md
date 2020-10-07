@@ -333,9 +333,13 @@ Of course, before you can run `npx zapatos`, you need to install and configure i
 
 ### Installation
 
-Install it with `npm`:
+First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras` and `columns` options to the `select` shortcuts.
 
-    npm install --save-dev zapatos
+Install Zapatos with `npm`:
+
+```bash
+npm install --save-dev zapatos
+```
 
 If you are copying the source files, which is the recommended default, you can make the library a `devDependency` with `--save-dev` (conversely, if you are symlinking them, which is not recommended, you will need the library as a standard `dependency` with plain old `--save`).
 
@@ -1167,7 +1171,7 @@ const bookTitles = await db.select('books', db.all,
   { columns: ['title'] }).run(pool);
 ```
 
-The return type is appropriately narrowed to the requested columns only, so VS Code will complain if we now try to access `bookTitles[0].authorId`, for example.
+The return type is appropriately narrowed to the requested columns only, so VS Code will complain if we now try to access `bookTitles[0].authorId`, for example. (Note: this works only when `strictNullChecks` are in operation).
 
 
 ##### `order`, `limit` and `offset`
@@ -1286,7 +1290,7 @@ const people = await db.select('employees', db.all, {
 
 As usual, this is fully typed. If, for example, you were to forget that `directReports` is a count rather than an array of employees, VS Code would soon disabuse you.
 
-There are still a couple of limitations to type inference for nested queries. First, there's no check that your join makes sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, we need to manually specify `selectExactlyOne` instead of `selectOne` when we know that a join will always produce a result — such as when the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint — which in principle might be inferred for us.
+There are still a few limitations to type inference for nested queries. First, there's no check that your join makes sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, we need to manually specify `selectExactlyOne` instead of `selectOne` when we know that a join will always produce a result — such as when the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint — which in principle might be inferred for us. Third, note that `strictNullChecks` (or `strict`) must be turned on in `tsconfig.json`, or nothing gets added to the return type.
 
 Nevertheless, this is a handy, flexible — but still transparent and zero-abstraction — way to generate and run complex join queries. 
 
@@ -1348,6 +1352,9 @@ const localStore = await db.selectOne('stores', { id: 1 }, {
   }
 }).run(pool);
 ```
+
+The `extras` option requires `strictNullChecks` (or `strict`) to be turned on in `tsconfig.json`.
+
 
 ##### `groupBy` and `having`
 
