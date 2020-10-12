@@ -117,15 +117,14 @@ export declare namespace authors {
     id: number;
     name: string;
     isLiving: boolean | null;
-  };
+  }
   export interface Insertable {
-    id?: number | DefaultType | SQLFragment;
-    name: string | SQLFragment;
-    isLiving?: boolean | null | DefaultType | SQLFragment;
-  };
-  export interface Updatable extends Partial<Insertable> { };
-  export type Whereable = { [K in keyof Insertable]?: 
-    Exclude<Insertable[K] | ParentColumn, null | DefaultType> };
+    id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
+    name: string | db.Parameter<string> | db.SQLFragment;
+    isLiving?: boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment;
+  }
+  export interface Updatable extends Partial<Insertable> { }
+  export interface Whereable extends WhereableFromInsertable<Insertable> { }
   /* ... */
 }
 ```
@@ -145,7 +144,7 @@ export type SelectableForTable<T extends Table> = {
 
 Postgres enumerated types (e.g. `CREATE TYPE "ab" AS ENUM ('a', 'b');`) are exported appropriately (`'a' | 'b'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its underlying type, but can also be customised. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can be customised from there.
 
-[Tell me more about the command line tool »](#how-do-i-use-it)
+[Tell me more about the command line tool »](#how-do-i-get-it)
 
 #### Arbitrary SQL
 
@@ -291,6 +290,8 @@ try {
 
 Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
 
+[Tell me more about the `transaction` function »](#transaction)
+
 
 ### Why does it do those things?
 
@@ -317,7 +318,7 @@ export default new pg.Pool({ connectionString: process.env.DATABASE_URL });
 Finally, it won't tell you how to structure your code: Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
 
 
-## How do I use it?
+## How do I get it?
 
 Zapatos provides a command line tool, which is run like so:
     
@@ -546,7 +547,7 @@ const title = await db.sql`
 
 — even if the two produce the same result right now.
 
-More critically, **never** override the type-checking so as to write:
+More critically, **never never never** override the type-checking so as to write:
 
 ```typescript
 const 
@@ -555,7 +556,9 @@ const
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 ```
 
-If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-cast-boolean--string-parameter), and in certain other places. If you're in any doubt, check whether the generated SQL is using `$1`, `$2`, ... parameters for all untrusted data).
+If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-cast-boolean--string-parameter), and in certain other places. 
+
+If you're in any doubt, double-check that the generated SQL is using `$1`, `$2`, ... parameters for all potentially untrusted data).
 
 
 #### `cols()` and `vals()`
