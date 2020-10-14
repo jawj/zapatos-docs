@@ -376,7 +376,7 @@ This file has up to six top-level keys:
 
 * `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema, copying files, and so on. It defaults to `false`.
 
-* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when an unknown Postgres type is converted to a TypeScript `any`. If `true`, which is the default, it does.
+* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when a new user-defined type or domain is encountered and given its own type file in `zapatos/custom`. If `true`, which is the default, it does.
 
 * `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
