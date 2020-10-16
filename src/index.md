@@ -90,7 +90,7 @@ To achieve this aim, Zapatos does these five things:
 
 * **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
 
-* **Transactions** &nbsp; A `transaction` function helps with managing and retrying transactions. [Show me »](#transactions)
+* **Transactions** &nbsp; Transaction helper functions assist in managing and retrying transactions. [Show me »](#transactions)
 
 
 ### How does that look?
@@ -245,14 +245,14 @@ We can of course extend this to deeper nesting (e.g. query each author, with the
 
 #### Transactions
 
-**A `transaction` function helps with managing and retrying transactions.**
+**Transaction helper functions assist in managing and retrying transactions.**
 
 Transactions are where I've found traditional ORMs like TypeORM and Sequelize probably most footgun-prone. Zapatos is always explicit about what client or pool is running your query — hence the `pool` argument in all our examples so far. 
 
-Zapatos also offers a simple `transaction` helper function that handles issuing a SQL `ROLLBACK` on error, releasing the database client in a TypeScript `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. It looks like this:
+Zapatos also offers simple transaction helper functions that handle issuing a SQL `ROLLBACK` on error, releasing the database client in a TypeScript `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. There's one for each isolation level (`SERIALIZABLE`, `REPEATABLE READ`, and so on), and they look like this:
 
 ```typescript:noresult
-const result = await db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+const result = await db.serializable(pool, async txnClient => {
   /* queries here use txnClient instead of pool */
 });
 ```
@@ -265,14 +265,14 @@ CREATE TABLE "bankAccounts"
 , "balance" INTEGER NOT NULL DEFAULT 0 CHECK ("balance" > 0) );
 ```
 
-We can use the `transaction` helper like so:
+We can use the transaction helpers like so:
 
 ```typescript
 const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
 
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
-  db.transaction(pool, db.Isolation.Serializable, txnClient => Promise.all([
+  db.serializable(pool, txnClient => Promise.all([
     db.update('bankAccounts',
       { balance: db.sql`${db.self} - ${db.param(amount)}` },
       { id: sendingAccountId }).run(txnClient),
@@ -288,9 +288,9 @@ try {
 }
 ```
 
-Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
+Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnClientForRepeatableRead`, you can call it with `IsolationLevel.Serializable` or `IsolationLevel.RepeatableRead` but not `IsolationLevel.ReadCommitted`.
 
-[Tell me more about the `transaction` function »](#transaction)
+[Tell me more about the transaction functions »](#transaction)
 
 
 ### Why does it do those things?
@@ -1421,12 +1421,12 @@ const authors2 = await db.select("authors", db.all, {
 ```
 
 
-=> transaction.ts export async function transaction<T, M extends Isolation>(
+=> transaction.ts export async function transaction<T, M extends IsolationLevel>(
 
 ### `transaction`
 
 ```typescript:norun
-export enum Isolation {
+export enum IsolationLevel {
   // these are the only meaningful values in Postgres: 
   // see https://www.postgresql.org/docs/11/sql-set-transaction.html
   Serializable = "SERIALIZABLE",
@@ -1437,7 +1437,7 @@ export enum Isolation {
   ReadCommittedRO = "READ COMMITTED, READ ONLY",
   SerializableRODeferrable = "SERIALIZABLE, READ ONLY, DEFERRABLE"
 }
-export async function transaction<T, M extends Isolation>(
+export async function transaction<T, M extends IsolationLevel>(
   pool: pg.Pool,
   isolationMode: M,
   callback: (client: TxnClient<M>) => Promise<T>
@@ -1489,7 +1489,7 @@ The important business logic is that there must always be _at least one doctor_ 
 
 ```typescript
 const requestLeaveForDoctorOnDay = async (doctorId: number, day: string) =>
-  db.transaction(pool, db.Isolation.Serializable, async txnClient => {
+  db.transaction(pool, db.IsolationLevel.Serializable, async txnClient => {
     const otherDoctorsOnShift = await db.count('shifts', {
       doctorId: db.sql`${db.self} != ${db.param(doctorId)}`,
       day,
@@ -1513,28 +1513,13 @@ console.log(`Leave booked for:
 
 Expanding the results, we see that one of the requests is retried and then fails — as it must to retain one doctor on shift — thanks to the `SERIALIZABLE` isolation (`REPEATABLE READ`, which is one isolation level weaker, wouldn't help).
 
-#### `TxnSatisfying` types
-
-```typescript:norun
-export declare namespace TxnSatisfying {
-  export type Serializable = Isolation.Serializable;
-  export type RepeatableRead = Serializable | Isolation.RepeatableRead;
-  export type ReadCommitted = RepeatableRead | Isolation.ReadCommitted;
-  export type SerializableRO = Serializable | Isolation.SerializableRO;
-  export type RepeatableReadRO = SerializableRO | RepeatableRead | Isolation.RepeatableReadRO;
-  export type ReadCommittedRO = RepeatableReadRO | ReadCommitted | Isolation.ReadCommittedRO;
-  export type SerializableRODeferrable = SerializableRO | Isolation.SerializableRODeferrable;
-}
-```
-
-If you find yourself passing transaction clients around, you may find the `TxnSatisfying` types useful. For example, if you type a `txnClient` argument to a function as `TxnSatisfying.RepeatableRead`, you can call it with `Isolation.Serializable` or `Isolation.RepeatableRead` but not `Isolation.ReadCommitted`.
 
 #### Transaction shortcuts
 
 To help save keystrokes and line noise, there is a family of transaction shortcut functions named after each isolation mode. For example, instead of:
 
 ```typescript:noresult
-const result = await db.transaction(pool, db.Isolation.Serializable, async txnClient => { /* ... */ });
+const result = await db.transaction(pool, db.IsolationLevel.Serializable, async txnClient => { /* ... */ });
 ```
 
 You can use the equivalent:
@@ -1544,6 +1529,28 @@ const result = await db.serializable(pool, async txnClient => { /* ... */ });
 ```
 
 
+#### `IsolationSatisfying` generic
+
+```typescript:norun
+export type IsolationSatisfying<T extends IsolationLevel> = {
+  [IsolationLevel.Serializable]: IsolationLevel.Serializable;
+  [IsolationLevel.RepeatableRead]: IsolationSatisfying<IsolationLevel.
+  /* ... */
+}[T];
+
+export type TxnClientForSerializable = TxnClient<IsolationSatisfying<IsolationLevel.Serializable>>;
+export type TxnClientForRepeatableRead = TxnClient<IsolationSatisfying<IsolationLevel.RepeatableRead>>;
+/* ... */
+```
+
+If you find yourself passing transaction clients around, you may find the `IsolationSatisfying` generic useful. For example, if you type a `txnClient` argument to a function as `IsolationSatisfying<IsolationLevel.RepeatableRead>` — probably by using the alias type `TxnClientForRepeatableRead` — you can call it with a client having `IsolationLevel.Serializable` or `IsolationLevel.RepeatableRead` but not `IsolationLevel.ReadCommitted`.
+
+
+#### Composable transactions
+
+** TODO **
+
+
 ### Run-time configuration
 
 There are a few configuration options you can set at runtime:
@@ -1551,13 +1558,13 @@ There are a few configuration options you can set at runtime:
 ```typescript:norun
 export interface Config {
   transactionAttemptsMax: number;
-  transactionRetryDelay: { minMs: number, maxMs: number };
+  transactionRetryDelay: { minMs: number; maxMs: number };
   castArrayParamsToJson: boolean;
   castObjectParamsToJson: boolean;
-  queryListener?(str: any): void;
-  resultListener?(str: any): void;
-  transactionListener?(str: any): void;
-};
+  queryListener?(str: any, txnId?: number): void;
+  resultListener?(str: any, txnId?: number): void;
+  transactionListener?(str: any, txnId?: number): void;
+}
 ```
 
 Read the current values with `getConfig()` and set new values with `setConfig(newConfig: Partial<Config>)`.
@@ -1568,11 +1575,21 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 
 * `castArrayParamsToJson` and `castObjectParamsToJson` control whether `Parameter` objects containing arrays and objects, respectively, are to be automatically stringified and cast as Postgres `json` when interpolated into a query. Both default to `false`. See further discussion below.
 
-* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query.
+* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query as their first argument. For queries within a transaction, they will be passed a unique numeric transaction ID as their second argument, to assist with debugging.
 
 * `transactionListener`, similarly, is called with messages about transaction retries.
 
-You might use one or more of the three listener functions to implement logging. They're also used in generating the _Show generated SQL, results_ elements of this documentation.
+You might use one or more of the three listener functions to implement logging. For example, if you're using the [`debug`](https://github.com/visionmedia/debug) library, you might do something like this:
+
+```typescript:norun
+db.setConfig({
+  queryListener: debug('sql.query'),
+  resultListener: debug('sql.result'),
+  transactionListener: debug('sql.transaction'),
+});
+```
+
+These listeners also used in generating the _Show generated SQL, results_ elements of this documentation.
 
 
 #### Casting `Parameters` to JSON
@@ -1631,6 +1648,46 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 ## About Zapatos
 
+### Changes
+
+This list is limited to major new features and breaking changes. For the complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 0.1.61
+
+_New feature_: [composable transactions](#composable-transactions). Also, for queries within a transaction, a unique numeric transaction ID is now passed as a second argument to the query, result and transaction listeners, to assist with debugging.
+
+_Breaking change_: some transaction-related objects have been renamed.
+
+* The `Isolation` enum becomes `IsolationLevel`. 
+* The `TxnSatisfying` namespace becomes an `IsolationSatisfying<T extends IsolationLevel>` generic type. So, for example, `TxnSatisfying.Serializable` is rewritten as `IsolationSatisfying<IsolationLevel.Serializable>`. 
+
+Because these are admittedly a bit of a mouthful, there are new shortcuts for `TxnClient`, which is the context you'll mainly want to use them in. For example, `TxnClientForSerializable` is an alias for `TxnClient<IsolationSatisfying<IsolationLevel.Serializable>>`.
+
+Transaction shortcuts for each isolation level were already introduced, quietly, back in 0.1.57. For example:
+
+```typescript:noresult
+await db.transaction(pool, db.IsolationLevel.Serializable, async txnClient => { /* ... */ });
+// can be rewritten as
+await db.serializable(pool, async txnClient => { /* ... */ });
+```
+
+#### 0.1.57
+
+_New feature_: [condition helpers](https://github.com/jawj/zapatos/blob/master/src/conditions.ts) for use within `Whereables`. For example:
+
+```typescript:noresult
+const 
+  date = new Date('1989-11-09T18:53:00+0100'),
+  authorIds = [1, 2, 3];
+
+const query1a = db.select('books', { createdAt: db.sql`${db.self} >= ${db.param(date)}` });
+// can be rewritten as
+const query1b = db.select('books', { createdAt: dc.gte(date) });
+
+const query2a = db.select('books', { authorId: db.sql`${db.self} IN (${db.vals(authorIds)})` });
+// can be rewritten as
+const query2b = db.select('books', { authorId: dc.isIn(authorIds) });
+```
 
 ### This documentation
 

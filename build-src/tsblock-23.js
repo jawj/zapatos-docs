@@ -1,17 +1,23 @@
 import * as xyz from './zapatos/src';
 xyz.setConfig({
-    queryListener: (x) => {
+    queryListener: (x, txnId) => {
+        if (txnId != null)
+            console.log('%%txnId%:' + txnId + '%%');
         console.log('%%text%:' + x.text + '%%');
         if (x.values.length) {
             console.log('%%values%:[' + x.values.map((v) => JSON.stringify(v)).join(', ') + ']%%');
         }
     },
-    resultListener: (x) => {
+    resultListener: (x, txnId) => {
         if (x != null && (false || !(Array.isArray(x) && x.length === 0))) {
+            if (txnId != null)
+                console.log('%%txnId%:' + txnId + '%%');
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
         }
     },
-    transactionListener: (x) => {
+    transactionListener: (x, txnId) => {
+        if (txnId != null)
+            console.log('%%txnId%:' + txnId + '%%');
         console.log('%%transaction%:' + x + '%%');
     },
 });

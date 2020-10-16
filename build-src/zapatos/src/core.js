@@ -139,9 +139,10 @@ export class SQLFragment {
          * @param force If true, force this query to hit the DB even if it's marked as a no-op
          */
         this.run = async (queryable, force = false) => {
-            const query = this.compile(), config = getConfig();
+            var _a;
+            const query = this.compile(), config = getConfig(), txnId = (_a = queryable._zapatos) === null || _a === void 0 ? void 0 : _a.txnId;
             if (config.queryListener)
-                config.queryListener(query);
+                config.queryListener(query, txnId);
             let result;
             if (!this.noop || force) {
                 const qr = await queryable.query(query);
@@ -151,7 +152,7 @@ export class SQLFragment {
                 result = this.noopResult;
             }
             if (config.resultListener)
-                config.resultListener(result);
+                config.resultListener(result, txnId);
             return result;
         };
         /**

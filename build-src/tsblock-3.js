@@ -1,17 +1,23 @@
 import * as xyz from './zapatos/src';
 xyz.setConfig({
-    queryListener: (x) => {
+    queryListener: (x, txnId) => {
+        if (txnId != null)
+            console.log('%%txnId%:' + txnId + '%%');
         console.log('%%text%:' + x.text + '%%');
         if (x.values.length) {
             console.log('%%values%:[' + x.values.map((v) => JSON.stringify(v)).join(', ') + ']%%');
         }
     },
-    resultListener: (x) => {
+    resultListener: (x, txnId) => {
         if (x != null && (false || !(Array.isArray(x) && x.length === 0))) {
+            if (txnId != null)
+                console.log('%%txnId%:' + txnId + '%%');
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
         }
     },
-    transactionListener: (x) => {
+    transactionListener: (x, txnId) => {
+        if (txnId != null)
+            console.log('%%txnId%:' + txnId + '%%');
         console.log('%%transaction%:' + x + '%%');
     },
 });
@@ -19,7 +25,7 @@ import * as db from './zapatos/src';
 import pool from './pgPool';
 try {
     /* original script begins */
-    const result = await db.transaction(pool, db.Isolation.Serializable, async (txnClient) => {
+    const result = await db.serializable(pool, async (txnClient) => {
         /* queries here use txnClient instead of pool */
     });
     /* original script ends */
