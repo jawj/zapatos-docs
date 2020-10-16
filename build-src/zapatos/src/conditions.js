@@ -20,8 +20,6 @@ export const between = (a, b) => sql `${self} BETWEEN (${conditionalParam(a)}) A
 export const betweenSymmetric = (a, b) => sql `${self} BETWEEN SYMMETRIC (${conditionalParam(a)}) AND (${conditionalParam(b)})`;
 export const notBetween = (a, b) => sql `${self} NOT BETWEEN (${conditionalParam(a)}) AND (${conditionalParam(b)})`;
 export const notBetweenSymmetric = (a, b) => sql `${self} NOT BETWEEN SYMMETRIC (${conditionalParam(a)}) AND (${conditionalParam(b)})`;
-export const isIn = (a) => sql `${self} IN (${vals(a)})`;
-export const isNotIn = (a) => sql `${self} NOT IN (${vals(a)})`;
 export const like = (a) => sql `${self} LIKE ${conditionalParam(a)}`;
 export const notLike = (a) => sql `${self} NOT LIKE ${conditionalParam(a)}`;
 export const ilike = (a) => sql `${self} ILIKE ${conditionalParam(a)}`;
@@ -32,6 +30,8 @@ export const reMatch = (a) => sql `${self} ~ ${conditionalParam(a)}`;
 export const reImatch = (a) => sql `${self} ~* ${conditionalParam(a)}`;
 export const notReMatch = (a) => sql `${self} !~ ${conditionalParam(a)}`;
 export const notReImatch = (a) => sql `${self} !~* ${conditionalParam(a)}`;
+export const isIn = (a) => a.length > 0 ? sql `${self} IN (${vals(a)})` : sql `false`;
+export const isNotIn = (a) => a.length > 0 ? sql `${self} NOT IN (${vals(a)})` : sql `true`;
 export const or = (...conditions) => sql `(${mapWithSeparator(conditions, sql ` OR `, c => c)})`;
 export const and = (...conditions) => sql `(${mapWithSeparator(conditions, sql ` AND `, c => c)})`;
 export const not = (condition) => sql `(NOT ${condition})`;

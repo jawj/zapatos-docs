@@ -1637,7 +1637,7 @@ db.setConfig({
 });
 ```
 
-These listeners also used in generating the _Show generated SQL, results_ elements of this documentation.
+These listeners are also used in generating the _Show generated SQL, results_ elements of this documentation.
 
 
 #### Casting `Parameters` to JSON
@@ -1689,7 +1689,7 @@ await db.insert("arrays", {
 }).run(pool);
 ```
 
-The `castObjectParamsToJson` option has a fairly similar effect. As seen above, `pg` already stringifies JavaScript objects, but it does not explicitly cast them to `json`, and instead passes implicitly them as `text`. This matters in the (probably rare) case that the parameter then requires an onward cast from `json` to another type.
+The `castObjectParamsToJson` option has a fairly similar effect. As seen above, `pg` already stringifies JavaScript objects, but it does not explicitly cast them to `json`, and instead passes them implicitly as `text`. This matters in the (probably rare) case that the parameter then requires an onward cast from `json` to another type.
 
 For example, when working with recent PostGIS, casting `geometry` values to JSON produces handy [GeoJSON](https://geojson.org/) output, and you can [define your own cast](https://trac.osgeo.org/postgis/ticket/3687#comment:9) in the opposite direction too. However, when doing a GeoJSON `INSERT` into or `UPDATE` of a `geometry` column, the stringified JSON input parameter must be explicitly cast to JSON, otherwise it's assumed to be [Well-Known Text](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) and fails to parse. In Zapatos, you can specify the cast manually with the [optional second argument to `param`](#paramvalue-any-cast-boolean--string-parameter)), or you can set `castObjectParamsToJson` to `true`, and any JSON objects interpolated as a `Parameter` will be cast to `json` automatically.
 
