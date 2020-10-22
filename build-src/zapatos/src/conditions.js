@@ -35,3 +35,6 @@ export const isNotIn = (a) => a.length > 0 ? sql `${self} NOT IN (${vals(a)})` :
 export const or = (...conditions) => sql `(${mapWithSeparator(conditions, sql ` OR `, c => c)})`;
 export const and = (...conditions) => sql `(${mapWithSeparator(conditions, sql ` AND `, c => c)})`;
 export const not = (condition) => sql `(NOT ${condition})`;
+// these are really more operations than conditions, but we sneak them in here for now, for use e.g. in UPDATE queries
+export const add = (a) => sql `${self} + ${conditionalParam(a)}`;
+export const subtract = (a) => sql `${self} - ${conditionalParam(a)}`;

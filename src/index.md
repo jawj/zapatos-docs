@@ -871,12 +871,29 @@ Since you're using Node, it's safe to convert this string straight back to a `Da
 
 ```typescript:norun
 interface InsertSignatures {
-  <T extends Table>(table: T, values: InsertableForTable<T>): SQLFragment<JSONSelectableForTable<T>>;
-  <T extends Table>(table: T, values: InsertableForTable<T>[]): SQLFragment<JSONSelectableForTable<T>[]>;
+  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
+    table: T,
+    values: InsertableForTable<T>,
+    options?: ReturningOptionsForTable<T, C, E>
+  ): SQLFragment<ReturningTypeForTable<T, C, E>>;
+
+  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
+    table: T,
+    values: InsertableForTable<T>[],
+    options?: ReturningOptionsForTable<T, C, E>
+  ): SQLFragment<ReturningTypeForTable<T, C, E>[]>;
 }
 ```
 
-The `insert` shortcut inserts one or more rows in a table, and returns them with any `DEFAULT` values filled in. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]`.
+The `insert` shortcut inserts one or more rows in a table, and returns them with any `DEFAULT` values filled in. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]` (subject to the options described below).
+
+The optional `options` argument has two keys.
+
+* `returning` takes an array of column names, and narrows down the returned values accordingly. This may be useful if you are inserting large objects which you prefer don't take an inefficient return trip over the wire and through the JSON parser. 
+
+* `extras` takes a map of string keys to `sql` template strings (i.e. `SQLFragments`), allowing you to compute and return other quantities alongside the table's columns. The `RunResult` type variables of those template strings matter, as they are passed through to the result type.
+
+(Note that type inference can only do the right thing with `returning` and `extras` when `strictNullChecks` are enabled).
 
 For example:
 
@@ -903,7 +920,18 @@ const
     { bookId: time.id, tag: 'physics' },
     { bookId: me.id, tag: 'physicist' },
     { bookId: me.id, tag: 'autobiography' },
-  ]).run(pool);
+  ]).run(pool),
+
+  // insert with custom return values
+  nutshell = await db.insert('books', { 
+    authorId: steve.id, 
+    title: 'The Universe in a Nutshell',
+    createdAt: db.sql`now()`,
+  }, {
+    returning: ['id'],
+    extras: { upperTitle: db.sql<s.books.SQL, string>`upper(${"title"})` },
+  }).run(pool);
+
 ```
 
 You'll note that `Insertable`s can take `SQLFragment` values (from the `sql` tagged template function) as well as direct values (strings, numbers, and so on). 
@@ -924,11 +952,16 @@ await db.insert("authors", []).run(pool, true);  // does reach DB, for same resu
 
 ```typescript:norun
 interface UpdateSignatures {
-  <T extends Table>(table: T, values: UpdatableForTable<T>, where: WhereableForTable<T> | SQLFragment): SQLFragment<JSONSelectableForTable<T>[]>;
+  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
+    table: T,
+    values: UpdatableForTable<T>,
+    where: WhereableForTable<T> | SQLFragment,
+    options?: ReturningOptionsForTable<T, C, E>
+  ): SQLFragment<ReturningTypeForTable<T, C, E>[]>;
 }
 ```
 
-The `update` shortcut updates rows in the database. It takes a `Table` name and a corresponding `Updatable` and `Whereable` — in that order, matching the order in a raw SQL query. It returns a corresponding `JSONSelectable[]`, listing every row affected.
+The `update` shortcut updates rows in the database. It takes a `Table` name and a corresponding `Updatable` and `Whereable` **in that order**, matching their order in the raw SQL query. It returns a `JSONSelectable[]`, listing every column of every row affected (or a subset or superset of those columns, if you use the `returning` and/or `extras` options, which work just as described above for `insert`).
 
 For example, when we discover with that we've mis-spelled a famous physicist's name, we can do this:
 
@@ -952,7 +985,7 @@ To atomically increment the `consecutiveFailedLogins` value, we can do something
 
 ```typescript
 await db.update("emailAuthentication", { 
-  consecutiveFailedLogins: db.sql`${db.self} + 1`,
+  consecutiveFailedLogins: db.sql`${db.self} + 1`,  // or equivalently, `dc.add(1)`
   lastFailedLogin: db.sql`now()`,
 }, { email: 'me@privacy.net' }).run(pool);
 ```
@@ -962,21 +995,30 @@ await db.update("emailAuthentication", {
 #### `upsert`
 
 ```typescript:norun
-interface UpsertAction { $action: 'INSERT' | 'UPDATE'; }
-type UpsertReturnableForTable<T extends Table> = JSONSelectableForTable<T> & UpsertAction;
-type UpsertConflictTargetForTable<T extends Table> = Constraint<T> | ColumnForTable<T> | ColumnForTable<T>[];
-
 interface UpsertSignatures {
-  <T extends Table>(table: T, values: InsertableForTable<T>, conflictTarget: UpsertConflictTargetForTable<T>, noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>>;
-  <T extends Table>(table: T, values: InsertableForTable<T>[], conflictTarget: UpsertConflictTargetForTable<T>, noNullUpdateCols?: ColumnForTable<T> | ColumnForTable<T>[]): SQLFragment<UpsertReturnableForTable<T>[]>;
+  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
+    table: T,
+    values: InsertableForTable<T>,
+    conflictTarget: UpsertConflictTargetForTable<T>,
+    options?: UpsertOptions<T, C, E>
+  ): SQLFragment<UpsertReturnableForTable<T, C, E>>;
+
+  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
+    table: T,
+    values: InsertableForTable<T>[],
+    conflictTarget: UpsertConflictTargetForTable<T>,
+    options?: UpsertOptions<T, C, E>
+  ): SQLFragment<UpsertReturnableForTable<T, C, E>[]>;
 }
 ```
 
 The `upsert` shortcut issues an [`INSERT ... ON CONFLICT ... DO UPDATE`](https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT) query. Like `insert`, it takes a `Table` name and a corresponding `Insertable` or `Insertable[]`. 
 
-It then takes, in addition, a column name (or an array thereof) or an appropriate unique index as the conflict target: the 'arbiter index(es)' on which a conflict is to be detected. Optionally, it can also take a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+It then takes, in addition, a column name (or an array thereof) or an appropriate unique index as the conflict target: the 'arbiter index(es)' on which a conflict is to be detected. 
 
-It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row.
+It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row. 
+
+The optional fourth argument is an `options` object. Available options are `returning` and `extras` (see documentation for `insert`), plus `noNullUpdateColumns`. The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
 
 Let's say we have a table of app subscription transactions:
 
@@ -1035,16 +1077,22 @@ The same as for `insert`, an empty array provided to `upsert` is identified as a
 
 ```typescript:norun
 export interface DeleteSignatures {
-  <T extends Table>(table: T, where: WhereableForTable<T> | SQLFragment): SQLFragment<JSONSelectableForTable<T>[]>;
+  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
+    table: T,
+    where: WhereableForTable<T> | SQLFragment,
+    options?: ReturningOptionsForTable<T, C, E>
+  ): SQLFragment<ReturningTypeForTable<T, C, E>[]>;
 }
 ```
 
-The `deletes` shortcut, unsurprisingly, deletes rows from a table (`delete`, unfortunately, is a JavaScript reserved word). It takes the table name and an appropriate `Whereable` or `SQLFragment`, and returns the deleted rows as a `JSONSelectable`.
+The `deletes` shortcut, unsurprisingly, deletes rows from a table (`delete`, unfortunately, is a JavaScript reserved word). It takes the table name and an appropriate `Whereable` or `SQLFragment`, and by default returns the deleted rows as a `JSONSelectable`. 
+
+Again, you can narrow or broaden what's returned with the `returning` and `extras` options, as documented above for `insert`.
 
 For example:
 
 ```typescript
-await db.deletes('books', { title: 'Holes' }).run(pool);
+await db.deletes('books', { title: 'Holes' }, { returning: ['id'] }).run(pool);
 ```
 
 => shortcuts.ts /* === truncate === */
@@ -1167,14 +1215,14 @@ The `select` and `selectOne` shortcuts can also take an `options` object as thei
 
 ##### `columns`
 
-The `columns` key specifies that we want to return only a subset of columns, which we might do for reasons of efficiency. It takes an array of `Column` names for the appropriate table. For example:
+The `columns` key specifies that we want to return only a subset of columns, perhaps for reasons of efficiency. It takes an array of `Column` names for the appropriate table, and works in just the same way as the `returning` option on the other query types. For example:
 
 ```typescript
 const bookTitles = await db.select('books', db.all, 
   { columns: ['title'] }).run(pool);
 ```
 
-The return type is appropriately narrowed to the requested columns only, so VS Code will complain if we now try to access `bookTitles[0].authorId`, for example. (Note: this works only when `strictNullChecks` are in operation).
+The return type is of course appropriately narrowed to the requested columns only, so VS Code will complain if we now try to access `bookTitles[0].authorId`, for example. (Note: this works only when `strictNullChecks` are in operation).
 
 
 ##### `order`, `limit` and `offset`
@@ -1302,7 +1350,7 @@ Nevertheless, this is a handy, flexible — but still transparent and zero-abstr
 
 The `extras` option allows us to include additional result keys that don't represent columns of our tables. That could be a computed quantity, such as a geographical distance via [PostGIS](https://postgis.net/). 
 
-The option takes a mapping of property names to `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variables of those template strings are significant, as they are passed through to the result type.
+The option takes a mapping of property names to `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variables of those template strings are significant, as they are passed through to the result type. (The `extras` option is now also available on other query types, such as `insert`).
 
 Let's see `extras` in use, with an example that shows too how the `lateral` option can go well beyond simply matching a foreign key to a primary key.
 
@@ -1698,8 +1746,14 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 ### Changes
 
-This change list is limited to major new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
+
+#### 1.0.2
+
+_New feature_: new `returning` and `extras` options on `insert`, `update`, `upsert` and `deletes` queries. These behave like the `columns` and `extras` options on `select`.
+
+_Breaking change_: the optional last argument to `upsert` is now an options object, when previously it was a list of columns that should not be overwritten with `null` in the case of an `UPDATE`. That column list can now be passed via a `noNullUpdateColumns` key on the new options object.
 
 #### 1.0.0
 

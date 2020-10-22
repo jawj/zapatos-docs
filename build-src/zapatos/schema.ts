@@ -14,6 +14,14 @@ type BasicWhereableFromInsertable<T> = { [K in keyof T]: Exclude<T[K] | db.Paren
 type WhereableFromBasicWhereable<T> = { [K in keyof T]?: T[K] | db.SQLFragment<any, T[K]> };
 type WhereableFromInsertable<T> = WhereableFromBasicWhereable<BasicWhereableFromInsertable<T>>;
 
+type UpdatableFromInsertable<T> = { [K in keyof T]?: T[K] | db.SQLFragment<any, T[K]> };
+
+type JSONSelectableFromSelectable<T> = { [K in keyof T]:
+  Date extends T[K] ? Exclude<T[K], Date> | db.DateString :
+  Date[] extends T[K] ? Exclude<T[K], Date[]> | db.DateString[] :
+  T[K]
+};
+
 /* === schema: public === */
 
 /* --- enums --- */
@@ -39,13 +47,9 @@ export declare namespace appleTransactions {
     accountId: number | db.Parameter<number> | db.SQLFragment;
     latestReceiptData?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'appleTransactionsPrimaryKey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -63,13 +67,9 @@ export declare namespace arrays {
     jsonValue?: db.JSONValue | db.Parameter<db.JSONValue> | null | db.DefaultType | db.SQLFragment;
     textArray?: string[] | db.Parameter<string[]> | null | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = never;
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -89,13 +89,9 @@ export declare namespace authors {
     name: string | db.Parameter<string> | db.SQLFragment;
     isLiving?: boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'authors_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -113,13 +109,9 @@ export declare namespace bankAccounts {
     id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
     balance?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'bankAccounts_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -141,13 +133,9 @@ export declare namespace books {
     title?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
     createdAt?: Date | db.Parameter<Date> | db.DateString | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'books_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -165,13 +153,9 @@ export declare namespace doctors {
     id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
     name: string | db.Parameter<string> | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'doctors_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -191,13 +175,9 @@ export declare namespace emailAuthentication {
     consecutiveFailedLogins?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
     lastFailedLogin?: Date | db.Parameter<Date> | db.DateString | null | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'emailAuthentication_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -217,13 +197,9 @@ export declare namespace employees {
     name: string | db.Parameter<string> | db.SQLFragment;
     managerId?: number | db.Parameter<number> | null | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'employees_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -241,13 +217,9 @@ export declare namespace shifts {
     day: Date | db.Parameter<Date> | db.DateString | db.SQLFragment;
     doctorId: number | db.Parameter<number> | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'shifts_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -267,13 +239,9 @@ export declare namespace stores {
     name: string | db.Parameter<string> | db.SQLFragment;
     geom: c.PgGeometry | db.Parameter<c.PgGeometry> | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'stores_pkey';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
@@ -291,13 +259,9 @@ export declare namespace tags {
     tag: string | db.Parameter<string> | db.SQLFragment;
     bookId: number | db.Parameter<number> | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
+  export interface Updatable extends UpdatableFromInsertable<Insertable> { }
   export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  export type JSONSelectable = { [K in keyof Selectable]:
-    Date extends Selectable[K] ? Exclude<Selectable[K], Date> | db.DateString :
-    Date[] extends Selectable[K] ? Exclude<Selectable[K], Date[]> | db.DateString[] :
-    Selectable[K]
-  };
+  export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
   export type UniqueIndex = 'tagsUniqueIdx';
   export type Column = keyof Selectable;
   export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;

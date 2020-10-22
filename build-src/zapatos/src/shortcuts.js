@@ -7,13 +7,22 @@ Copyright (C) 2020 George MacKerron
 Released under the MIT licence: see LICENCE file
 */
 import { all, SQLFragment, sql, cols, vals, raw, param, } from './core';
-import { completeKeysWithDefault, mapWithSeparator } from './utils';
+import { completeKeysWithDefault, mapWithSeparator, } from './utils';
+;
+function SQLForColumnsOfTable(columns, table) {
+    return columns === undefined ? sql `to_jsonb(${table}.*)` :
+        sql `jsonb_build_object(${mapWithSeparator(columns, sql `, `, c => sql `${param(c)}::text, ${c}`)})`;
+}
+function SQLForExtras(extras) {
+    return extras === undefined ? [] :
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extras), sql `, `, k => sql `${param(k)}::text, ${extras[k]}`)})`;
+}
 /**
  * Generate an `INSERT` query `SQLFragment`.
  * @param table The table into which to insert
  * @param values The `Insertable` values (or array thereof) to be inserted
  */
-export const insert = function (table, values) {
+export const insert = function (table, values, options) {
     let query;
     if (Array.isArray(values) && values.length === 0) {
         query = sql `INSERT INTO ${table} SELECT null WHERE false`;
@@ -23,8 +32,8 @@ export const insert = function (table, values) {
     else {
         const completedValues = Array.isArray(values) ? completeKeysWithDefault(values) : values, colsSQL = cols(Array.isArray(completedValues) ? completedValues[0] : completedValues), valuesSQL = Array.isArray(completedValues) ?
             mapWithSeparator(completedValues, sql `, `, v => sql `(${vals(v)})`) :
-            sql `(${vals(completedValues)})`;
-        query = sql `INSERT INTO ${table} (${colsSQL}) VALUES ${valuesSQL} RETURNING to_jsonb(${table}.*) AS result`;
+            sql `(${vals(completedValues)})`, returningSQL = SQLForColumnsOfTable(options === null || options === void 0 ? void 0 : options.returning, table), extrasSQL = SQLForExtras(options === null || options === void 0 ? void 0 : options.extras);
+        query = sql `INSERT INTO ${table} (${colsSQL}) VALUES ${valuesSQL} RETURNING ${returningSQL}${extrasSQL} AS result`;
     }
     query.runResultTransform = Array.isArray(values) ?
         (qr) => qr.rows.map(r => r.result) :
@@ -56,23 +65,25 @@ export function constraint(x) { return new Constraint(x); }
  * @param noNullUpdateCols Optionally, a column (or array thereof) that should not be
  * overwritten with `NULL` values during an update
  */
-export const upsert = function (table, values, conflictTarget, noNullUpdateCols = []) {
+export const upsert = function (table, values, conflictTarget, options) {
+    var _a;
     if (Array.isArray(values) && values.length === 0)
         return insert(table, values); // punt a no-op to plain insert
     if (typeof conflictTarget === 'string')
         conflictTarget = [conflictTarget]; // now either Column[] or Constraint
-    if (!Array.isArray(noNullUpdateCols))
-        noNullUpdateCols = [noNullUpdateCols];
+    let noNullUpdateColumns = (_a = options === null || options === void 0 ? void 0 : options.noNullUpdateColumns) !== null && _a !== void 0 ? _a : [];
+    if (!Array.isArray(noNullUpdateColumns))
+        noNullUpdateColumns = [noNullUpdateColumns];
     const completedValues = Array.isArray(values) ? completeKeysWithDefault(values) : values, firstRow = Array.isArray(completedValues) ? completedValues[0] : completedValues, colsSQL = cols(firstRow), valuesSQL = Array.isArray(completedValues) ?
         mapWithSeparator(completedValues, sql `, `, v => sql `(${vals(v)})`) :
         sql `(${vals(completedValues)})`, colNames = Object.keys(firstRow), nonUniqueCols = Array.isArray(conflictTarget) ?
         colNames.filter(v => !conflictTarget.includes(v)) :
         colNames, uniqueColsSQL = Array.isArray(conflictTarget) ?
         sql `(${mapWithSeparator(conflictTarget.slice().sort(), sql `, `, c => c)})` :
-        sql `ON CONSTRAINT ${conflictTarget.value}`, updateColsSQL = mapWithSeparator(nonUniqueCols.slice().sort(), sql `, `, c => c), updateValuesSQL = mapWithSeparator(nonUniqueCols.slice().sort(), sql `, `, c => noNullUpdateCols.includes(c) ? sql `CASE WHEN EXCLUDED.${c} IS NULL THEN ${table}.${c} ELSE EXCLUDED.${c} END` : sql `EXCLUDED.${c}`);
+        sql `ON CONSTRAINT ${conflictTarget.value}`, updateColsSQL = mapWithSeparator(nonUniqueCols.slice().sort(), sql `, `, c => c), updateValuesSQL = mapWithSeparator(nonUniqueCols.slice().sort(), sql `, `, c => noNullUpdateColumns.includes(c) ? sql `CASE WHEN EXCLUDED.${c} IS NULL THEN ${table}.${c} ELSE EXCLUDED.${c} END` : sql `EXCLUDED.${c}`), returningSQL = SQLForColumnsOfTable(options === null || options === void 0 ? void 0 : options.returning, table), extrasSQL = SQLForExtras(options === null || options === void 0 ? void 0 : options.extras);
     // the added-on $action = 'INSERT' | 'UPDATE' key takes after SQL Server's approach to MERGE
     // (and on the use of xmax for this purpose, see: https://stackoverflow.com/questions/39058213/postgresql-upsert-differentiate-inserted-and-updated-rows-using-system-columns-x)
-    const query = sql `INSERT INTO ${table} (${colsSQL}) VALUES ${valuesSQL} ON CONFLICT ${uniqueColsSQL} DO UPDATE SET (${updateColsSQL}) = ROW(${updateValuesSQL}) RETURNING to_jsonb(${table}.*) || jsonb_build_object('$action', CASE xmax WHEN 0 THEN 'INSERT' ELSE 'UPDATE' END) AS result`;
+    const query = sql `INSERT INTO ${table} (${colsSQL}) VALUES ${valuesSQL} ON CONFLICT ${uniqueColsSQL} DO UPDATE SET (${updateColsSQL}) = ROW(${updateValuesSQL}) RETURNING ${returningSQL}${extrasSQL} || jsonb_build_object('$action', CASE xmax WHEN 0 THEN 'INSERT' ELSE 'UPDATE' END) AS result`;
     query.runResultTransform = Array.isArray(completedValues) ?
         (qr) => qr.rows.map(r => r.result) :
         (qr) => qr.rows[0].result;
@@ -84,10 +95,10 @@ export const upsert = function (table, values, conflictTarget, noNullUpdateCols 
  * @param values An `Updatable` of the new values with which to update the table
  * @param where A `Whereable` (or `SQLFragment`) defining which rows to update
  */
-export const update = function (table, values, where) {
+export const update = function (table, values, where, options) {
     // note: the ROW() constructor below is required in Postgres 10+ if we're updating a single column
     // more info: https://www.postgresql-archive.org/Possible-regression-in-UPDATE-SET-lt-column-list-gt-lt-row-expression-gt-with-just-one-single-column0-td5989074.html
-    const query = sql `UPDATE ${table} SET (${cols(values)}) = ROW(${vals(values)}) WHERE ${where} RETURNING to_jsonb(${table}.*) AS result`;
+    const returningSQL = SQLForColumnsOfTable(options === null || options === void 0 ? void 0 : options.returning, table), extrasSQL = SQLForExtras(options === null || options === void 0 ? void 0 : options.extras), query = sql `UPDATE ${table} SET (${cols(values)}) = ROW(${vals(values)}) WHERE ${where} RETURNING ${returningSQL}${extrasSQL} AS result`;
     query.runResultTransform = (qr) => qr.rows.map(r => r.result);
     return query;
 };
@@ -96,8 +107,8 @@ export const update = function (table, values, where) {
  * @param table The table to delete from
  * @param where A `Whereable` (or `SQLFragment`) defining which rows to delete
  */
-export const deletes = function (table, where) {
-    const query = sql `DELETE FROM ${table} WHERE ${where} RETURNING to_jsonb(${table}.*) AS result`;
+export const deletes = function (table, where, options) {
+    const returningSQL = SQLForColumnsOfTable(options === null || options === void 0 ? void 0 : options.returning, table), extrasSQL = SQLForExtras(options === null || options === void 0 ? void 0 : options.extras), query = sql `DELETE FROM ${table} WHERE ${where} RETURNING ${returningSQL}${extrasSQL} AS result`;
     query.runResultTransform = (qr) => qr.rows.map(r => r.result);
     return query;
 };
@@ -147,14 +158,11 @@ export class NotExactlyOneError extends Error {
  * @param mode Used internally by `selectOne` and `count`
  */
 export const select = function (table, where = all, options = {}, mode = SelectResultMode.Many) {
-    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, alias = allOptions.alias || table, { distinct, groupBy, having, lateral, extras } = allOptions, lock = allOptions.lock === undefined || Array.isArray(allOptions.lock) ? allOptions.lock : [allOptions.lock], order = allOptions.order === undefined || Array.isArray(allOptions.order) ? allOptions.order : [allOptions.order], tableAliasSQL = alias === table ? [] : sql ` AS ${alias}`, distinctSQL = !distinct ? [] : sql ` DISTINCT${distinct instanceof SQLFragment || typeof distinct === 'string' ? sql ` ON (${distinct})` :
+    const limit1 = mode === SelectResultMode.One || mode === SelectResultMode.ExactlyOne, allOptions = limit1 ? Object.assign(Object.assign({}, options), { limit: 1 }) : options, alias = allOptions.alias || table, { distinct, groupBy, having, lateral, columns, extras } = allOptions, lock = allOptions.lock === undefined || Array.isArray(allOptions.lock) ? allOptions.lock : [allOptions.lock], order = allOptions.order === undefined || Array.isArray(allOptions.order) ? allOptions.order : [allOptions.order], tableAliasSQL = alias === table ? [] : sql ` AS ${alias}`, distinctSQL = !distinct ? [] : sql ` DISTINCT${distinct instanceof SQLFragment || typeof distinct === 'string' ? sql ` ON (${distinct})` :
         Array.isArray(distinct) ? sql ` ON (${cols(distinct)})` : []}`, colsSQL = mode === SelectResultMode.Count ?
-        (allOptions.columns ? sql `count(${cols(allOptions.columns)})` : sql `count(${alias}.*)`) :
-        allOptions.columns ?
-            sql `jsonb_build_object(${mapWithSeparator(allOptions.columns, sql `, `, c => sql `${param(c)}::text, ${c}`)})` :
-            sql `to_jsonb(${alias}.*)`, colsLateralSQL = lateral === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateral), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, colsExtraSQL = extras === undefined ? [] :
-        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(extras), sql `, `, k => sql `${param(k)}::text, ${extras[k]}`)})`, allColsSQL = sql `${colsSQL}${colsLateralSQL}${colsExtraSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, groupBySQL = !groupBy ? [] : sql ` GROUP BY ${groupBy instanceof SQLFragment || typeof groupBy === 'string' ? groupBy : cols(groupBy)}`, havingSQL = !having ? [] : sql ` HAVING ${having}`, orderSQL = order === undefined ? [] :
+        (columns ? sql `count(${cols(columns)})` : sql `count(${alias}.*)`) :
+        SQLForColumnsOfTable(columns, alias), colsExtraSQL = SQLForExtras(extras), colsLateralSQL = lateral === undefined ? [] :
+        sql ` || jsonb_build_object(${mapWithSeparator(Object.keys(lateral), sql `, `, (k, i) => sql `${param(k)}::text, "ljoin_${raw(String(i))}".result`)})`, allColsSQL = sql `${colsSQL}${colsExtraSQL}${colsLateralSQL}`, whereSQL = where === all ? [] : sql ` WHERE ${where}`, groupBySQL = !groupBy ? [] : sql ` GROUP BY ${groupBy instanceof SQLFragment || typeof groupBy === 'string' ? groupBy : cols(groupBy)}`, havingSQL = !having ? [] : sql ` HAVING ${having}`, orderSQL = order === undefined ? [] :
         sql ` ORDER BY ${mapWithSeparator(order, sql `, `, o => {
             if (!['ASC', 'DESC'].includes(o.direction))
                 throw new Error(`Direction must be ASC/DESC, not '${o.direction}'`);
@@ -186,8 +194,7 @@ export const select = function (table, where = all, options = {}, mode = SelectR
                     if (result === undefined)
                         throw new NotExactlyOneError(query, 'One result expected but none returned (hint: check `.query.compile()` on this Error)');
                     return result;
-                } :
-                // SelectResultMode.One or SelectResultMode.Many
+                } : // SelectResultMode.One or SelectResultMode.Many
                 (qr) => { var _a; return (_a = qr.rows[0]) === null || _a === void 0 ? void 0 : _a.result; };
     return query;
 };

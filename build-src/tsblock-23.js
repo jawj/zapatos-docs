@@ -44,7 +44,16 @@ try {
         { bookId: time.id, tag: 'physics' },
         { bookId: me.id, tag: 'physicist' },
         { bookId: me.id, tag: 'autobiography' },
-    ]).run(pool);
+    ]).run(pool), 
+    // insert with custom return values
+    nutshell = await db.insert('books', {
+        authorId: steve.id,
+        title: 'The Universe in a Nutshell',
+        createdAt: db.sql `now()`,
+    }, {
+        returning: ['id'],
+        extras: { upperTitle: db.sql `upper(${"title"})` },
+    }).run(pool);
     /* original script ends */
 }
 catch (e) {
