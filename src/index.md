@@ -1749,13 +1749,13 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
 
-#### 1.0.2
+#### 2.0
 
 _New feature_: new `returning` and `extras` options on `insert`, `update`, `upsert` and `deletes` queries. These behave like the `columns` and `extras` options on `select`.
 
 _Breaking change_: the optional last argument to `upsert` is now an options object, when previously it was a list of columns that should not be overwritten with `null` in the case of an `UPDATE`. That column list can now be passed via a `noNullUpdateColumns` key on the new options object.
 
-#### 1.0.0
+#### 1.0
 
 _New feature_: [transaction sharing support](#transaction-sharing). Also, for queries within a transaction, a unique numeric transaction ID is now passed as a second argument to the query/result/transaction listeners, to aid debugging.
 
