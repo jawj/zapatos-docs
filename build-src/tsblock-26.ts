@@ -29,7 +29,7 @@
         try {
         /* original script begins */
         await db.update("emailAuthentication", { 
-  consecutiveFailedLogins: db.sql`${db.self} + 1`,  // or equivalently, `dc.add(1)`
+  consecutiveFailedLogins: db.sql`${db.self} + 1`,  // or equivalently, ...: dc.add(1),
   lastFailedLogin: db.sql`now()`,
 }, { email: 'me@privacy.net' }).run(pool);
 
