@@ -334,7 +334,7 @@ Of course, before you can run `npx zapatos`, you need to install and configure i
 
 ### Installation
 
-First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras` and `columns` options to the `select` shortcuts.
+First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras` and `returning`/`columns` options to the shortcut functions.
 
 Install Zapatos with `npm`:
 
