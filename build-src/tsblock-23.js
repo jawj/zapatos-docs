@@ -1,4 +1,4 @@
-import * as xyz from './zapatos/src';
+import * as xyz from 'zapatos/db';
 xyz.setConfig({
     queryListener: (x, txnId) => {
         if (txnId != null)
@@ -21,7 +21,7 @@ xyz.setConfig({
         console.log('%%transaction%:' + x + '%%');
     },
 });
-import * as db from './zapatos/src';
+import * as db from 'zapatos/db';
 import pool from './pgPool';
 try {
     /* original script begins */

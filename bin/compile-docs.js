@@ -46,17 +46,24 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
-var z = require("zapatos");
+var z = require("zapatos/generate");
 var MarkdownIt = require("markdown-it");
 var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
 var pgcs = require("pg-connection-string");
 void (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var tmpdb, dbURL, dbEnv, _a, host, port, user, password, connOpts, zapCfg, recurseNodes, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
+    var tmpdb, dbURL, dbEnv, _a, host, port, user, password, connOpts, zapCfg, recurseNodes, files, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -101,9 +108,10 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                             return memo.concat(recurseNodes(path.join(node, n)));
                         }, []);
                 };
-                all = recurseNodes('./build-src/zapatos').reduce(function (memo, p) {
-                    var localPath = p.replace(/^build-src[/]/, '');
+                files = __spreadArrays(recurseNodes('../zapatos/dist'), recurseNodes('build-src/zapatos')).filter(function (f) { return f.match(/[.]d[.]ts$/); }), all = files.reduce(function (memo, p) {
+                    var localPath = p.replace(/^[.][.][/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/').replace(/^build-src[/]zapatos[/]/, '');
                     memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
+                    console.log(localPath);
                     return memo;
                 }, {});
                 Object.assign(all, {
@@ -111,14 +119,13 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                     'pg.ts': "\n      export class Pool {}\n      export class PoolClient {}\n      export class QueryResult {\n        rows: any;\n      }",
                     // pretend pg.Pool
                     'pgPool.ts': "\n      import * as pg from 'pg';\n      export default new pg.Pool();",
-                    // workaround for Monaco Editor not finding index.ts inside folders:
-                    'zapatos/src.ts': "\n      export * from './src/index';",
+                    'node_modules/zapatos/db.ts': "\n      export * from 'node_modules/zapatos/db';\n    "
                 });
                 fs.writeFileSync('./web/zapatos-bundle.js', "const zapatosBundle = " + JSON.stringify(all) + ";");
                 console.info('Adding source code links ...');
                 rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }), src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, function (_dummy, srcFileName, targetLine) {
                     var _a;
-                    var srcPath = "./build-src/zapatos/src/" + srcFileName, srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }), targetRegEx = new RegExp('^[\t ]*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '[\t ]*$', 'm'), foundAtIndex = (_a = srcFile.match(targetRegEx)) === null || _a === void 0 ? void 0 : _a.index;
+                    var srcPath = "../zapatos/src/db/" + srcFileName, srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }), targetRegEx = new RegExp('^[\t ]*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '[\t ]*$', 'm'), foundAtIndex = (_a = srcFile.match(targetRegEx)) === null || _a === void 0 ? void 0 : _a.index;
                     if (foundAtIndex === undefined)
                         throw new Error("\"" + targetLine + "\" not found in " + srcPath);
                     var lineNo = srcFile.slice(0, foundAtIndex + 1).split('\n').length;
@@ -172,7 +179,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
                     .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
                 runnableTags.forEach(function (runnableTag, i) {
-                    var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from './zapatos/src';\n        xyz.setConfig({\n          queryListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any, txnId?: number) => {\n            if (x != null && (" + (runnableTag.className.match(/\bshowempty\b/) ? true : false) + " || !(Array.isArray(x) && x.length === 0))) {\n              if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from './zapatos/src';\n          import { conditions as dc } from './zapatos/src';\n          import * as s from './zapatos/schema';\n          import pool from './pgPool';\n        ") + "\n\n        try {\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n        } catch(e) {\n          console.log(e.name + ': ' + e.message);\n          console.error('  -> error: ' + e.message);\n        }\n\n        await pool.end();\n      ";
+                    var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from 'zapatos/db';\n        xyz.setConfig({\n          queryListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any, txnId?: number) => {\n            if (x != null && (" + (runnableTag.className.match(/\bshowempty\b/) ? true : false) + " || !(Array.isArray(x) && x.length === 0))) {\n              if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from 'zapatos/db';\n          import { conditions as dc } from 'zapatos/db';\n          import type * as s from 'zapatos/schema';\n          import pool from './pgPool';\n        ") + "\n\n        try {\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n        } catch(e) {\n          console.log(e.name + ': ' + e.message);\n          console.error('  -> error: ' + e.message);\n        }\n\n        await pool.end();\n      ";
                     fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
                 });
                 console.info('Compiling TypeScript script blocks ..');
@@ -232,11 +239,11 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                     var script = runnableTag.textContent;
                     runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
                         ((script === null || script === void 0 ? void 0 : script.match(/\bdb[.]/)) ?
-                            "<span class=\"hljs-keyword\">import</span> * <span class=\"hljs-keyword\">as</span> db <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./zapatos/src'</span>;\n" : '') +
+                            "<span class=\"hljs-keyword\">import</span> * <span class=\"hljs-keyword\">as</span> db <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/db'</span>;\n" : '') +
                         ((script === null || script === void 0 ? void 0 : script.match(/\bdc[.]/)) ?
-                            "<span class=\"hljs-keyword\">import</span> { conditions <span class=\"hljs-keyword\">as</span> dc } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./zapatos/src'</span>;\n" : '') +
+                            "<span class=\"hljs-keyword\">import</span> { conditions <span class=\"hljs-keyword\">as</span> dc } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/db'</span>;\n" : '') +
                         ((script === null || script === void 0 ? void 0 : script.match(/\bs[.]/)) ?
-                            "<span class=\"hljs-keyword\">import</span> * <span class=\"hljs-keyword\">as</span> s <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./zapatos/schema'</span>;\n" : '') +
+                            "<span class=\"hljs-keyword\">import type</span> * <span class=\"hljs-keyword\">as</span> s <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/schema'</span>;\n" : '') +
                         ((script === null || script === void 0 ? void 0 : script.match(/\bpool\b/)) ?
                             "<span class=\"hljs-keyword\">import</span> pool <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./pgPool'</span>;\n" : '') +
                         '</code>');

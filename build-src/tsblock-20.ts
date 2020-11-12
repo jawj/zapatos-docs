@@ -1,5 +1,5 @@
 
-        import * as xyz from './zapatos/src';
+        import * as xyz from 'zapatos/db';
         xyz.setConfig({
           queryListener: (x: any, txnId?: number) => {
             if (txnId != null) console.log('%%txnId%:' + txnId + '%%');
@@ -20,9 +20,9 @@
           },
         });
         
-          import * as db from './zapatos/src';
-          import { conditions as dc } from './zapatos/src';
-          import * as s from './zapatos/schema';
+          import * as db from 'zapatos/db';
+          import { conditions as dc } from 'zapatos/db';
+          import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
 

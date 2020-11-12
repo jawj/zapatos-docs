@@ -1,7 +1,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as z from 'zapatos';
+import * as z from 'zapatos/generate';
 import MarkdownIt = require('markdown-it');
 import { execSync } from 'child_process';
 import * as hljs from 'highlight.js';
@@ -64,11 +64,14 @@ void (async () => {
       fs.readdirSync(node).reduce<string[]>((memo, n) =>
         memo.concat(recurseNodes(path.join(node, n))), []);
 
-  const all = recurseNodes('./build-src/zapatos').reduce<{ [k: string]: string }>((memo, p) => {
-    const localPath = p.replace(/^build-src[/]/, '');
-    memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
-    return memo;
-  }, {});
+  const
+    files = [...recurseNodes('../zapatos/dist'), ...recurseNodes('build-src/zapatos')].filter(f => f.match(/[.]d[.]ts$/)),
+    all = files.reduce<{ [k: string]: string }>((memo, p) => {
+      const localPath = p.replace(/^[.][.][/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/').replace(/^build-src[/]zapatos[/]/, '');
+      memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
+      console.log(localPath);
+      return memo;
+    }, {});
 
   Object.assign(all, {
     // stubs for key pg types
@@ -82,9 +85,9 @@ void (async () => {
     'pgPool.ts': `
       import * as pg from 'pg';
       export default new pg.Pool();`,
-    // workaround for Monaco Editor not finding index.ts inside folders:
-    'zapatos/src.ts': `
-      export * from './src/index';`,
+    'node_modules/zapatos/db.ts': `
+      export * from 'node_modules/zapatos/db';
+    `
   });
 
   fs.writeFileSync('./web/zapatos-bundle.js', `const zapatosBundle = ${JSON.stringify(all)};`);
@@ -96,7 +99,7 @@ void (async () => {
     rawSrc = fs.readFileSync('./src/index.md', { encoding: 'utf8' }),
     src = rawSrc.replace(/^=>\s*(\S+)\s*(.*)$/gm, (_dummy, srcFileName, targetLine) => {
       const
-        srcPath = `./build-src/zapatos/src/${srcFileName}`,
+        srcPath = `../zapatos/src/db/${srcFileName}`,
         srcFile = fs.readFileSync(srcPath, { encoding: 'utf8' }),
         targetRegEx = new RegExp('^[\t ]*' + targetLine.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '[\t ]*$', 'm'),
         foundAtIndex = srcFile.match(targetRegEx)?.index;
@@ -213,7 +216,7 @@ void (async () => {
     const
       ts = runnableTag.textContent,
       instrumentedTs = `
-        import * as xyz from './zapatos/src';
+        import * as xyz from 'zapatos/db';
         xyz.setConfig({
           queryListener: (x: any, txnId?: number) => {
             if (txnId != null) console.log('%%txnId%:' + txnId + '%%');
@@ -234,9 +237,9 @@ void (async () => {
           },
         });
         ${ts?.match(/^\s*import\b/m) ? '' : `
-          import * as db from './zapatos/src';
-          import { conditions as dc } from './zapatos/src';
-          import * as s from './zapatos/schema';
+          import * as db from 'zapatos/db';
+          import { conditions as dc } from 'zapatos/db';
+          import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         `}
 
@@ -323,11 +326,11 @@ void (async () => {
     const script = runnableTag.textContent;
     runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
       (script?.match(/\bdb[.]/) ?
-        `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> db <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/src'</span>;\n` : '') +
+        `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> db <span class="hljs-keyword">from</span> <span class="hljs-string">'zapatos/db'</span>;\n` : '') +
       (script?.match(/\bdc[.]/) ?
-        `<span class="hljs-keyword">import</span> { conditions <span class="hljs-keyword">as</span> dc } <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/src'</span>;\n` : '') +
+        `<span class="hljs-keyword">import</span> { conditions <span class="hljs-keyword">as</span> dc } <span class="hljs-keyword">from</span> <span class="hljs-string">'zapatos/db'</span>;\n` : '') +
       (script?.match(/\bs[.]/) ?
-        `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> s <span class="hljs-keyword">from</span> <span class="hljs-string">'./zapatos/schema'</span>;\n` : '') +
+        `<span class="hljs-keyword">import type</span> * <span class="hljs-keyword">as</span> s <span class="hljs-keyword">from</span> <span class="hljs-string">'zapatos/schema'</span>;\n` : '') +
       (script?.match(/\bpool\b/) ?
         `<span class="hljs-keyword">import</span> pool <span class="hljs-keyword">from</span> <span class="hljs-string">'./pgPool'</span>;\n` : '') +
       '</code>'
