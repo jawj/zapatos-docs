@@ -57,7 +57,7 @@ void (async () => {
   execSync(`cp -r ./node_modules/monaco-editor/min ./web/monaco`);
 
 
-  console.info('Bundling Zapatos source for Monaco ...');
+  console.info('Bundling Zapatos types for Monaco ...');
 
   const recurseNodes = (node: string): string[] =>
     fs.statSync(node).isFile() ? [node] :
@@ -65,9 +65,15 @@ void (async () => {
         memo.concat(recurseNodes(path.join(node, n))), []);
 
   const
-    files = [...recurseNodes('../zapatos/dist'), ...recurseNodes('build-src/zapatos')].filter(f => f.match(/[.]d[.]ts$/)),
+    files = [
+      ...recurseNodes('build-src/zapatos'),
+      ...recurseNodes('node_modules/zapatos/dist'),
+      ...recurseNodes('node_modules/@types/pg')
+    ].filter(f => f.match(/[.]d[.]ts$/)),
     all = files.reduce<{ [k: string]: string }>((memo, p) => {
-      const localPath = p.replace(/^[.][.][/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/').replace(/^build-src[/]zapatos[/]/, '');
+      const localPath = p
+        .replace(/^node_modules[/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/')
+        .replace(/^build-src[/]zapatos[/]/, '');
       memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
       console.log('- ' + localPath);
       return memo;
@@ -75,19 +81,16 @@ void (async () => {
 
   Object.assign(all, {
     // stubs for key pg types
-    'pg.ts': `
-      export class Pool {}
-      export class PoolClient {}
-      export class QueryResult {
-        rows: any;
-      }`,
+    // 'pg.ts': `
+    //   export class Pool {}
+    //   export class PoolClient {}
+    //   export class QueryResult {
+    //     rows: any;
+    //   }`,
     // pretend pg.Pool
     'pgPool.ts': `
       import * as pg from 'pg';
       export default new pg.Pool();`,
-    'node_modules/zapatos/db.ts': `
-      export * from 'node_modules/zapatos/db';
-    `
   });
 
   fs.writeFileSync('./web/zapatos-bundle.js', `const zapatosBundle = ${JSON.stringify(all)};`);
@@ -134,8 +137,9 @@ void (async () => {
     html = `<!DOCTYPE html>
     <html lang="en">
       <head>
+        <meta charset="UTF-8"> 
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <meta name="google-site-verification" content="tN1ANkxDkpFanVNXNfGs0pOFnDVAZH6tkBCRW2fkV8I" />
+        <meta name="google-site-verification" content="tN1ANkxDkpFanVNXNfGs0pOFnDVAZH6tkBCRW2fkV8I">
         <!-- tocbot -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.min.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css">
