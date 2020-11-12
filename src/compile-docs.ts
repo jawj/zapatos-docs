@@ -12,7 +12,7 @@ void (async () => {
 
   const
     tmpdb = `zapatos_docs_${new Date().toISOString().replace(/\D+/g, '')}`,
-    dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'UTF8' })
+    dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'utf8' })
       .trim().replace('{{ZDBNAME}}', tmpdb),
     dbEnv = { ...process.env, ZDBURL: dbURL };
 
@@ -54,7 +54,7 @@ void (async () => {
 
   console.info('Copying Monaco editor ...');
 
-  execSync(`cp -r ./node_modules/@typescript-deploys/monaco-editor/min ./web/monaco`);
+  execSync(`cp -r ./node_modules/monaco-editor/min ./web/monaco`);
 
 
   console.info('Bundling Zapatos source for Monaco ...');
@@ -69,7 +69,7 @@ void (async () => {
     all = files.reduce<{ [k: string]: string }>((memo, p) => {
       const localPath = p.replace(/^[.][.][/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/').replace(/^build-src[/]zapatos[/]/, '');
       memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
-      console.log(localPath);
+      console.log('- ' + localPath);
       return memo;
     }, {});
 

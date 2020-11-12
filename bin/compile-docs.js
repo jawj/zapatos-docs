@@ -67,7 +67,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, ''), dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'UTF8' })
+                tmpdb = "zapatos_docs_" + new Date().toISOString().replace(/\D+/g, ''), dbURL = fs.readFileSync(path.join(__dirname, '..', 'pgURLTemplate'), { encoding: 'utf8' })
                     .trim().replace('{{ZDBNAME}}', tmpdb), dbEnv = __assign(__assign({}, process.env), { ZDBURL: dbURL });
                 console.info("Creating temporary DB (" + tmpdb + ") ...");
                 _a = pgcs.parse(dbURL), host = _a.host, port = _a.port, user = _a.user, password = _a.password;
@@ -100,7 +100,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
             case 1:
                 _b.sent();
                 console.info('Copying Monaco editor ...');
-                child_process_1.execSync("cp -r ./node_modules/@typescript-deploys/monaco-editor/min ./web/monaco");
+                child_process_1.execSync("cp -r ./node_modules/monaco-editor/min ./web/monaco");
                 console.info('Bundling Zapatos source for Monaco ...');
                 recurseNodes = function (node) {
                     return fs.statSync(node).isFile() ? [node] :
@@ -111,7 +111,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 files = __spreadArrays(recurseNodes('../zapatos/dist'), recurseNodes('build-src/zapatos')).filter(function (f) { return f.match(/[.]d[.]ts$/); }), all = files.reduce(function (memo, p) {
                     var localPath = p.replace(/^[.][.][/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/').replace(/^build-src[/]zapatos[/]/, '');
                     memo[localPath] = fs.readFileSync(p, { encoding: 'utf8' });
-                    console.log(localPath);
+                    console.log('- ' + localPath);
                     return memo;
                 }, {});
                 Object.assign(all, {
