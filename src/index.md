@@ -425,7 +425,7 @@ These files must be included in your TypeScript compilation. That may happen for
 
 #### Programmatic generation
 
-As an alternative to the command line tool, it's also possible to generate the schema programmatically. For example:
+As an alternative to the command line tool, it's also possible to generate the schema programmatically by importing from `zapatos/generate`. For example:
 
 ```typescript:norun
 import * as zg from 'zapatos/generate';
@@ -472,13 +472,29 @@ export interface PgMySpecialJsonb {
 
 ### Import it
 
-In your code, get the core library as `import * as db from 'zapatos/db'` (or if you're looking to generate your schema programmatically, it's `import * as zg from 'zapatos/generate'`). 
+In your code, get the core library like so: 
 
-Both of these are real file paths inside `node_modules/zapatos`. ESM wrappers are provided, so this should work the same whether your project is set to use the CommonJS or ESM module specs.
+```typescript:noresult
+import * as db from 'zapatos/db';
+```
 
-To import your ordinary schema types (such as `myTable.Selectable`), use `import type * as s from 'zapatos/schema'`. Be sure to `import type` for this one, or you'll upset `ts-jest`, amongst others. For any user-defined or domain types, it's `import type * as c from 'zapatos/custom'`. 
+ESM wrappers are provided, so the import should work the same whether your project is set to use the CommonJS or ESM module specs.
 
-Although they look like file paths, `zapatos/schema` and `zapatos/custom` are actually the names of [ambient modules](https://www.typescriptlang.org/docs/handbook/modules.html#ambient-modules) declared inside your source tree in `zapatos/schema.d.ts` and `zapatos/custom/*.d.ts`.
+To import your ordinary schema types (`myTable.Selectable`, `myOtherTable.Insertable`, etc.):
+
+```typescript:noresult
+import type * as s from 'zapatos/schema';
+```
+
+Be sure to `import type` for this, not plain `import`, or you'll upset `ts-jest` and maybe others. 
+
+To import any user-defined or domain types:
+
+```typescript:noresult
+import type * as c from 'zapatos/custom';
+```
+
+Although they look like file paths, `zapatos/schema` and `zapatos/custom` are actually the names of [ambient modules](https://www.typescriptlang.org/docs/handbook/modules.html#ambient-modules) declared in `zapatos/schema.d.ts` and `zapatos/custom/*.d.ts`, within your source tree. By contrast, `zapatos/db` and `zapatos/generate` are real folders in `node_modules`.
 
 
 ## User guide
@@ -1749,6 +1765,48 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
+
+#### 3.0
+
+_Major breaking change_: Zapatos no longer copies its source to your source tree. In the long run, this is good news — now it's just a normal module, updates won't pollute your diffs, and so on. Thanks are due to [@eyelidlessness](https://github.com/eyelidlessness) and [@jtfell](https://github.com/jtfell).
+
+Right now, though, there's a bit of work to do. Existing users will need to:
+
+* Delete the old `zapatos/schema.ts` (but leave the new `zapatos/schema.d.ts`).
+
+* Delete the folder `zapatos/src`, and all its contents, which are copied Zapatos source files.
+
+* Transfer any customised type declarations in `zapatos/custom` from the plain old `.ts` files to the new `.d.ts` files.
+
+* Delete all the plain old `.ts` files in `zapatos/custom`, including `index.ts`.
+
+* Ensure all the `.d.ts` files in `zapatos` are picked up by your TypeScript configuration (e.g. check the `"files"` or `"include"` keys in `tsconfig.json`).
+
+* If you use `ts-node` or `node -r ts-node/register` to run your project, ensure you pass the `--files` option (`ts-node` only) or set `TS_NODE_FILES=true` (either case).
+
+* Make the following changes to your imports (you can use VS Code's 'Replace in Files' command for this, just remember to toggle Regular Expressions on):
+
+```
+   1) Change:  import * as zapatos from 'zapatos'
+      To:      import * as zapatos from 'zapatos/generate'
+
+      Search:  ^(\s*import[^"']*['"])zapatos(["'])
+      Replace: $1zapatos/generate$2
+
+   2) Change:  import * as db from './path/to/zapatos/src'
+      To:      import * as db from 'zapatos/db'
+
+      Search:  ^(\s*import[^"']*['"])[^"']*/zapatos/src(["'])
+      Replace: $1zapatos/db$2
+
+   3) Change:  import * as s from './path/to/zapatos/schema'
+      To:      import type * as s from 'zapatos/schema'
+                      ^^^^
+                      be sure to import type, not just import
+
+      Search:  ^(\s*import\s*)(type\s*)?([^"']*['"])[^"']+/(zapatos/schema["'])
+      Replace: $1type $3$4
+```
 
 #### 2.0
 
