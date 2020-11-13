@@ -111,7 +111,7 @@ CREATE TABLE "authors"
 We run `npx zapatos` to generate a file named `schema.ts`, including table definitions like this one:
 
 ```typescript:norun
-export declare namespace authors {
+export namespace authors {
   /* ... */
   export interface Selectable {
     id: number;
@@ -320,31 +320,17 @@ Finally, it won't tell you how to structure your code: Zapatos doesn't deal in t
 
 ## How do I get it?
 
-Zapatos provides a command line tool, which is run like so:
-    
-    npx zapatos
+### Install it
 
-This generates the TypeScript schema for your database in a folder named `zapatos/schema.ts`, and copies (or symlinks) the Zapatos source files into `zapatos/src`. Any user-defined or domain types encountered get defined in their own files under `zapatos/custom`, which you can subsequently customise.
+First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras`, `returning` and `columns` options to the shortcut functions.
 
-**You *must* import the Zapatos source files from the copied/symlinked Zapatos directory, e.g. `from './zapatos/src'`, and *not* `from 'zapatos'` in the usual way (which would find them in `node_modules`).**
-
-That's because the source files depend on importing your custom, Zapatos-generated `schema.ts`, which they cannot do if they're imported direct from `node_modules` in the usual way.
-
-Of course, before you can run `npx zapatos`, you need to install and configure it.
-
-### Installation
-
-First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras` and `returning`/`columns` options to the shortcut functions.
-
-Install Zapatos with `npm`:
+Then install Zapatos as a dev dependency with `npm`:
 
 ```bash
 npm install --save-dev zapatos
 ```
 
-If you are copying the source files, which is the recommended default, you can make the library a `devDependency` with `--save-dev` (conversely, if you are symlinking them, which is not recommended, you will need the library as a standard `dependency` with plain old `--save`).
-
-### Configuration
+### Configure it
 
 Add a top-level file `zapatosconfig.json` to your project. Here's an example:
 
@@ -354,9 +340,6 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
     "connectionString": "postgresql://localhost/example_db"
   },
   "outDir": "./src",
-  "srcMode": "copy",
-  "progressListener": false,
-  "warningListener": true,
   "schemas": {
     "public": {
       "include": "*",
@@ -371,8 +354,6 @@ This file has up to six top-level keys:
 * `"db"` gives Postgres connection details. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here. **This is the only required key.**
 
 * `"outDir"` defines where your `zapatos` folder will be created, relative to the project root. If not specified, it defaults to the project root, i.e. `"."`.
-
-* `"srcMode"` can take the values `"copy"` (the default) or `"symlink"`, determining whether `zapatos/src` will be a copy of the folder `node_modules/zapatos/src` or just a symlink to it. The symlink option can cause enormous headaches with tools like `ts-node` and `ts-jest`, which refuse to compile anything inside `node_modules`, and is not recommended.
 
 * `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema, copying files, and so on. It defaults to `false`.
 
@@ -397,7 +378,7 @@ If not specified, the default value for `"schemas"` includes all tables in the `
 }
 ```
 
-One more example: if you use PostGIS, you'll likely want to exclude its system tables:
+If you use PostGIS, you'll likely want to exclude its system tables:
 
 ```json
 "schemas": {
@@ -426,15 +407,31 @@ This is likely most useful for the database connection details. For example, on 
 }
 ```
 
+#### ESLint / tslint
+
+A general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid various `Promise`-related pitfalls.
+
+
+### Generate your schema
+
+Zapatos provides a command line tool. With everything configured, run it like so:
+    
+    npx zapatos
+
+This generates the TypeScript schema for your database as `zapatos/schema.d.ts` inside your configured `outDir`. Any user-defined or domain types encountered get defined in their own `.d.ts` files inside `zapatos/custom`, which you can subsequently customise.
+
+These files must be included in your TypeScript compilation. That may happen for you automatically, but you may need to check the `"include"` or `"files"` keys in `tsconfig.json`. If you use `ts-node` or `node -r ts-node/register`, you may need to change it to `ts-node --files` or set `TS_NODE_FILES=true`.
+
+
 #### Programmatic generation
 
-As an alternative to the command line tool, it's also possible to generate the schema and copy (or symlink) the source files programmatically. This is the only case when you _should_ import directly from `node_modules`. For example:
+As an alternative to the command line tool, it's also possible to generate the schema programmatically. For example:
 
 ```typescript:norun
-import * as z from 'zapatos';  // direct import in this case only
+import * as zg from 'zapatos/generate';
 
-const zapCfg: z.Config = { db: { connectionString: 'postgres://localhost/mydb' } };
-await z.generate(zapCfg);
+const zapCfg: zg.Config = { db: { connectionString: 'postgres://localhost/mydb' } };
+await zg.generate(zapCfg);
 ```
 
 Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above. In this case the `progressListener` and `warningListener` keys can each take `true` or `false` (as in the JSON case) or alternatively a function with the signature `(s: string) => void`, which you can use to implement your own logging.
@@ -442,7 +439,7 @@ Call the `generate` method with an object structured exactly the same as `zapato
 
 #### Custom types and domains
 
-As mentioned previously, any user-defined or domain types encountered during schema generation get defined in their own files under `zapatos/custom`, which you can subsequently customise.
+As mentioned previously, any user-defined or domain types encountered during schema generation get defined in their own `.d.ts` files under `zapatos/custom`, which you can subsequently customise.
 
 You can use domain types in order to specify custom types on the TypeScript side for certain Postgres columns. Say, for example, that you have a Postgres `jsonb` column on which you want to impose a particular structure. You could do the following:
 
@@ -473,14 +470,18 @@ export interface PgMySpecialJsonb {
 };
 ```
 
+### Import it
 
-#### ESLint / tslint
+In your code, get the core library as `import * as db from 'zapatos/db'` (or if you're looking to generate your schema programmatically, it's `import * as zg from 'zapatos/generate'`). 
 
-One general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid `Promise`-related pitfalls.
+Both of these are real file paths inside `node_modules/zapatos`. ESM wrappers are provided, so this should work the same whether your project is set to use the CommonJS or ESM module specs.
+
+To import your ordinary schema types (such as `myTable.Selectable`), use `import type * as s from 'zapatos/schema'`. Be sure to `import type` for this one, or you'll upset `ts-jest`, amongst others. For any user-defined or domain types, it's `import type * as c from 'zapatos/custom'`. 
+
+Although they look like file paths, `zapatos/schema` and `zapatos/custom` are actually the names of [ambient modules](https://www.typescriptlang.org/docs/handbook/modules.html#ambient-modules) declared inside your source tree in `zapatos/schema.d.ts` and `zapatos/custom/*.d.ts`.
 
 
 ## User guide
-
 
 => core.ts // === SQL tagged template strings ===
 

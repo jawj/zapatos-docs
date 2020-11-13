@@ -80,13 +80,6 @@ void (async () => {
     }, {});
 
   Object.assign(all, {
-    // stubs for key pg types
-    // 'pg.ts': `
-    //   export class Pool {}
-    //   export class PoolClient {}
-    //   export class QueryResult {
-    //     rows: any;
-    //   }`,
     // pretend pg.Pool
     'pgPool.ts': `
       import * as pg from 'pg';
