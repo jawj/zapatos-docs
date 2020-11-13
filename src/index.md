@@ -359,6 +359,8 @@ This file has up to six top-level keys:
 
 * `"warningListener"` is a boolean that determines whether or not the tool logs a warning when a new user-defined type or domain is encountered and given its own type file in `zapatos/custom`. If `true`, which is the default, it does.
 
+* `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`.
+
 * `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
 Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if and only if** all of your table names are unique across all schemas. To make this work, you'll need to set something like this: 
@@ -434,7 +436,11 @@ const zapCfg: zg.Config = { db: { connectionString: 'postgres://localhost/mydb' 
 await zg.generate(zapCfg);
 ```
 
-Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above. In this case the `progressListener` and `warningListener` keys can each take `true` or `false` (as in the JSON case) or alternatively a function with the signature `(s: string) => void`, which you can use to implement your own logging.
+Call the `generate` method with an object structured exactly the same as `zapatosconfig.json`, documented above, with the following two exceptions: 
+
+* The `"progressListener"` and `"warningListener"` keys can each take `true` or `false` (as in the JSON case), or alternatively a function with the signature `(s: string) => void`, which you can use to implement your own logging.
+
+* The `"customTypesTransform"` key can take any of the string values allowed in the JSON case, or otherwise a function with the signature `(s: string) => string`, with which you can define your own type name transformation.
 
 
 #### Custom types and domains
@@ -1851,11 +1857,11 @@ This change list is limited to new features and breaking changes. For a complete
 
 _Major breaking change_: Zapatos no longer copies its source to your source tree. In the long run, this is good news — now it's just a normal module, updates won't pollute your diffs, and so on. Thanks are due to [@eyelidlessness](https://github.com/eyelidlessness) and [@jtfell](https://github.com/jtfell).
 
-Right now, though, there's a bit of work to do. Existing users will need to:
+Right now, though, there's a bit of work to do. After running `npx zapatos` in version 3.0, existing users will see a message informing them that they need to:
 
 * Delete the old `zapatos/schema.ts` (but leave the new `zapatos/schema.d.ts`).
 
-* Delete the folder `zapatos/src`, and all its contents, which are copied Zapatos source files.
+* Delete the folder `zapatos/src`, and all its contents, which are old copied Zapatos source files.
 
 * Transfer any customised type declarations in `zapatos/custom` from the plain old `.ts` files to the new `.d.ts` files.
 
@@ -1899,7 +1905,7 @@ _Breaking change_: the optional last argument to `upsert` is now an options obje
 
 _New feature_: [transaction sharing support](#transaction-sharing). Also, for queries within a transaction, a unique numeric transaction ID is now passed as a second argument to the query/result/transaction listeners, to aid debugging.
 
-_Breaking change_: some transaction-related objects have been renamed (hence the jump in [major version](https://semver.org/) to 1.0.0).
+_Breaking change_: some transaction-related objects have been renamed (hence the jump in [major version](https://semver.org/) to 1.0).
 
 * The `Isolation` enum becomes `IsolationLevel`. 
 * The `TxnSatisfying` namespace becomes an `IsolationSatisfying<T extends IsolationLevel>` generic type. So, for example, `TxnSatisfying.Serializable` is rewritten as `IsolationSatisfying<IsolationLevel.Serializable>`. 
