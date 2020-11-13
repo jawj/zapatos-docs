@@ -500,7 +500,7 @@ To import any user-defined or domain types:
 import type * as c from 'zapatos/custom';
 ```
 
-Although they look like file paths, `zapatos/schema` and `zapatos/custom` are actually the names of [ambient modules](https://www.typescriptlang.org/docs/handbook/modules.html#ambient-modules) declared in `zapatos/schema.d.ts` and `zapatos/custom/*.d.ts`, within your source tree. By contrast, `zapatos/db` and `zapatos/generate` are real folders in `node_modules`.
+The paths `zapatos/db` and `zapatos/generate` point to real folders in `node_modules`. Although they look like file paths, `zapatos/schema` and `zapatos/custom` are actually the names of [ambient modules](https://www.typescriptlang.org/docs/handbook/modules.html#ambient-modules) declared in the generated files in your source tree: `zapatos/schema.d.ts` and `zapatos/custom/*.d.ts`.
 
 
 ## User guide
