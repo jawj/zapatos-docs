@@ -274,16 +274,38 @@ declare module 'zapatos/schema' {
     export type SQL = SQLExpression | SQLExpression[];
   }
 
+  export namespace users {
+    export type Table = 'users';
+    export interface Selectable {
+      id: number;
+      ipOctet: number;
+      friendlyName: string | null;
+    }
+    export interface Insertable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
+      ipOctet?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
+      friendlyName?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
+    }
+    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
+    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
+    export type UniqueIndex = 'users_pkey' | 'users_ipOctet_key';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
   /* === cross-table types === */
 
-  export type Table = appleTransactions.Table | arrays.Table | authors.Table | bankAccounts.Table | books.Table | doctors.Table | emailAuthentication.Table | employees.Table | shifts.Table | stores.Table | tags.Table;
-  export type Selectable = appleTransactions.Selectable | arrays.Selectable | authors.Selectable | bankAccounts.Selectable | books.Selectable | doctors.Selectable | emailAuthentication.Selectable | employees.Selectable | shifts.Selectable | stores.Selectable | tags.Selectable;
-  export type Whereable = appleTransactions.Whereable | arrays.Whereable | authors.Whereable | bankAccounts.Whereable | books.Whereable | doctors.Whereable | emailAuthentication.Whereable | employees.Whereable | shifts.Whereable | stores.Whereable | tags.Whereable;
-  export type Insertable = appleTransactions.Insertable | arrays.Insertable | authors.Insertable | bankAccounts.Insertable | books.Insertable | doctors.Insertable | emailAuthentication.Insertable | employees.Insertable | shifts.Insertable | stores.Insertable | tags.Insertable;
-  export type Updatable = appleTransactions.Updatable | arrays.Updatable | authors.Updatable | bankAccounts.Updatable | books.Updatable | doctors.Updatable | emailAuthentication.Updatable | employees.Updatable | shifts.Updatable | stores.Updatable | tags.Updatable;
-  export type UniqueIndex = appleTransactions.UniqueIndex | arrays.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | tags.UniqueIndex;
-  export type Column = appleTransactions.Column | arrays.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | shifts.Column | stores.Column | tags.Column;
-  export type AllTables = [appleTransactions.Table, arrays.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, shifts.Table, stores.Table, tags.Table];
+  export type Table = appleTransactions.Table | arrays.Table | authors.Table | bankAccounts.Table | books.Table | doctors.Table | emailAuthentication.Table | employees.Table | shifts.Table | stores.Table | tags.Table | users.Table;
+  export type Selectable = appleTransactions.Selectable | arrays.Selectable | authors.Selectable | bankAccounts.Selectable | books.Selectable | doctors.Selectable | emailAuthentication.Selectable | employees.Selectable | shifts.Selectable | stores.Selectable | tags.Selectable | users.Selectable;
+  export type Whereable = appleTransactions.Whereable | arrays.Whereable | authors.Whereable | bankAccounts.Whereable | books.Whereable | doctors.Whereable | emailAuthentication.Whereable | employees.Whereable | shifts.Whereable | stores.Whereable | tags.Whereable | users.Whereable;
+  export type Insertable = appleTransactions.Insertable | arrays.Insertable | authors.Insertable | bankAccounts.Insertable | books.Insertable | doctors.Insertable | emailAuthentication.Insertable | employees.Insertable | shifts.Insertable | stores.Insertable | tags.Insertable | users.Insertable;
+  export type Updatable = appleTransactions.Updatable | arrays.Updatable | authors.Updatable | bankAccounts.Updatable | books.Updatable | doctors.Updatable | emailAuthentication.Updatable | employees.Updatable | shifts.Updatable | stores.Updatable | tags.Updatable | users.Updatable;
+  export type UniqueIndex = appleTransactions.UniqueIndex | arrays.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | tags.UniqueIndex | users.UniqueIndex;
+  export type Column = appleTransactions.Column | arrays.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | shifts.Column | stores.Column | tags.Column | users.Column;
+  export type AllTables = [appleTransactions.Table, arrays.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, shifts.Table, stores.Table, tags.Table, users.Table];
 
 
   export type SelectableForTable<T extends Table> = {
@@ -298,6 +320,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.Selectable;
     stores: stores.Selectable;
     tags: tags.Selectable;
+    users: users.Selectable;
   }[T];
 
   export type WhereableForTable<T extends Table> = {
@@ -312,6 +335,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.Whereable;
     stores: stores.Whereable;
     tags: tags.Whereable;
+    users: users.Whereable;
   }[T];
 
   export type InsertableForTable<T extends Table> = {
@@ -326,6 +350,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.Insertable;
     stores: stores.Insertable;
     tags: tags.Insertable;
+    users: users.Insertable;
   }[T];
 
   export type UpdatableForTable<T extends Table> = {
@@ -340,6 +365,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.Updatable;
     stores: stores.Updatable;
     tags: tags.Updatable;
+    users: users.Updatable;
   }[T];
 
   export type UniqueIndexForTable<T extends Table> = {
@@ -354,6 +380,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.UniqueIndex;
     stores: stores.UniqueIndex;
     tags: tags.UniqueIndex;
+    users: users.UniqueIndex;
   }[T];
 
   export type ColumnForTable<T extends Table> = {
@@ -368,6 +395,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.Column;
     stores: stores.Column;
     tags: tags.Column;
+    users: users.Column;
   }[T];
 
   export type SQLForTable<T extends Table> = {
@@ -382,6 +410,7 @@ declare module 'zapatos/schema' {
     shifts: shifts.SQL;
     stores: stores.SQL;
     tags: tags.SQL;
+    users: users.SQL;
   }[T];
 
 }

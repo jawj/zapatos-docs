@@ -117,13 +117,6 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                     return memo;
                 }, {});
                 Object.assign(all, {
-                    // stubs for key pg types
-                    // 'pg.ts': `
-                    //   export class Pool {}
-                    //   export class PoolClient {}
-                    //   export class QueryResult {
-                    //     rows: any;
-                    //   }`,
                     // pretend pg.Pool
                     'pgPool.ts': "\n      import * as pg from 'pg';\n      export default new pg.Pool();",
                 });
