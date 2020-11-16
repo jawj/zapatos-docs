@@ -22,7 +22,7 @@
     "pg-native": "^3.0.0",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
-    "zapatos": "^0.1.60"
+    "zapatos": "^3.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.7.0",
