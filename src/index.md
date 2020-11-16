@@ -108,7 +108,7 @@ CREATE TABLE "authors"
 , "isLiving" BOOLEAN );
 ```
 
-We run `npx zapatos` to generate a file named `schema.ts`, including table definitions like this one:
+We run `npx zapatos` to generate a file named `schema.d.ts`, including table definitions like this one:
 
 ```typescript:norun
 export namespace authors {
@@ -131,7 +131,7 @@ export namespace authors {
 
 The types are, I hope, pretty self-explanatory. `authors.Selectable` is what I'll get back from a `SELECT` query on this table. `authors.Insertable` is what I can `INSERT`: similar to the `Selectable`, but any fields that are `NULL`able and/or have `DEFAULT` values are allowed to be missing, `NULL` or `DEFAULT`. `authors.Updatable` is what I can `UPDATE` the table with: like what I can `INSERT`, but all columns are optional: it's a simple `Partial<authors.Insertable>`. `authors.Whereable`, finally, is what I can use in a `WHERE` condition 
 
-`schema.ts` includes a few other types that get used internally, including some handy type mappings, such as this one:
+`schema.d.ts` includes a few other types that get used internally, including some handy type mappings, such as this one:
 
 ```typescript:norun
 export type SelectableForTable<T extends Table> = {
@@ -1909,6 +1909,8 @@ Right now, though, there's a bit of work to do. After running `npx zapatos` in v
    Search:  ^(\s*import\s*)(type\s*)?([^"']*['"])[^"']+/(zapatos/schema["'])
    Replace: $1type $3$4
 ```
+
+_Newly documented feature_: the `isDatabaseError` function [is now documented](#errors).
 
 #### 2.0
 

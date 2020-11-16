@@ -128,7 +128,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                     if (foundAtIndex === undefined)
                         throw new Error("\"" + targetLine + "\" not found in " + srcPath);
                     var lineNo = srcFile.slice(0, foundAtIndex + 1).split('\n').length;
-                    return "<div style=\"height: 1px; clear: both;\"></div><div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
+                    return "<div style=\"height: 1px; clear: both;\"></div><div class=\"src-link\"><a href=\"https://github.com/jawj/zapatos/blob/master/src/db/" + srcFileName + "#L" + lineNo + "\">Source code \u00BB</a></div>";
                 });
                 console.info('Transforming Markdown and highlighting code blocks...');
                 md = new MarkdownIt({

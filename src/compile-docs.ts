@@ -103,7 +103,7 @@ void (async () => {
       if (foundAtIndex === undefined) throw new Error(`"${targetLine}" not found in ${srcPath}`);
       const lineNo = srcFile.slice(0, foundAtIndex + 1).split('\n').length;
 
-      return `<div style="height: 1px; clear: both;"></div><div class="src-link"><a href="https://github.com/jawj/zapatos/blob/master/src/${srcFileName}#L${lineNo}">Source code »</a></div>`;
+      return `<div style="height: 1px; clear: both;"></div><div class="src-link"><a href="https://github.com/jawj/zapatos/blob/master/src/db/${srcFileName}#L${lineNo}">Source code »</a></div>`;
     });
 
 
