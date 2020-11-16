@@ -73,6 +73,41 @@ CREATE TABLE "users"
 , "friendlyName" text
 );
 
+INSERT INTO "users" ("friendlyName") VALUES 
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo'), ('Foxtrot'), ('Golf'), ('Hotel'),
+  ('Alpha'), ('Bravo'), ('Charlie'), ('Delta'), ('Echo');
+
+
 INSERT INTO "authors" VALUES (1000, 'Philip Pullman', true);
 INSERT INTO "books" VALUES (1000, 1000, 'Northern Lights');
 INSERT INTO "books" VALUES (1001, 1000, 'The Subtle Knife');

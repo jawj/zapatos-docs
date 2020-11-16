@@ -1706,7 +1706,9 @@ try {
 }
 ```
 
-As another example, let's say we're assigning one octet of an IP address by using a `SERIAL` column. We want these to remain sequential up to 254, and then to start filling in the gaps.
+As another example, let's say we're assigning one octet of an IP address by using a `SERIAL` column. We want these to remain sequential up to 254, and then to start filling in any gaps created by deleted rows.
+
+Here's the table:
 
 ```sql
 CREATE TABLE "users" 
@@ -1716,7 +1718,33 @@ CREATE TABLE "users"
 );
 ```
 
+Behind the scenes, 253 rows have already been inserted. Let's delete one so we can see the filling-in process in action:
+
 ```typescript
+await db.deletes('users', { id: 123 }).run(pool);
+```
+
+```typescript
+async function createUser(friendlyName: string) {
+  return db.serializable(pool, async txnClient => {
+    let user;
+    try {
+      db.sql`SAVEPOINT start`.run(txnClient);
+      user = await db.insert('users', { friendlyName }).run(txnClient);
+
+    } catch (err) {
+      if (!db.isDatabaseError(err, 'DataException_SequenceGeneratorLimitExceeded')) throw err;
+      
+      db.sql`ROLLBACK TO start`.run(txnClient);
+      const ipOctet = await getFirstFreeIpOctet(txnClient);
+      if (!ipOctet) return null;
+
+      user = await db.insert('users', { friendlyName, ipOctet }).run(txnClient);
+    }
+    return user;
+  });
+}
+
 async function getFirstFreeIpOctet(txnClient: db.TxnClientForSerializable) {
   const result = await db.sql<s.users.SQL, [{ octet: number }] | []>`
     SELECT gs.octet 
@@ -1729,25 +1757,12 @@ async function getFirstFreeIpOctet(txnClient: db.TxnClientForSerializable) {
   return result[0]?.octet;
 }
 
-async function createUser(friendlyName: string) {
-  return db.serializable(pool, async txnClient => {
-    let user;
-    try {
-      user = await db.insert('users', { friendlyName }).run(txnClient);
-
-    } catch (err) {
-      if (!db.isDatabaseError(err, 'DataException_SequenceGeneratorLimitExceeded')) throw err;
-
-      const ipOctet = await getFirstFreeIpOctet(txnClient);
-      if (!ipOctet) return null;
-
-      user = await db.insert('users', { friendlyName, ipOctet }).run(txnClient);
-    }
-    return user;
-  });
-}
-
-const u = await createUser('Robin');
+const [alice, bob, cathy] = [
+  await createUser('Alice'),
+  await createUser('Bob'),
+  await createUser('Cathy'),
+];
+console.log(alice, bob, cathy);
 ```
 
 
