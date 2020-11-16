@@ -1729,13 +1729,13 @@ async function createUser(friendlyName: string) {
   return db.serializable(pool, async txnClient => {
     let user;
     try {
-      db.sql`SAVEPOINT start`.run(txnClient);
+      await db.sql`SAVEPOINT start`.run(txnClient);
       user = await db.insert('users', { friendlyName }).run(txnClient);
 
     } catch (err) {
       if (!db.isDatabaseError(err, 'DataException_SequenceGeneratorLimitExceeded')) throw err;
       
-      db.sql`ROLLBACK TO start`.run(txnClient);
+      await db.sql`ROLLBACK TO start`.run(txnClient);
       const ipOctet = await getFirstFreeIpOctet(txnClient);
       if (!ipOctet) return null;
 
