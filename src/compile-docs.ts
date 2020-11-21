@@ -34,7 +34,6 @@ void (async () => {
 
   const zapCfg: z.Config = {
     db: { connectionString: dbURL },
-    srcMode: "copy",
     outDir: "./build-src",
     schemas: {
       public: {

@@ -349,17 +349,52 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
 }
 ```
 
-This file has up to six top-level keys:
+Its structure is defined as:
 
-* `"db"` gives Postgres connection details. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here. **This is the only required key.**
+```typescript:norun
+export interface RequiredConfig {
+  db: pg.ClientConfig;
+}
+
+export interface OptionalConfig {
+  outDir: string;
+  schemas: SchemaRules;
+  progressListener: boolean | ((s: string) => void);
+  warningListener: boolean | ((s: string) => void);
+  customTypesTransform: 'PgMy_type' | 'my_type' | 'PgMyType' | ((s: string) => string);
+  columnOptions: ColumnOptions;
+}
+
+interface SchemaRules {
+  [schema: string]: {
+    include: '*' | string[];
+    exclude: '*' | string[];
+  };
+}
+
+interface ColumnOptions {
+  [k: string]: {  // table name or '*'
+    [k: string]: {  // column name
+      insert?: 'auto' | 'excluded' | 'optional';
+      update?: 'auto' | 'excluded';
+    };
+  };
+}
+
+export type Config = RequiredConfig & Partial<OptionalConfig>;
+```
+
+The seven available top-level keys are:
+
+* `"db"` gives Postgres connection details **and is the only required key**. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here.
 
 * `"outDir"` defines where your `zapatos` folder will be created, relative to the project root. If not specified, it defaults to the project root, i.e. `"."`.
 
-* `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema, copying files, and so on. It defaults to `false`.
+* `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema. It defaults to `false`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively provide your own listener function.
 
-* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when a new user-defined type or domain is encountered and given its own type file in `zapatos/custom`. If `true`, which is the default, it does.
+* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when a new user-defined type or domain is encountered and given its own type file in `zapatos/custom`. If `true`, which is the default, it does. If you [generate your schema programmatically](#programmatic-generation), you can alternatively provide your own listener function.
 
-* `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`.
+* `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively define your own transformation function.
 
 * `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
@@ -396,6 +431,38 @@ If you use PostGIS, you'll likely want to exclude its system tables:
   }
 }
 ```
+
+* `"columnOptions"` is a map of options applied to named columns of named tables. You can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or make column keys optional in `Insertable` types, using the option `"insert": "optional"`.
+
+This supports [use cases](https://github.com/jawj/zapatos/issues/25) where columns are set using triggers. 
+
+For example, say you have a `BEFORE INSERT` trigger on your `customers` table that can guess a default value for the `gender` column based on the value of the `title` column (though note: [don't do this](https://design-system.service.gov.uk/patterns/gender-or-sex/)). In this case, the `gender` column is actually optional on insert, even if it's `NOT NULL` with no default, because the trigger provides a default value. You can tell Zapatos about that like so:
+
+```json
+"columnOptions": {
+  "customers": {
+    "gender": {
+      "insert": "optional"
+    }
+  }
+}
+```
+
+You can also use `"*"` as a wildcard to match all tables. For example, say you've set up triggers to keep the `updatedAt` columns updated across your database. Then you might choose to exclude you `updatedAt` columns from the `Insertable` and `Updatable` types for all tables as follows:
+
+```json
+"columnOptions": {
+  "*": {
+    "updatedAt": {
+      "insert": "excluded",
+      "update": "excluded"
+    }
+  }
+}
+```
+
+Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as a complete key — you can't use a `*` to match parts of names — and for tables only, not columns.
+
 
 #### Environment variables
 
@@ -1867,12 +1934,19 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
+#### 3.1
+
+_New feature_: [Direct passthrough `lateral` subqueries](#passthrough).
+
+_New feature_: You can now manually exclude column keys from the `Insertable` and `Updatable` types, and make column keys optional in `Insertable` types, using a new `"columnOptions"` key in `zapatosconfig.json` or the corresponding `Config` object passed to `generate` ([see documentation](#columnoptions)). This supports [use cases](https://github.com/jawj/zapatos/issues/25) where columns are set using triggers. On a similar note, `GENERATED ALWAYS` columns (both the `IDENTITY` and `STORED` varieties) are now automatically excluded from `Insertable` and `Updatable` types, since it's an error to try to write to them.
 
 #### 3.0
 
 _Major breaking change_: Zapatos no longer copies its source to your source tree. In the long run, this is good news — now it's just a normal module, updates won't pollute your diffs, and so on. Thanks are due to [@eyelidlessness](https://github.com/eyelidlessness) and [@jtfell](https://github.com/jtfell).
 
 Right now, though, there's a bit of work to do. After running `npx zapatos` in version 3.0, existing users will see a message informing them that they need to:
+
+* Remove the `"srcMode"` key, if present, from `zapatosconfig.json` or the config argument passed to `generate` (this instruction was added in 3.1).
 
 * Delete the old `zapatos/schema.ts` (but leave the new `zapatos/schema.d.ts`).
 

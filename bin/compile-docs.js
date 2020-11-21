@@ -81,7 +81,6 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.info('Running Zapatos ...');
                 zapCfg = {
                     db: { connectionString: dbURL },
-                    srcMode: "copy",
                     outDir: "./build-src",
                     schemas: {
                         public: {

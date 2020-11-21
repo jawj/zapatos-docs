@@ -13,13 +13,7 @@ declare module 'zapatos/schema' {
   import type * as c from 'zapatos/custom';
 
   // got a type error on schemaVersionCanary below? update by running `npx zapatos`
-  export interface schemaVersionCanary extends db.SchemaVersionCanary { version: 100 }
-
-  type BasicWhereableFromInsertable<T> = { [K in keyof T]: Exclude<T[K] | db.ParentColumn, null | db.DefaultType> };
-  type WhereableFromBasicWhereable<T> = { [K in keyof T]?: T[K] | db.SQLFragment<any, T[K]> };
-  type WhereableFromInsertable<T> = WhereableFromBasicWhereable<BasicWhereableFromInsertable<T>>;
-
-  type UpdatableFromInsertable<T> = { [K in keyof T]?: T[K] | db.SQLFragment<any, T[K]> };
+  export interface schemaVersionCanary extends db.SchemaVersionCanary { version: 101 }
 
   type JSONSelectableFromSelectable<T> = { [K in keyof T]:
     Date extends T[K] ? Exclude<T[K], Date> | db.DateString :
@@ -46,14 +40,24 @@ declare module 'zapatos/schema' {
       accountId: number;
       latestReceiptData: string | null;
     }
+    export interface Whereable {
+      environment?: appleEnvironment | db.Parameter<appleEnvironment> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, appleEnvironment | db.Parameter<appleEnvironment> | db.SQLFragment | db.ParentColumn>;
+      originalTransactionId?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      accountId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      latestReceiptData?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       environment: appleEnvironment | db.Parameter<appleEnvironment> | db.SQLFragment;
       originalTransactionId: string | db.Parameter<string> | db.SQLFragment;
       accountId: number | db.Parameter<number> | db.SQLFragment;
       latestReceiptData?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      environment?: appleEnvironment | db.Parameter<appleEnvironment> | db.SQLFragment | db.SQLFragment<any, appleEnvironment | db.Parameter<appleEnvironment> | db.SQLFragment>;
+      originalTransactionId?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      accountId?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+      latestReceiptData?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'appleTransactionsPrimaryKey';
     export type Column = keyof Selectable;
@@ -68,12 +72,18 @@ declare module 'zapatos/schema' {
       jsonValue: db.JSONValue | null;
       textArray: string[] | null;
     }
+    export interface Whereable {
+      jsonValue?: db.JSONValue | db.Parameter<db.JSONValue> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, db.JSONValue | db.Parameter<db.JSONValue> | db.SQLFragment | db.ParentColumn>;
+      textArray?: string[] | db.Parameter<string[]> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string[] | db.Parameter<string[]> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       jsonValue?: db.JSONValue | db.Parameter<db.JSONValue> | null | db.DefaultType | db.SQLFragment;
       textArray?: string[] | db.Parameter<string[]> | null | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      jsonValue?: db.JSONValue | db.Parameter<db.JSONValue> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, db.JSONValue | db.Parameter<db.JSONValue> | null | db.DefaultType | db.SQLFragment>;
+      textArray?: string[] | db.Parameter<string[]> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string[] | db.Parameter<string[]> | null | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = never;
     export type Column = keyof Selectable;
@@ -89,13 +99,21 @@ declare module 'zapatos/schema' {
       name: string;
       isLiving: boolean | null;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      isLiving?: boolean | db.Parameter<boolean> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, boolean | db.Parameter<boolean> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       name: string | db.Parameter<string> | db.SQLFragment;
       isLiving?: boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      isLiving?: boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'authors_pkey';
     export type Column = keyof Selectable;
@@ -110,12 +128,18 @@ declare module 'zapatos/schema' {
       id: number;
       balance: number;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      balance?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       balance?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      balance?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'bankAccounts_pkey';
     export type Column = keyof Selectable;
@@ -132,14 +156,24 @@ declare module 'zapatos/schema' {
       title: string | null;
       createdAt: Date;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      authorId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      title?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      createdAt?: Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       authorId: number | db.Parameter<number> | db.SQLFragment;
       title?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
       createdAt?: Date | db.Parameter<Date> | db.DateString | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      authorId?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+      title?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment>;
+      createdAt?: Date | db.Parameter<Date> | db.DateString | db.DefaultType | db.SQLFragment | db.SQLFragment<any, Date | db.Parameter<Date> | db.DateString | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'books_pkey';
     export type Column = keyof Selectable;
@@ -154,12 +188,18 @@ declare module 'zapatos/schema' {
       id: number;
       name: string;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       name: string | db.Parameter<string> | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'doctors_pkey';
     export type Column = keyof Selectable;
@@ -175,13 +215,21 @@ declare module 'zapatos/schema' {
       consecutiveFailedLogins: number;
       lastFailedLogin: Date | null;
     }
+    export interface Whereable {
+      email?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      consecutiveFailedLogins?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      lastFailedLogin?: Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       email: string | db.Parameter<string> | db.SQLFragment;
       consecutiveFailedLogins?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       lastFailedLogin?: Date | db.Parameter<Date> | db.DateString | null | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      email?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      consecutiveFailedLogins?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      lastFailedLogin?: Date | db.Parameter<Date> | db.DateString | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, Date | db.Parameter<Date> | db.DateString | null | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'emailAuthentication_pkey';
     export type Column = keyof Selectable;
@@ -197,13 +245,21 @@ declare module 'zapatos/schema' {
       name: string;
       managerId: number | null;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      managerId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       name: string | db.Parameter<string> | db.SQLFragment;
       managerId?: number | db.Parameter<number> | null | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      managerId?: number | db.Parameter<number> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | null | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'employees_pkey';
     export type Column = keyof Selectable;
@@ -218,12 +274,18 @@ declare module 'zapatos/schema' {
       day: Date;
       doctorId: number;
     }
+    export interface Whereable {
+      day?: Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.ParentColumn>;
+      doctorId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       day: Date | db.Parameter<Date> | db.DateString | db.SQLFragment;
       doctorId: number | db.Parameter<number> | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      day?: Date | db.Parameter<Date> | db.DateString | db.SQLFragment | db.SQLFragment<any, Date | db.Parameter<Date> | db.DateString | db.SQLFragment>;
+      doctorId?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'shifts_pkey';
     export type Column = keyof Selectable;
@@ -239,13 +301,21 @@ declare module 'zapatos/schema' {
       name: string;
       geom: c.PgGeometry;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      geom?: c.PgGeometry | db.Parameter<c.PgGeometry> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, c.PgGeometry | db.Parameter<c.PgGeometry> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       name: string | db.Parameter<string> | db.SQLFragment;
       geom: c.PgGeometry | db.Parameter<c.PgGeometry> | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      geom?: c.PgGeometry | db.Parameter<c.PgGeometry> | db.SQLFragment | db.SQLFragment<any, c.PgGeometry | db.Parameter<c.PgGeometry> | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'stores_pkey';
     export type Column = keyof Selectable;
@@ -260,12 +330,18 @@ declare module 'zapatos/schema' {
       tag: string;
       bookId: number;
     }
+    export interface Whereable {
+      tag?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+      bookId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       tag: string | db.Parameter<string> | db.SQLFragment;
       bookId: number | db.Parameter<number> | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      tag?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+      bookId?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'tagsUniqueIdx';
     export type Column = keyof Selectable;
@@ -281,13 +357,21 @@ declare module 'zapatos/schema' {
       ipOctet: number;
       friendlyName: string | null;
     }
+    export interface Whereable {
+      id?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      ipOctet?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      friendlyName?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+    }
     export interface Insertable {
       id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       ipOctet?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
       friendlyName?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment;
     }
-    export interface Updatable extends UpdatableFromInsertable<Insertable> { }
-    export interface Whereable extends WhereableFromInsertable<Insertable> { }
+    export interface Updatable {
+      id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      ipOctet?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      friendlyName?: string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | null | db.DefaultType | db.SQLFragment>;
+    }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'users_pkey' | 'users_ipOctet_key';
     export type Column = keyof Selectable;
