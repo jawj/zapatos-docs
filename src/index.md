@@ -349,7 +349,7 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
 }
 ```
 
-Its structure is defined as:
+Its structure is defined as follows:
 
 ```typescript:norun
 export interface RequiredConfig {
@@ -392,7 +392,7 @@ The seven available top-level keys are:
 
 * `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema. It defaults to `false`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively provide your own listener function.
 
-* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when a new user-defined type or domain is encountered and given its own type file in `zapatos/custom`. If `true`, which is the default, it does. If you [generate your schema programmatically](#programmatic-generation), you can alternatively provide your own listener function.
+* `"warningListener"` is a boolean that determines whether or not the tool logs a warning when a new user-defined type or domain is encountered and given its own type file in `zapatos/custom`. If `true`, which is the default, it does. Again, if you [generate your schema programmatically](#programmatic-generation), you can alternatively provide your own listener function.
 
 * `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively define your own transformation function.
 
@@ -432,7 +432,7 @@ If you use PostGIS, you'll likely want to exclude its system tables:
 }
 ```
 
-* `"columnOptions"` is a map of options applied to named columns of named tables. You can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or make column keys optional in `Insertable` types, using the option `"insert": "optional"`.
+* `"columnOptions"` is an object mapping options to named columns of named (or all) tables. Currently, you can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or to force column keys to be optional in `Insertable` types, using the option `"insert": "optional"`.
 
 This supports [use cases](https://github.com/jawj/zapatos/issues/25) where columns are set using triggers. 
 
@@ -448,7 +448,7 @@ For example, say you have a `BEFORE INSERT` trigger on your `customers` table th
 }
 ```
 
-You can also use `"*"` as a wildcard to match all tables. For example, say you've set up triggers to keep the `updatedAt` columns updated across your database. Then you might choose to exclude you `updatedAt` columns from the `Insertable` and `Updatable` types for all tables as follows:
+You can also use `"*"` as a wildcard to match all tables. For example, perhaps you've set up the appropriate triggers to keep `updatedAt` columns up to date throughout your database. Then you might choose to exclude all your `updatedAt` columns from the `Insertable` and `Updatable` types for all tables as follows:
 
 ```json
 "columnOptions": {
@@ -461,7 +461,7 @@ You can also use `"*"` as a wildcard to match all tables. For example, say you'v
 }
 ```
 
-Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as a complete key — you can't use a `*` to match parts of names — and for tables only, not columns.
+Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as the whole key — you can't use a `*` to match parts of names — and only for tables, not for columns.
 
 
 #### Environment variables
