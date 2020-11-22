@@ -176,7 +176,7 @@ void (async () => {
   const
     maxIdLength = 64,
     content = document.querySelector('#content'),
-    headings = content!.querySelectorAll('h1, h2, h3, h4, h5'),
+    headings = content!.querySelectorAll('h1, h2, h3, h4, h5, h6'),
     headingMap: { [k: string]: number } = {};
 
   headings.forEach(heading => {

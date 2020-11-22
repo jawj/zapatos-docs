@@ -268,6 +268,32 @@ declare module 'zapatos/schema' {
     export type SQL = SQLExpression | SQLExpression[];
   }
 
+  export namespace photos {
+    export type Table = 'photos';
+    export interface Selectable {
+      photoId: number;
+      url: string;
+    }
+    export interface Whereable {
+      photoId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      url?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      photoId?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
+      url: string | db.Parameter<string> | db.SQLFragment;
+    }
+    export interface Updatable {
+      photoId?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      url?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+    }
+    export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
+    export type UniqueIndex = 'photos_pkey';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
   export namespace shifts {
     export type Table = 'shifts';
     export interface Selectable {
@@ -318,6 +344,58 @@ declare module 'zapatos/schema' {
     }
     export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
     export type UniqueIndex = 'stores_pkey';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  export namespace subjectPhotos {
+    export type Table = 'subjectPhotos';
+    export interface Selectable {
+      subjectId: number;
+      photoId: number;
+    }
+    export interface Whereable {
+      subjectId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      photoId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      subjectId: number | db.Parameter<number> | db.SQLFragment;
+      photoId: number | db.Parameter<number> | db.SQLFragment;
+    }
+    export interface Updatable {
+      subjectId?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+      photoId?: number | db.Parameter<number> | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment>;
+    }
+    export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
+    export type UniqueIndex = 'userphotosunique';
+    export type Column = keyof Selectable;
+    export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
+    export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
+    export type SQL = SQLExpression | SQLExpression[];
+  }
+
+  export namespace subjects {
+    export type Table = 'subjects';
+    export interface Selectable {
+      subjectId: number;
+      name: string;
+    }
+    export interface Whereable {
+      subjectId?: number | db.Parameter<number> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, number | db.Parameter<number> | db.SQLFragment | db.ParentColumn>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.ParentColumn | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment | db.ParentColumn>;
+    }
+    export interface Insertable {
+      subjectId?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
+      name: string | db.Parameter<string> | db.SQLFragment;
+    }
+    export interface Updatable {
+      subjectId?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment | db.SQLFragment<any, number | db.Parameter<number> | db.DefaultType | db.SQLFragment>;
+      name?: string | db.Parameter<string> | db.SQLFragment | db.SQLFragment<any, string | db.Parameter<string> | db.SQLFragment>;
+    }
+    export interface JSONSelectable extends JSONSelectableFromSelectable<Selectable> { }
+    export type UniqueIndex = 'subjects_pkey';
     export type Column = keyof Selectable;
     export type OnlyCols<T extends readonly Column[]> = Pick<Selectable, T[number]>;
     export type SQLExpression = db.GenericSQLExpression | db.ColumnNames<Updatable | (keyof Updatable)[]> | db.ColumnValues<Updatable> | Table | Whereable | Column;
@@ -382,14 +460,14 @@ declare module 'zapatos/schema' {
 
   /* === cross-table types === */
 
-  export type Table = appleTransactions.Table | arrays.Table | authors.Table | bankAccounts.Table | books.Table | doctors.Table | emailAuthentication.Table | employees.Table | shifts.Table | stores.Table | tags.Table | users.Table;
-  export type Selectable = appleTransactions.Selectable | arrays.Selectable | authors.Selectable | bankAccounts.Selectable | books.Selectable | doctors.Selectable | emailAuthentication.Selectable | employees.Selectable | shifts.Selectable | stores.Selectable | tags.Selectable | users.Selectable;
-  export type Whereable = appleTransactions.Whereable | arrays.Whereable | authors.Whereable | bankAccounts.Whereable | books.Whereable | doctors.Whereable | emailAuthentication.Whereable | employees.Whereable | shifts.Whereable | stores.Whereable | tags.Whereable | users.Whereable;
-  export type Insertable = appleTransactions.Insertable | arrays.Insertable | authors.Insertable | bankAccounts.Insertable | books.Insertable | doctors.Insertable | emailAuthentication.Insertable | employees.Insertable | shifts.Insertable | stores.Insertable | tags.Insertable | users.Insertable;
-  export type Updatable = appleTransactions.Updatable | arrays.Updatable | authors.Updatable | bankAccounts.Updatable | books.Updatable | doctors.Updatable | emailAuthentication.Updatable | employees.Updatable | shifts.Updatable | stores.Updatable | tags.Updatable | users.Updatable;
-  export type UniqueIndex = appleTransactions.UniqueIndex | arrays.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | tags.UniqueIndex | users.UniqueIndex;
-  export type Column = appleTransactions.Column | arrays.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | shifts.Column | stores.Column | tags.Column | users.Column;
-  export type AllTables = [appleTransactions.Table, arrays.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, shifts.Table, stores.Table, tags.Table, users.Table];
+  export type Table = appleTransactions.Table | arrays.Table | authors.Table | bankAccounts.Table | books.Table | doctors.Table | emailAuthentication.Table | employees.Table | photos.Table | shifts.Table | stores.Table | subjectPhotos.Table | subjects.Table | tags.Table | users.Table;
+  export type Selectable = appleTransactions.Selectable | arrays.Selectable | authors.Selectable | bankAccounts.Selectable | books.Selectable | doctors.Selectable | emailAuthentication.Selectable | employees.Selectable | photos.Selectable | shifts.Selectable | stores.Selectable | subjectPhotos.Selectable | subjects.Selectable | tags.Selectable | users.Selectable;
+  export type Whereable = appleTransactions.Whereable | arrays.Whereable | authors.Whereable | bankAccounts.Whereable | books.Whereable | doctors.Whereable | emailAuthentication.Whereable | employees.Whereable | photos.Whereable | shifts.Whereable | stores.Whereable | subjectPhotos.Whereable | subjects.Whereable | tags.Whereable | users.Whereable;
+  export type Insertable = appleTransactions.Insertable | arrays.Insertable | authors.Insertable | bankAccounts.Insertable | books.Insertable | doctors.Insertable | emailAuthentication.Insertable | employees.Insertable | photos.Insertable | shifts.Insertable | stores.Insertable | subjectPhotos.Insertable | subjects.Insertable | tags.Insertable | users.Insertable;
+  export type Updatable = appleTransactions.Updatable | arrays.Updatable | authors.Updatable | bankAccounts.Updatable | books.Updatable | doctors.Updatable | emailAuthentication.Updatable | employees.Updatable | photos.Updatable | shifts.Updatable | stores.Updatable | subjectPhotos.Updatable | subjects.Updatable | tags.Updatable | users.Updatable;
+  export type UniqueIndex = appleTransactions.UniqueIndex | arrays.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | photos.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | subjectPhotos.UniqueIndex | subjects.UniqueIndex | tags.UniqueIndex | users.UniqueIndex;
+  export type Column = appleTransactions.Column | arrays.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | photos.Column | shifts.Column | stores.Column | subjectPhotos.Column | subjects.Column | tags.Column | users.Column;
+  export type AllTables = [appleTransactions.Table, arrays.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, photos.Table, shifts.Table, stores.Table, subjectPhotos.Table, subjects.Table, tags.Table, users.Table];
 
 
   export type SelectableForTable<T extends Table> = {
@@ -401,8 +479,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.Selectable;
     emailAuthentication: emailAuthentication.Selectable;
     employees: employees.Selectable;
+    photos: photos.Selectable;
     shifts: shifts.Selectable;
     stores: stores.Selectable;
+    subjectPhotos: subjectPhotos.Selectable;
+    subjects: subjects.Selectable;
     tags: tags.Selectable;
     users: users.Selectable;
   }[T];
@@ -416,8 +497,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.Whereable;
     emailAuthentication: emailAuthentication.Whereable;
     employees: employees.Whereable;
+    photos: photos.Whereable;
     shifts: shifts.Whereable;
     stores: stores.Whereable;
+    subjectPhotos: subjectPhotos.Whereable;
+    subjects: subjects.Whereable;
     tags: tags.Whereable;
     users: users.Whereable;
   }[T];
@@ -431,8 +515,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.Insertable;
     emailAuthentication: emailAuthentication.Insertable;
     employees: employees.Insertable;
+    photos: photos.Insertable;
     shifts: shifts.Insertable;
     stores: stores.Insertable;
+    subjectPhotos: subjectPhotos.Insertable;
+    subjects: subjects.Insertable;
     tags: tags.Insertable;
     users: users.Insertable;
   }[T];
@@ -446,8 +533,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.Updatable;
     emailAuthentication: emailAuthentication.Updatable;
     employees: employees.Updatable;
+    photos: photos.Updatable;
     shifts: shifts.Updatable;
     stores: stores.Updatable;
+    subjectPhotos: subjectPhotos.Updatable;
+    subjects: subjects.Updatable;
     tags: tags.Updatable;
     users: users.Updatable;
   }[T];
@@ -461,8 +551,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.UniqueIndex;
     emailAuthentication: emailAuthentication.UniqueIndex;
     employees: employees.UniqueIndex;
+    photos: photos.UniqueIndex;
     shifts: shifts.UniqueIndex;
     stores: stores.UniqueIndex;
+    subjectPhotos: subjectPhotos.UniqueIndex;
+    subjects: subjects.UniqueIndex;
     tags: tags.UniqueIndex;
     users: users.UniqueIndex;
   }[T];
@@ -476,8 +569,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.Column;
     emailAuthentication: emailAuthentication.Column;
     employees: employees.Column;
+    photos: photos.Column;
     shifts: shifts.Column;
     stores: stores.Column;
+    subjectPhotos: subjectPhotos.Column;
+    subjects: subjects.Column;
     tags: tags.Column;
     users: users.Column;
   }[T];
@@ -491,8 +587,11 @@ declare module 'zapatos/schema' {
     doctors: doctors.SQL;
     emailAuthentication: emailAuthentication.SQL;
     employees: employees.SQL;
+    photos: photos.SQL;
     shifts: shifts.SQL;
     stores: stores.SQL;
+    subjectPhotos: subjectPhotos.SQL;
+    subjects: subjects.SQL;
     tags: tags.SQL;
     users: users.SQL;
   }[T];

@@ -151,7 +151,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 console.info('Adding title ...');
                 document.head.insertAdjacentHTML('beforeend', "<title>" + document.querySelector('h1').textContent + "</title>");
                 console.info('Adding id attributes to headings...');
-                maxIdLength = 64, content = document.querySelector('#content'), headings = content.querySelectorAll('h1, h2, h3, h4, h5'), headingMap = {};
+                maxIdLength = 64, content = document.querySelector('#content'), headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6'), headingMap = {};
                 headings.forEach(function (heading) {
                     var id = heading.id ? heading.id : heading.textContent
                         .trim().toLowerCase()

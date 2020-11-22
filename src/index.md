@@ -340,16 +340,10 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
     "connectionString": "postgresql://localhost/example_db"
   },
   "outDir": "./src",
-  "schemas": {
-    "public": {
-      "include": "*",
-      "exclude": ["excluded_table_1", "excluded_table_2"]
-    }
-  }
 }
 ```
 
-Its structure is defined as follows:
+It should be structured as follows:
 
 ```typescript:norun
 export interface RequiredConfig {
@@ -384,7 +378,7 @@ interface ColumnOptions {
 export type Config = RequiredConfig & Partial<OptionalConfig>;
 ```
 
-The seven available top-level keys are:
+The available top-level keys are:
 
 * `"db"` gives Postgres connection details **and is the only required key**. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here.
 
@@ -1220,8 +1214,11 @@ const allTables: s.AllTables = [
   'doctors',
   'emailAuthentication', 
   'employees', 
+  'photos',
   'shifts',
   'stores',
+  'subjectPhotos',
+  'subjects',
   'tags',
   'users'
 ];
@@ -1238,7 +1235,7 @@ await db.truncate(allTables, 'CASCADE').run(pool);
 
 #### `select`, `selectOne`, `selectExactlyOne` and `count`
 
-(If you want to see the full horror of these type signatures, follow the above link to the code).
+(If you want to see the full horror of the type signatures, follow the above link to the code).
 
 The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), a `SQLFragment` from a `sql` template string, or the appropriate `Whereable` for the target table (recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable)).
 
@@ -1318,7 +1315,7 @@ The return type is of course appropriately narrowed to the requested columns onl
 
 ##### `order`, `limit` and `offset`
 
-The `limit` and `offset` options each take a number and pass it directly through to SQL `LIMIT` and `OFFSET` clauses. The `order` option takes an `OrderSpecForTable[]`, which has this shape:
+The `limit` and `offset` options each take a number and pass it directly through to SQL `LIMIT` and `OFFSET` clauses. The `order` option takes a single `OrderSpecForTable` or an `OrderSpecForTable[]` array, which has this shape:
 
 ```typescript:norun
 interface OrderSpecForTable<T extends Table> {
@@ -1332,13 +1329,13 @@ Putting them together gives us queries like this:
 
 ```typescript
 const [lastButOneBook] = await db.select('books', db.all, { 
-  order: [{ by: 'createdAt', direction: 'DESC' }], 
+  order: { by: 'createdAt', direction: 'DESC' }, 
   limit: 1, 
   offset: 1,
 }).run(pool);
 ```
 
-I used destructuring assignment here (`const [lastButOneBook] = /* ... */;`) to account for the fact that I know this query is only going to return one response. Unfortunately, destructuring is just syntactic sugar for indexing, and indexing in TypeScript [doesn't reflect that the result may be undefined](https://github.com/Microsoft/TypeScript/issues/13778). That means that `lastButOneBook` is now typed as a `JSONSelectable`, but it could actually be `undefined`, and that could lead to errors down the line.
+I used destructuring assignment here (`const [lastButOneBook] = /* ... */;`) to account for the fact that I know this query is only going to return one response. Unfortunately, destructuring is just syntactic sugar for indexing, and indexing in TypeScript [doesn't reflect that the result may be undefined](https://github.com/Microsoft/TypeScript/issues/13778) unless you have [`--noUncheckedIndexedAccess`](https://devblogs.microsoft.com/typescript/announcing-typescript-4-1/#no-unchecked-indexed-access) turned on. That means that `lastButOneBook` is now typed as a `JSONSelectable`, but it could actually be `undefined`, and that could lead to errors down the line.
 
 To work around this, we can use the `selectOne` function instead, which turns the example above into the following:
 
@@ -1358,7 +1355,11 @@ Earlier we put together [some big `LATERAL` joins of authors and books](#manual-
 
 We can improve on this. Since `SQLFragments` are already designed to contain other `SQLFragments`, it's a pretty small leap to enable `select`/`selectOne`/`count` calls to be nested inside other `select`/`selectOne` calls in order to significantly simplify this kind of `LATERAL` join query.
 
-We achieve this with an additional `options` key, `lateral`, which takes a mapping of property names to nested query shortcuts. It allows us to write an even bigger join (of books, each with their author and tags) like so:
+We achieve this with an additional `options` key, `lateral`. This `lateral` key takes either a single nested query shortcut, or an object that maps one or more property names to query shortcuts. 
+
+###### `lateral` property maps
+
+Let's deal with the latter case — the map of property names to query shortcuts — first. It allows us to write an even bigger join (of books, each with their author and tags) like so:
 
 ```typescript
 const booksAuthorTags = await db.select('books', db.all, {
@@ -1369,9 +1370,11 @@ const booksAuthorTags = await db.select('books', db.all, {
 }).run(pool);
 ```
 
-(Note that we use `selectExactlyOne` in the nested author query here because a book's `authorId` is defined as `NOT NULL REFERENCES authors(id)`, and we can therefore be 100% certain that we'll get back a row here).
+The result here is a `books.JSONSelectable`, augmented with both an `author` property (containing an `authors.JSONSelectable`) and a `tags` property (containing a `tags.JSONSelectable[]` array).
 
-Or we can turn this around, nesting more deeply to retrieve authors, each with their books, each with their tags:
+Note that we use `selectExactlyOne` in the nested author query because a book's `authorId` is defined as `NOT NULL REFERENCES "authors"("id")`, and we can therefore be 100% certain that we'll get back a row here.
+
+We could of course turn this around, nesting more deeply to retrieve authors, each with their books, each with their tags:
 
 ```typescript
 const authorsBooksTags = await db.select('authors', db.all, {
@@ -1432,7 +1435,69 @@ const people = await db.select('employees', db.all, {
 
 As usual, this is fully typed. If, for example, you were to forget that `directReports` is a count rather than an array of employees, VS Code would soon disabuse you.
 
-There are still a few limitations to type inference for nested queries. First, there's no check that your join makes sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, we need to manually specify `selectExactlyOne` instead of `selectOne` when we know that a join will always produce a result — such as when the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint — which in principle might be inferred for us. Third, note that `strictNullChecks` (or `strict`) must be turned on in `tsconfig.json`, or nothing gets added to the return type.
+###### `lateral` pass-through
+
+As already mentioned, the `lateral` key can also ([since v3.1](https://github.com/jawj/zapatos/issues/48)) take a single nested query shortcut. In this case, the result of the lateral query is promoted and passed directly through as the result of the parent query. This can be helpful when working with many-to-many relationships between tables.
+
+For instance, let's say we've got two tables, `photos` and `subjects`, where `subjects` holds data on the people who appear in the photos. This is a many-to-many relationship, since a photo can have many subjects and a subject can be in multiple photos. We model it with a third table, `subjectPhotos`.
+
+Here are the tables:
+
+```sql
+CREATE TABLE "photos" 
+( "photoId" int PRIMARY KEY GENERATED ALWAYS AS IDENTITY
+, "url" text NOT NULL
+);
+CREATE TABLE "subjects"
+( "subjectId" int PRIMARY KEY GENERATED ALWAYS AS IDENTITY
+, "name" text NOT NULL
+);
+CREATE TABLE "subjectPhotos"
+( "subjectId" int NOT NULL REFERENCES "subjects"("subjectId")
+, "photoId" int NOT NULL REFERENCES "photos"("photoId")
+, CONSTRAINT "userPhotosUnique" UNIQUE ("subjectId", "photoId")
+);
+```
+
+Insert some data:
+
+```typescript
+const
+  [alice, bobby, cathy] = await db.insert('subjects', [
+    { name: 'Alice' }, { name: 'Bobby' }, { name: 'Cathy' },
+  ]).run(pool),
+  [photo1, photo2, photo3] = await db.insert('photos', [
+    { url: 'photo1.jpg' }, { url: 'photo2.jpg' }, { url: 'photo3.jpg' },
+  ]).run(pool);
+
+await db.insert('subjectPhotos', [
+  { subjectId: alice.subjectId, photoId: photo1.photoId },
+  { subjectId: alice.subjectId, photoId: photo2.photoId },
+  { subjectId: bobby.subjectId, photoId: photo2.photoId },
+  { subjectId: cathy.subjectId, photoId: photo1.photoId },
+  { subjectId: cathy.subjectId, photoId: photo3.photoId },
+]).run(pool);
+```
+
+And now query for all photos with their subjects:
+
+```typescript
+const photos = await db.select('photos', db.all, {
+  lateral: {
+    subjects: db.select('subjectPhotos', { photoId: db.parent('photoId') }, {
+      lateral: db.selectExactlyOne('subjects', { subjectId: db.parent('subjectId') })
+    })
+  }
+}).run(pool);
+```
+
+Note that the `subjects` subquery is passed directly to the `lateral` option of the `subjectPhotos` query, and its result is therefore passed straight through, effectively overwriting the `subjectPhotos` query result. That's fine, since the `subjectPhotos` table effectively contains only noise here, in the form of additional instances of the `photoId` and `subjectId` values.
+
+As seen here, when you pass a nested query directly to the `lateral` option of a containing query, nothing else is returned from that containing query. For this reason, it would be futile to also specify `columns` or `extras` on the containing query, and trying to do so will give you a type error.
+
+###### Limitations
+
+There are still a few limitations to type inference for nested queries. First, there's no check that your joins make sense (column types and `REFERENCES` relationships are not exploited in the `Whereable` term). Second, we need to manually specify `selectExactlyOne` instead of `selectOne` when we know that a join will always produce a result — such as when the relevant foreign key is `NOT NULL` and has a `REFERENCES` constraint — which in principle might be inferred for us. Third, note that `strictNullChecks` (or `strict`) must be turned on in `tsconfig.json`, or nothing gets added to the return type.
 
 Nevertheless, this is a handy, flexible — but still transparent and zero-abstraction — way to generate and run complex join queries. 
 
@@ -1936,9 +2001,9 @@ This change list is limited to new features and breaking changes. For a complete
 
 #### 3.1
 
-_New feature_: [Direct passthrough `lateral` subqueries](#passthrough).
+_New feature_: [Pass-through `lateral` subqueries](#pass-through-lateral).
 
-_New feature_: You can now manually exclude column keys from the `Insertable` and `Updatable` types, and make column keys optional in `Insertable` types, using a new `"columnOptions"` key in `zapatosconfig.json` or the corresponding `Config` object passed to `generate` ([see documentation](#columnoptions)). This supports [use cases](https://github.com/jawj/zapatos/issues/25) where columns are set using triggers. On a similar note, `GENERATED ALWAYS` columns (both the `IDENTITY` and `STORED` varieties) are now automatically excluded from `Insertable` and `Updatable` types, since it's an error to try to write to them.
+_New feature_: You can now manually exclude column keys from the `Insertable` and `Updatable` types, and make column keys optional in `Insertable` types, using a new `"columnOptions"` key in `zapatosconfig.json` or the corresponding `Config` object passed to `generate` ([documentation](#configure-it)). On a similar note, `GENERATED ALWAYS` columns (both the `IDENTITY` and `STORED` varieties) are now automatically excluded from `Insertable` and `Updatable` types, since it's an error to try to write to them.
 
 #### 3.0
 
