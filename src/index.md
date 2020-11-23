@@ -428,7 +428,7 @@ If you use PostGIS, you'll likely want to exclude its system tables:
 
 * `"columnOptions"` is an object mapping options to named columns of named (or all) tables. Currently, you can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or to force column keys to be optional in `Insertable` types, using the option `"insert": "optional"`.
 
-This supports [use cases](https://github.com/jawj/zapatos/issues/25) where columns are set using triggers. 
+This supports use cases where columns are set using triggers. 
 
 For example, say you have a `BEFORE INSERT` trigger on your `customers` table that can guess a default value for the `gender` column based on the value of the `title` column (though note: [don't do this](https://design-system.service.gov.uk/patterns/gender-or-sex/)). In this case, the `gender` column is actually optional on insert, even if it's `NOT NULL` with no default, because the trigger provides a default value. You can tell Zapatos about that like so:
 
@@ -1437,7 +1437,7 @@ As usual, this is fully typed. If, for example, you were to forget that `directR
 
 ###### `lateral` pass-through
 
-As already mentioned, the `lateral` key can also ([since v3.1](https://github.com/jawj/zapatos/issues/48)) take a single nested query shortcut. In this case, the result of the lateral query is promoted and passed directly through as the result of the parent query. This can be helpful when working with many-to-many relationships between tables.
+As already mentioned, the `lateral` key can also take a single nested query shortcut. In this case, the result of the lateral query is promoted and passed directly through as the result of the parent query. This can be helpful when working with many-to-many relationships between tables.
 
 For instance, let's say we've got two tables, `photos` and `subjects`, where `subjects` holds data on the people who appear in the photos. This is a many-to-many relationship, since a photo can have many subjects and a subject can be in multiple photos. We model it with a third table, `subjectPhotos`.
 
@@ -1491,9 +1491,9 @@ const photos = await db.select('photos', db.all, {
 }).run(pool);
 ```
 
-Note that the `subjects` subquery is passed directly to the `lateral` option of the `subjectPhotos` query, and its result is therefore passed straight through, effectively overwriting the `subjectPhotos` query result. That's fine, since the `subjectPhotos` table effectively contains only noise here, in the form of additional instances of the `photoId` and `subjectId` values.
+Note that the `subjects` subquery is passed directly to the `lateral` option of the `subjectPhotos` query, and its result is therefore passed straight through, effectively overwriting the `subjectPhotos` query result. That's fine, since the `subjectPhotos` table effectively contains only noise here, in the form of duplicate copies of the `photoId` and `subjectId` primary keys.
 
-As seen here, when you pass a nested query directly to the `lateral` option of a containing query, nothing else is returned from that containing query. For this reason, it would be futile to also specify `columns` or `extras` on the containing query, and trying to do so will give you a type error.
+As seen here, when you pass a nested query directly to the `lateral` option of a parent query, nothing else is returned from that parent query. For this reason, specifying `columns` or `extras` on the parent query would have no effect, and trying to do so will give you a type error.
 
 ###### Limitations
 
@@ -2001,9 +2001,9 @@ This change list is limited to new features and breaking changes. For a complete
 
 #### 3.1
 
-_New feature_: [Pass-through `lateral` subqueries](#pass-through-lateral).
+_New feature_: [Pass-through `lateral` subqueries](#lateral-pass-through), for querying [many-to-many relationships](https://github.com/jawj/zapatos/issues/48).
 
-_New feature_: You can now manually exclude column keys from the `Insertable` and `Updatable` types, and make column keys optional in `Insertable` types, using a new `"columnOptions"` key in `zapatosconfig.json` or the corresponding `Config` object passed to `generate` ([documentation](#configure-it)). On a similar note, `GENERATED ALWAYS` columns (both the `IDENTITY` and `STORED` varieties) are now automatically excluded from `Insertable` and `Updatable` types, since it's an error to try to write to them.
+_New feature_: [As requested](https://github.com/jawj/zapatos/issues/25), you can now manually exclude column keys from the `Insertable` and `Updatable` types, and make column keys optional in `Insertable` types, using a new `"columnOptions"` key in `zapatosconfig.json` or the corresponding `Config` object passed to `generate` ([documentation](#configure-it)). On a similar note, `GENERATED ALWAYS` columns (both the `IDENTITY` and `STORED` varieties) are now automatically excluded from `Insertable` and `Updatable` types, since it's an error to try to write to them.
 
 #### 3.0
 
