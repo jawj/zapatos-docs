@@ -312,7 +312,11 @@ It also doesn't manage the connection pool for you, as some ORMs do — mainly b
 
 ```typescript:norun
 import pg from 'pg';
-export default new pg.Pool({ connectionString: process.env.DATABASE_URL });
+
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+pool.on('error', err => console.error(err));  // don't let a pg restart kill your app
+
+export default pool;
 ```
 
 Finally, it won't tell you how to structure your code: Zapatos doesn't deal in the 'model' classes beloved of traditional ORMs, just (fully-typed) [POJOs](https://twitter.com/_ericelliott/status/831965087749533698?lang=en).
