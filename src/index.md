@@ -328,10 +328,10 @@ Finally, it won't tell you how to structure your code: Zapatos doesn't deal in t
 
 First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras`, `returning` and `columns` options to the shortcut functions.
 
-Then install Zapatos as a dev dependency with `npm`:
+Then install Zapatos with `npm`:
 
 ```bash
-npm install --save-dev zapatos
+npm install --save zapatos
 ```
 
 ### Configure it
@@ -1912,9 +1912,13 @@ export interface Config {
   transactionRetryDelay: { minMs: number; maxMs: number };
   castArrayParamsToJson: boolean;
   castObjectParamsToJson: boolean;
-  queryListener?(str: any, txnId?: number): void;
-  resultListener?(str: any, txnId?: number): void;
-  transactionListener?(str: any, txnId?: number): void;
+  queryListener?(query: SQLQuery, txnId?: number): void;
+  resultListener?(result: any, txnId?: number, elapsedMs?: number): void;
+  transactionListener?(message: string, txnId?: number): void;
+}
+export interface SQLQuery {
+  text: string;
+  values: any[];
 }
 ```
 
@@ -1926,17 +1930,26 @@ Read the current values with `getConfig()` and set new values with `setConfig(ne
 
 * `castArrayParamsToJson` and `castObjectParamsToJson` control whether `Parameter` objects containing arrays and objects, respectively, are to be automatically stringified and cast as Postgres `json` when interpolated into a query. Both default to `false`. See further discussion below.
 
-* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query as their first argument. For queries within a transaction, they will be passed a unique numeric transaction ID as their second argument, to aid debugging.
+* `queryListener` and `resultListener`, if set, are called from the `run` function, and receive the results of (respectively) compiling and then executing and transforming each query as their first argument. For queries within a transaction, they will be passed a unique numeric transaction ID as their second argument, to aid debugging. The `resultListener` receives a third argument, which is the time the query took (in ms).
 
-* `transactionListener`, similarly, is called with messages about transaction retries.
+* `transactionListener`, similarly, is called with messages about transaction retries, and associated transaction IDs.
 
-You might use one or more of the three listener functions to implement logging. For example, if you're using the [`debug`](https://github.com/visionmedia/debug) library, you might do something like this:
+You might use one or more of the three listener functions to implement logging. For example, if you're using the [`debug`](https://github.com/visionmedia/debug) library, you could do something like this:
 
 ```typescript:norun
+const
+  queryDebug = debug('db:query'),
+  resultDebug = debug('db:result'),
+  txnDebug = debug('db:transaction'),
+  strFromTxnId = (txnId: number | undefined) => txnId === undefined ? '-' : String(txnId);
+
 db.setConfig({
-  queryListener: debug('sql.query'),
-  resultListener: debug('sql.result'),
-  transactionListener: debug('sql.transaction'),
+  queryListener: (query, txnId) =>
+    queryDebug(`(%s) %s\n%o`, strFromTxnId(txnId), query.text, query.values),
+  resultListener: (result, txnId, elapsedMs) =>
+    resultDebug(`(%s, %dms) %O`, strFromTxnId(txnId), elapsedMs?.toFixed(1), result),
+  transactionListener: (message, txnId) =>
+    txnDebug(`(%s) %s`, strFromTxnId(txnId), message),
 });
 ```
 
@@ -2013,7 +2026,9 @@ _New feature_: [As requested](https://github.com/jawj/zapatos/issues/25), you ca
 
 _Major breaking change_: Zapatos no longer copies its source to your source tree. In the long run, this is good news — now it's just a normal module, updates won't pollute your diffs, and so on. Thanks are due to [@eyelidlessness](https://github.com/eyelidlessness) and [@jtfell](https://github.com/jtfell).
 
-Right now, though, there's a bit of work to do. After running `npx zapatos` in version 3.0, existing users will see a message informing them that they need to:
+Right now, though, there's a bit of work to do. When you run `npx zapatos` for the first time in version 3, you'll see a message pointing out that you need to:
+
+* Make sure Zapatos is filed under `"dependencies"` (not `"devDependencies"`) in `package.json`
 
 * Remove the `"srcMode"` key, if present, from `zapatosconfig.json` or the config argument passed to `generate` (this instruction was added in 3.1).
 
