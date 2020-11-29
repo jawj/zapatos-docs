@@ -485,7 +485,7 @@ Zapatos provides a command line tool. With everything configured, run it like so
     
     npx zapatos
 
-This generates the TypeScript schema for your database as `zapatos/schema.d.ts` inside your configured `outDir`. Any user-defined or domain types encountered get defined in their own `.d.ts` files inside `zapatos/custom`, which you can subsequently customise.
+This generates the TypeScript schema for your database as `zapatos/schema.d.ts` inside your configured `outDir`. Any user-defined or domain types encountered get defined within `zapatos/custom` in their own `.d.ts` files, which you can subsequently customise.
 
 These files must be included in your TypeScript compilation. That may happen for you automatically, but you may need to check the `"include"` or `"files"` keys in `tsconfig.json`. If you use `ts-node` or `node -r ts-node/register`, you may need to change it to `ts-node --files` or set `TS_NODE_FILES=true`.
 
@@ -524,10 +524,10 @@ Since you've done nothing else with this domain, it's effectively just a simple 
 ALTER TABLE "myTable" ALTER COLUMN "myExistingJsonbColumn" TYPE "mySpecialJsonb";
 ```
 
-When you next regenerate the TypeScript schema, you'll find a custom type for `PgMySpecialJsonb` in `zapatos/custom/PgMySpecialJsonb.ts`, defined like so:
+When you next regenerate the TypeScript schema, you'll find a custom type for `PgMySpecialJsonb` in `zapatos/custom/PgMySpecialJsonb.d.ts`, defined like so:
 
 ```typescript:norun
-export type PgMySpecialJsonb = JSONValue;
+export type PgMySpecialJsonb = db.JSONValue;
 ```
 
 You can of course replace this definition with whatever TypeScript type or interface you choose. The file will not be overwritten on future schema generations. For example, perhaps this column holds blog article data:
@@ -644,9 +644,9 @@ const
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 ```
 
-If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. (It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-cast-boolean--string-parameter), and in certain other places. 
+If you override type-checking to pass untrusted data to Zapatos in unexpected places, such as the above use of `any`, you can expect successful SQL injection attacks. 
 
-If you're in any doubt, double-check that the generated SQL is using `$1`, `$2`, ... parameters for all potentially untrusted data).
+(It *is* safe to pass untrusted data as values in `Whereable`, `Insertable`, and `Updatable` objects, manually by using [`param`](#paramvalue-any-cast-boolean--string-parameter), and in certain other places. If you're in any doubt, double-check that the generated SQL is using `$1`, `$2`, ... parameters for all potentially untrusted data).
 
 
 #### `cols()` and `vals()`
@@ -721,7 +721,7 @@ const
  
 Finally, there's a set of helper functions you can use to create appropriate `SQLFragment`s like these for use as `Whereable` values. The advantages are: (1) there's slighly less to type, and (2) you get type-checking on their arguments (so you're not tempted to compare incomparable things). 
 
-They're exported under `conditions` on the main object, and the full set can be seen in [conditions.ts](https://github.com/jawj/zapatos/blob/master/src/conditions.ts). Using two of them, we'd rewrite the above example as:
+They're exported under `conditions` on the main object, and the full set can be seen in [conditions.ts](https://github.com/jawj/zapatos/blob/master/src/db/conditions.ts). Using two of them, we'd rewrite the above example as:
 
 ```typescript
 const 
@@ -757,9 +757,9 @@ This same mechanism is applied automatically when we use [a `Whereable` object](
 The optional second argument to `param`, `cast`, allows us to specify a SQL `CAST` type for the wrapped value. If `cast` is a string, it's interpreted as a Postgres type, so `param(someValue, 'text')` comes out in the compiled query as as `CAST($1 TO "text")`. If `cast` is `true`, the parameter value will be JSON stringified and cast to `json`, and if `cast` is `false`, the parameter will **not** be JSON stringified or cast to `json` (regardless, in both cases, of [the `castArrayParamsToJson` and `castObjectParamsToJson` configuration options](#casting-parameters-to-json)).
 
 
-#### `default`
+#### `Default`
 
-The `default` symbol simply compiles to the SQL `DEFAULT` keyword. This may be useful in `INSERT` and `UPDATE` queries where no value is supplied for one or more of the affected columns.
+The `Default` symbol simply compiles to the SQL `DEFAULT` keyword. This may be useful in `INSERT` and `UPDATE` queries where no value is supplied for one or more of the affected columns.
 
 
 #### `sql` template strings
@@ -812,7 +812,7 @@ The `raw` function returns `DangerousRawString` wrapper instances. This represen
 
 #### `parent(columnName: string): ParentColumn`
 
-Within `select`, `selectOne` or `count` queries passed as subqueries to the `lateral` option of `select` or `selectOne`, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral-and-alias).
+Within queries passed as subqueries to the `lateral` option of `select`, `selectOne` or `selectExactlyOne`, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral-and-alias).
 
 
 ### `SQLFragment`
