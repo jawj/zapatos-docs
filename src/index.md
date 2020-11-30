@@ -384,7 +384,7 @@ export type Config = RequiredConfig & Partial<OptionalConfig>;
 
 The available top-level keys are:
 
-* `"db"` gives Postgres connection details **and is the only required key**. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting#Programmatic) to `new pg.Pool(/* ... */)` here.
+* `"db"` gives Postgres connection details **and is the only required key**. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting/#Programmatic) to `new pg.Pool(/* ... */)` here.
 
 * `"outDir"` defines where your `zapatos` folder will be created, relative to the project root. If not specified, it defaults to the project root, i.e. `"."`.
 
@@ -1024,7 +1024,7 @@ const
 
 You'll note that `Insertable`s can take `SQLFragment` values (from the `sql` tagged template function) as well as direct values (strings, numbers, and so on). 
 
-Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/a/49379324/338196) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
+Postgres can accept up to 65,536 parameters per query (since [an Int16 is used](https://stackoverflow.com/questions/6581573/what-are-the-max-number-of-allowable-parameters-per-database-provider-type/49379324#49379324) to convey the number of parameters in the _Bind_ message of the [wire protocol](https://www.postgresql.org/docs/current/protocol-message-formats.html)). If there's a risk that a multiple-row `INSERT` could have more inserted values than that, you'll need a mechanism to batch them up into separate calls.
 
 If you provide an empty array to `insert`, this is identified as a no-op, and the database will not actually be queried unless you set the `force` option on `run` to true.
 
@@ -2090,7 +2090,7 @@ Because these are a bit of a mouthful, there are new shortcuts for `TxnClient`, 
 
 #### 0.1.57
 
-_New features_: [condition helpers](https://github.com/jawj/zapatos/blob/master/src/conditions.ts) for use within `Whereables`, and isolation level-specific [transaction shortcuts](#transaction-isolation-shortcuts).
+_New features_: [condition helpers](https://github.com/jawj/zapatos/blob/master/src/db/conditions.ts) for use within `Whereables`, and isolation level-specific [transaction shortcuts](#transaction-isolation-shortcuts).
 
 Condition helpers let you rewrite query conditions like these:
 
@@ -2139,7 +2139,7 @@ Some nice-to-haves would include:
 
 * **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in generated types and the shortcut functions that make use of them.
 
-* **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](http://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
+* **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](https://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
 
 
 ### Alternatives
@@ -2149,7 +2149,7 @@ If you're interested in Zapatos, you might also want to consider [Prisma](https:
 
 ### Licence
 
-This software is released under the [MIT licence](http://www.opensource.org/licenses/mit-license.php).
+This software is released under the [MIT licence](https://opensource.org/licenses/mit-license.php).
 
 Copyright (C) 2020 George MacKerron
 

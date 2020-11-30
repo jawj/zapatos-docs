@@ -7,6 +7,9 @@ import { execSync } from 'child_process';
 import * as hljs from 'highlight.js';
 import { JSDOM } from 'jsdom';
 import * as pgcs from 'pg-connection-string';
+import * as http from 'http';
+import * as https from 'https';
+
 
 void (async () => {
 
@@ -193,13 +196,21 @@ void (async () => {
   });
 
 
-  console.log('Checking internal links ...');
+  console.log('Checking links ...');
 
   const links = content!.querySelectorAll('a');
   links.forEach(link => {
     const href = link.getAttribute('href');
-    if (href?.charAt(0) !== '#') return;
-    if (!content?.querySelector(href)) console.error(` => No link target "${href}"`);
+    if (!href) return;
+    if (href.charAt(0) === '#') {
+      if (!content!.querySelector(href)) console.error(` => No link target "${href}"`);
+
+    } else {
+      const lib = href.match(/^https:/) ? https : http;
+      lib.get(href, res => {  // you'd think a HEAD request would do, but HN 405s them
+        if (res.statusCode !== 200) console.error(`*** HTTP status ${res.statusCode} for link target ${href} ***`);
+      });
+    }
   });
 
 

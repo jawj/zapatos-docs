@@ -62,6 +62,8 @@ var child_process_1 = require("child_process");
 var hljs = require("highlight.js");
 var jsdom_1 = require("jsdom");
 var pgcs = require("pg-connection-string");
+var http = require("http");
+var https = require("https");
 void (function () { return __awaiter(void 0, void 0, void 0, function () {
     var tmpdb, dbURL, dbEnv, _a, host, port, user, password, connOpts, zapCfg, recurseNodes, files, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_b) {
@@ -164,14 +166,23 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                         id += '-' + headingMap[id];
                     heading.id = id;
                 });
-                console.log('Checking internal links ...');
+                console.log('Checking links ...');
                 links = content.querySelectorAll('a');
                 links.forEach(function (link) {
                     var href = link.getAttribute('href');
-                    if ((href === null || href === void 0 ? void 0 : href.charAt(0)) !== '#')
+                    if (!href)
                         return;
-                    if (!(content === null || content === void 0 ? void 0 : content.querySelector(href)))
-                        console.error(" => No link target \"" + href + "\"");
+                    if (href.charAt(0) === '#') {
+                        if (!content.querySelector(href))
+                            console.error(" => No link target \"" + href + "\"");
+                    }
+                    else {
+                        var lib = href.match(/^https:/) ? https : http;
+                        lib.get(href, function (res) {
+                            if (res.statusCode !== 200)
+                                console.error("*** HTTP status " + res.statusCode + " for link target " + href + " ***");
+                        });
+                    }
                 });
                 console.info('Collecting TypeScript scripts ..');
                 runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
