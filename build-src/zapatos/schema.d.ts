@@ -468,6 +468,7 @@ declare module 'zapatos/schema' {
   export type UniqueIndex = appleTransactions.UniqueIndex | arrays.UniqueIndex | authors.UniqueIndex | bankAccounts.UniqueIndex | books.UniqueIndex | doctors.UniqueIndex | emailAuthentication.UniqueIndex | employees.UniqueIndex | photos.UniqueIndex | shifts.UniqueIndex | stores.UniqueIndex | subjectPhotos.UniqueIndex | subjects.UniqueIndex | tags.UniqueIndex | users.UniqueIndex;
   export type Column = appleTransactions.Column | arrays.Column | authors.Column | bankAccounts.Column | books.Column | doctors.Column | emailAuthentication.Column | employees.Column | photos.Column | shifts.Column | stores.Column | subjectPhotos.Column | subjects.Column | tags.Column | users.Column;
   export type AllTables = [appleTransactions.Table, arrays.Table, authors.Table, bankAccounts.Table, books.Table, doctors.Table, emailAuthentication.Table, employees.Table, photos.Table, shifts.Table, stores.Table, subjectPhotos.Table, subjects.Table, tags.Table, users.Table];
+  export type AllMaterializedViews = [];
 
 
   export type SelectableForTable<T extends Table> = {

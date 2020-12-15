@@ -112,24 +112,32 @@ We run `npx zapatos` to generate a file named `schema.d.ts`, including table def
 
 ```typescript:norun
 export namespace authors {
-  /* ... */
+  export type Table = 'authors';
   export interface Selectable {
     id: number;
     name: string;
     isLiving: boolean | null;
+  }
+  export interface Whereable {
+    id?: number | db.Parameter<number> | db.SQLFragment /* | ... etc ... */;
+    name?: string | db.Parameter<string> | db.SQLFragment /* | ... etc ... */;
+    isLiving?: boolean | db.Parameter<boolean> | db.SQLFragment /* | ... etc ... */;
   }
   export interface Insertable {
     id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment;
     name: string | db.Parameter<string> | db.SQLFragment;
     isLiving?: boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment;
   }
-  export interface Updatable extends Partial<Insertable> { }
-  export interface Whereable extends WhereableFromInsertable<Insertable> { }
-  /* ... */
+  export interface Updatable {
+    id?: number | db.Parameter<number> | db.DefaultType | db.SQLFragment /* | ... etc ... */;
+    name?: string | db.Parameter<string> | db.SQLFragment /* | ... etc ... */;
+    isLiving?: boolean | db.Parameter<boolean> | null | db.DefaultType | db.SQLFragment /* | ... etc ... */;
+  }
+  /* ... etc ... */
 }
 ```
 
-The types are, I hope, pretty self-explanatory. `authors.Selectable` is what I'll get back from a `SELECT` query on this table. `authors.Insertable` is what I can `INSERT`: similar to the `Selectable`, but any fields that are `NULL`able and/or have `DEFAULT` values are allowed to be missing, `NULL` or `DEFAULT`. `authors.Updatable` is what I can `UPDATE` the table with: like what I can `INSERT`, but all columns are optional: it's a simple `Partial<authors.Insertable>`. `authors.Whereable`, finally, is what I can use in a `WHERE` condition 
+The types are, I hope, reasonably self-explanatory. `authors.Selectable` is what I'll get back from a `SELECT` query on this table. `authors.Whereable` is what I can use in a `WHERE` condition: everything's optional, and I can include arbitrary SQL. `authors.Insertable` is what I can `INSERT`: it's similar to the `Selectable`, but any fields that are `NULL`able and/or have `DEFAULT` values are allowed to be missing, `NULL` or `DEFAULT`. `authors.Updatable` is what I can `UPDATE` the table with: like what I can `INSERT`, but all columns are optional: it's (roughly) a `Partial<authors.Insertable>`. 
 
 `schema.d.ts` includes a few other types that get used internally, including some handy type mappings, such as this one:
 
@@ -142,7 +150,9 @@ export type SelectableForTable<T extends Table> = {
 }[T];
 ```
 
-Postgres enumerated types (e.g. `CREATE TYPE "ab" AS ENUM ('a', 'b');`) are exported appropriately (`'a' | 'b'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its underlying type, but can also be customised. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can be customised from there.
+Currently, ordinary tables and materialized views are supported (`Updatable`s and `Insertable`s are empty for materialized views). 
+
+Postgres enumerated types (e.g. `CREATE TYPE "ab" AS ENUM ('a', 'b');`) are exported appropriately (`'a' | 'b'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its base type, but can be customised from there. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can also be customised.
 
 [Tell me more about the command line tool »](#how-do-i-get-it)
 
@@ -394,7 +404,7 @@ The available top-level keys are:
 
 * `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively define your own transformation function.
 
-* `"schemas"` is an object that lets you define schemas and tables to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
+* `"schemas"` is an object that lets you define schemas and tables (and materialized views) to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
 
 Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if and only if** all of your table names are unique across all schemas. To make this work, you'll need to set something like this: 
 
@@ -434,7 +444,7 @@ If you use PostGIS, you'll likely want to exclude its system tables:
 
 This supports use cases where columns are set using triggers. 
 
-For example, say you have a `BEFORE INSERT` trigger on your `customers` table that can guess a default value for the `gender` column based on the value of the `title` column (though note: [don't do this](https://design-system.service.gov.uk/patterns/gender-or-sex/)). In this case, the `gender` column is actually optional on insert, even if it's `NOT NULL` with no default, because the trigger provides a default value. You can tell Zapatos about that like so:
+For example, say you have a `BEFORE INSERT` trigger on your `customers` table that can guess a default value for the `gender` column based on the value of the `title` column (though note: [don't do that](https://design-system.service.gov.uk/patterns/gender-or-sex/)). In this case, the `gender` column is actually optional on insert, even if it's `NOT NULL` with no default, because the trigger provides a default value. You can tell Zapatos about that like so:
 
 ```json
 "columnOptions": {
@@ -1235,6 +1245,9 @@ You can then empty the database like so:
 await db.truncate(allTables, 'CASCADE').run(pool);
 ```
 
+There is also, along similar lines, an `AllMaterializedViews` type.
+
+
 => shortcuts.ts /* === select === */
 
 #### `select`, `selectOne`, `selectExactlyOne` and `count`
@@ -2015,6 +2028,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 3.2
+
+_New feature_: Types are now generated for materialized views as well as ordinary tables, [thanks to @jtfell](https://github.com/jawj/zapatos/pull/55).
 
 #### 3.1
 
