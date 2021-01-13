@@ -366,6 +366,7 @@ export interface RequiredConfig {
 
 export interface OptionalConfig {
   outDir: string;
+  outExt: string;
   schemas: SchemaRules;
   progressListener: boolean | ((s: string) => void);
   warningListener: boolean | ((s: string) => void);
@@ -397,6 +398,8 @@ The available top-level keys are:
 * `"db"` gives Postgres connection details **and is the only required key**. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting/#Programmatic) to `new pg.Pool(/* ... */)` here.
 
 * `"outDir"` defines where your `zapatos` folder will be created, relative to the project root. If not specified, it defaults to the project root, i.e. `"."`.
+
+* `"outExt"` defines the file extension for all generated type files. It defaults to `".d.ts"`, but [for certain use cases you may wish to set it to `".ts"`](https://github.com/jawj/zapatos/issues/53).
 
 * `"progressListener"` is a boolean that determines how chatty the tool is. If `true`, it enumerates its progress in generating the schema. It defaults to `false`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively provide your own listener function.
 
@@ -1116,7 +1119,11 @@ It then takes, in addition, a column name (or an array thereof) or an appropriat
 
 It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row. 
 
-The optional fourth argument is an `options` object. Available options are `returning` and `extras` (see documentation for `insert`), plus `noNullUpdateColumns`. The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+The optional fourth argument is an `options` object. Available options are `returning` and `extras` (see documentation for `insert`), plus `updateColumns` and `noNullUpdateColumns`. 
+
+* The `updateColumns` allows you to specify a subset of columns (as either one name or an array of names) that are to be updated on conflict. For example, you might want to leave a `createdAt` field alone.
+
+* The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
 
 Let's say we have a table of app subscription transactions:
 
@@ -2028,6 +2035,12 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 3.3
+
+_New feature_: Added an `updateColumns` option to `upsert`, enabling only a subset of columns to be updated on conflict.
+
+_New feature_: Added an `outExt` generation configuration key, to allow generating `.ts` files instead of `.d.ts` files.
 
 #### 3.2
 
