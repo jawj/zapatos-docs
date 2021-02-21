@@ -233,7 +233,7 @@ void (async () => {
             }
           },
           resultListener: (x: any, txnId?: number) => {
-            if (x != null && (${runnableTag.className.match(/\bshowempty\b/) ? true : false} || !(Array.isArray(x) && x.length === 0))) {
+            if (${runnableTag.className.match(/\bshownull\b/) ? true : false} || (x != null && (${runnableTag.className.match(/\bshowempty\b/) ? true : false} || !(Array.isArray(x) && x.length === 0)))) {
               if (txnId != null) console.log('%%txnId%:' + txnId + '%%');
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }

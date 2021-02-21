@@ -970,23 +970,7 @@ Since you're using Node, it's safe to convert this string straight back to a `Da
 
 #### `insert`
 
-```typescript:norun
-interface InsertSignatures {
-  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
-    table: T,
-    values: InsertableForTable<T>,
-    options?: ReturningOptionsForTable<T, C, E>
-  ): SQLFragment<ReturningTypeForTable<T, C, E>>;
-
-  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
-    table: T,
-    values: InsertableForTable<T>[],
-    options?: ReturningOptionsForTable<T, C, E>
-  ): SQLFragment<ReturningTypeForTable<T, C, E>[]>;
-}
-```
-
-The `insert` shortcut inserts one or more rows in a table, and returns them with any `DEFAULT` values filled in. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]` (subject to the options described below).
+The `insert` shortcut inserts one or more rows in a table, and returns them with any `DEFAULT` or generated values filled in. It takes a `Table` name and the corresponding `Insertable` or `Insertable[]`, and returns the corresponding `JSONSelectable` or `JSONSelectable[]` (subject to the options described below).
 
 The optional `options` argument has two keys.
 
@@ -1051,18 +1035,9 @@ await db.insert("authors", []).run(pool, true);  // does reach DB, for same resu
 
 #### `update`
 
-```typescript:norun
-interface UpdateSignatures {
-  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
-    table: T,
-    values: UpdatableForTable<T>,
-    where: WhereableForTable<T> | SQLFragment,
-    options?: ReturningOptionsForTable<T, C, E>
-  ): SQLFragment<ReturningTypeForTable<T, C, E>[]>;
-}
-```
+The `update` shortcut updates rows in the database. It takes a `Table` name and a corresponding `Updatable` and `Whereable` **in that order, matching their order in the raw SQL query**. 
 
-The `update` shortcut updates rows in the database. It takes a `Table` name and a corresponding `Updatable` and `Whereable` **in that order**, matching their order in the raw SQL query. It returns a `JSONSelectable[]`, listing every column of every row affected (or a subset or superset of those columns, if you use the `returning` and/or `extras` options, which work just as described above for `insert`).
+It returns a `JSONSelectable[]`, listing every column of every row affected (or a subset or superset of those columns, if you use the `returning` and/or `extras` options, which work just as described above for `insert`).
 
 For example, when we discover with that we've mis-spelled a famous physicist's name, we can do this:
 
@@ -1095,35 +1070,19 @@ await db.update("emailAuthentication", {
 
 #### `upsert`
 
-```typescript:norun
-interface UpsertSignatures {
-  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
-    table: T,
-    values: InsertableForTable<T>,
-    conflictTarget: UpsertConflictTargetForTable<T>,
-    options?: UpsertOptions<T, C, E>
-  ): SQLFragment<UpsertReturnableForTable<T, C, E>>;
-
-  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
-    table: T,
-    values: InsertableForTable<T>[],
-    conflictTarget: UpsertConflictTargetForTable<T>,
-    options?: UpsertOptions<T, C, E>
-  ): SQLFragment<UpsertReturnableForTable<T, C, E>[]>;
-}
-```
-
-The `upsert` shortcut issues an [`INSERT ... ON CONFLICT ... DO UPDATE`](https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT) query. Like `insert`, it takes a `Table` name and a corresponding `Insertable` or `Insertable[]`. 
+The `upsert` shortcut issues an [`INSERT ... ON CONFLICT ...`](https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT) query. Like `insert`, it takes a `Table` name and a corresponding `Insertable` or `Insertable[]`. 
 
 It then takes, in addition, a column name (or an array thereof) or an appropriate unique index as the conflict target: the 'arbiter index(es)' on which a conflict is to be detected. 
 
 It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row. 
 
-The optional fourth argument is an `options` object. Available options are `returning` and `extras` (see documentation for `insert`), plus `updateColumns` and `noNullUpdateColumns`. 
+The optional fourth argument is an `options` object. Available options are `returning` and `extras` (see documentation for `insert`), plus `updateColumns`, `noNullUpdateColumns`, and `updateValues`. 
 
-* The `updateColumns` allows you to specify a subset of columns (as either one name or an array of names) that are to be updated on conflict. For example, you might want to leave a `createdAt` field alone.
+* The `updateColumns` option allows you to specify a subset of columns (as either one name or an array of names) that are to be updated on conflict. For example, you might want to include all columns except `createdAt` in this list.
 
 * The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+
+* The `updateValues` option allows you to specify alternative column values to be used in the `UPDATE` query branch: [see below](#updatevalues).
 
 Let's say we have a table of app subscription transactions:
 
@@ -1175,20 +1134,62 @@ const
 
 The same as for `insert`, an empty array provided to `upsert` is identified as a no-op, and the database will not actually be queried unless you set the `force` option on `run` to true.
 
+##### `INSERT ... ON CONFLICT ... DO NOTHING`
+
+A special case arises if you pass the empty array `[]` to the `updateColumns` option of `upsert`. 
+
+Since no columns are then to be updated in case of a conflict, an `ON CONFLICT ... DO NOTHING` query is generated instead of an `ON CONFLICT ... DO UPDATE ...` query. For better self-documenting code, an alias for the empty array is provided for this case: `doNothing`.
+
+Since nothing is returned by Postgres for any `DO NOTHING` cases, a query with `updateColumns: []` or `updateColumns: db.doNothing` may return fewer rows than you pass in. If you pass in an array of insert row values, you could get back an empty array if all rows conflict. If you pass in a single row, you'll get `undefined` back if there's a conflict. The return types will automatically reflect this.
+
+For example:
+
+```sql
+CREATE TABLE "usedVoucherCodes" 
+( "code" text PRIMARY KEY
+, "redeemedAt" timestamptz NOT NULL DEFAULT now()
+);
+```
+
+```typescript:shownull
+// unused code: returns the inserted row
+const a = await db.upsert('usedVoucherCodes', 
+  { code: 'XYE953ZVU767' }, 'code', 
+  { updateColumns: db.doNothing }).run(pool);
+
+// same code, already used: returns undefined
+const b = await db.upsert('usedVoucherCodes', 
+  { code: 'XYE953ZVU767' }, 'code', 
+  { updateColumns: db.doNothing }).run(pool);
+```
+
+##### `updateValues`
+
+You can use the `updateValues` option to specify alternative column values to be used in the `UPDATE` branch of the query. Only one set of values can be provided: these will be used for any and all rows that get updated.
+
+This may be useful, for example, when keeping a count, using a table such as this:
+
+```sql
+CREATE TABLE "nameCounts" 
+( "name" text PRIMARY KEY
+, "count" integer NOT NULL
+);
+```
+
+In the following query, we insert a new value with a count of 1 if a name doesn't already exist in the table. If a name does exist, we increment the existing count instead:
+
+```typescript
+for (let i = 0; i < 2; i++) {
+  await db.upsert('nameCounts',
+    { name: 'Alice', count: 1 }, 'name',
+    { updateValues: { count: db.sql`${"nameCounts"}.${"count"} + 1` } }
+  ).run(pool);
+}
+```
 
 => shortcuts.ts /* === delete === */
 
 #### `deletes`
-
-```typescript:norun
-export interface DeleteSignatures {
-  <T extends Table, C extends ColumnForTable<T>[] | undefined, E extends SQLFragmentsMap | undefined>(
-    table: T,
-    where: WhereableForTable<T> | SQLFragment,
-    options?: ReturningOptionsForTable<T, C, E>
-  ): SQLFragment<ReturningTypeForTable<T, C, E>[]>;
-}
-```
 
 The `deletes` shortcut, unsurprisingly, deletes rows from a table (`delete`, unfortunately, is a JavaScript reserved word). It takes the table name and an appropriate `Whereable` or `SQLFragment`, and by default returns the deleted rows as a `JSONSelectable`. 
 
@@ -1203,17 +1204,6 @@ await db.deletes('books', { title: 'Holes' }, { returning: ['id'] }).run(pool);
 => shortcuts.ts /* === truncate === */
 
 #### `truncate`
-
-```typescript:norun
-type TruncateIdentityOpts = 'CONTINUE IDENTITY' | 'RESTART IDENTITY';
-type TruncateForeignKeyOpts = 'RESTRICT' | 'CASCADE';
-
-interface TruncateSignatures {
-  (table: Table | Table[], optId: TruncateIdentityOpts): SQLFragment<undefined>;
-  (table: Table | Table[], optFK: TruncateForeignKeyOpts): SQLFragment<undefined>;
-  (table: Table | Table[], optId: TruncateIdentityOpts, optFK: TruncateForeignKeyOpts): SQLFragment<undefined>;
-}
-```
 
 The `truncate` shortcut truncates one or more tables. It takes a `Table` name or a `Table[]` name array, and (optionally) the options `'CONTINUE IDENTITY'`/`'RESTART IDENTITY'` and/or `'RESTRICT'`/`'CASCADE'`.
 
@@ -1235,12 +1225,14 @@ const allTables: s.AllTables = [
   'doctors',
   'emailAuthentication', 
   'employees', 
+  'nameCounts',
   'photos',
   'shifts',
   'stores',
   'subjectPhotos',
   'subjects',
   'tags',
+  'usedVoucherCodes',
   'users'
 ];
 ```
@@ -1258,8 +1250,6 @@ There is also, along similar lines, an `AllMaterializedViews` type.
 => shortcuts.ts /* === select === */
 
 #### `select`, `selectOne`, `selectExactlyOne` and `count`
-
-(If you want to see the full horror of the type signatures, follow the above link to the code).
 
 The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), a `SQLFragment` from a `sql` template string, or the appropriate `Whereable` for the target table (recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable)).
 
@@ -1563,25 +1553,20 @@ const [brighton] = await db.insert('stores', [
 And now query my local store (Brighton) plus its three nearest alternatives, with their distances in metres, using PostGIS's index-aware [`<-> operator`](https://postgis.net/docs/geometry_distance_knn.html):
 
 ```typescript
-const localStore = await db.selectOne('stores', { id: 1 }, {
-  columns: ['name'],
-  lateral: {
-    alternatives: db.select('stores', { id: dc.ne(db.parent("id")) }, {
-      alias: 'nearby',
-      columns: ['name'],
-      extras: {  // <-- here it is!
-        distance: db.sql<s.stores.SQL, number>`
-          ${"geom"} <-> ${db.parent("geom")}`,
-      },
-      order: [{ 
-        by: db.sql<s.stores.SQL>`
-          ${"geom"} <-> ${db.parent("geom")}`, 
-        direction: 'ASC' 
-      }],
-      limit: 3,
-    })
-  }
-}).run(pool);
+const 
+  distance = db.sql<s.stores.SQL, number>`${"geom"} <-> ${db.parent("geom")}`,
+  localStore = await db.selectOne('stores', { id: 1 }, {
+    columns: ['name'],
+    lateral: {
+      alternatives: db.select('stores', { id: dc.ne(db.parent("id")) }, {
+        alias: 'nearby',
+        columns: ['name'],
+        extras: { distance },  // <-- here it is!
+        order: { by: distance, direction: 'ASC' },
+        limit: 3,
+      })
+    }
+  }).run(pool);
 ```
 
 The `extras` option requires `strictNullChecks` (or `strict`) to be turned on in `tsconfig.json`.
@@ -2034,7 +2019,11 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 ### Changes
 
-This change list is limited to new features and breaking changes. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 3.4
+
+_New features + bugfix_: Added `upsert` shortcut support for `INSERT ... ON CONFLICT ... DO NOTHING` [by passing an empty array as the `updateColumns` option](#insert--on-conflict--do-nothing) (and fixed [a bug](https://github.com/jawj/zapatos/issues/71) where this, and certain other `upsert` queries, would generate invalid SQL). Added [a new `updateValues` option](#updatevalues) for `upsert`. Added the `eq` condition helper, which was [strangely missing](https://github.com/jawj/zapatos/issues/73).
 
 #### 3.3
 
@@ -2174,14 +2163,14 @@ Some nice-to-haves would include:
 
 ### Alternatives
 
-If you're interested in Zapatos, you might also want to consider [Prisma](https://www.prisma.io/), [Mammoth](https://github.com/Ff00ff/mammoth), and [PgTyped](https://github.com/adelsz/pgtyped).
+You may find [this excellent overview of TypeScript SQL libraries](https://gist.github.com/phiresky/9f79cd2bb018ed827e58740a82b5661c) useful.
 
 
 ### Licence
 
 This software is released under the [MIT licence](https://opensource.org/licenses/mit-license.php).
 
-Copyright (C) 2020 George MacKerron
+Copyright (C) 2020 — 2021 George MacKerron
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

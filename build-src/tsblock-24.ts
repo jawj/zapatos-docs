@@ -9,7 +9,7 @@
             }
           },
           resultListener: (x: any, txnId?: number) => {
-            if (x != null && (true || !(Array.isArray(x) && x.length === 0))) {
+            if (false || (x != null && (true || !(Array.isArray(x) && x.length === 0)))) {
               if (txnId != null) console.log('%%txnId%:' + txnId + '%%');
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }

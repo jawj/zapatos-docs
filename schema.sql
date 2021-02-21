@@ -16,6 +16,16 @@ CREATE TABLE "tags"
 CREATE UNIQUE INDEX "tagsUniqueIdx" ON "tags"("bookId", "tag");
 CREATE INDEX "tagsBookIdIdx" ON "tags"("tag");
 
+CREATE TABLE "usedVoucherCodes" 
+( "code" text PRIMARY KEY
+, "redeemedAt" timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE "nameCounts" 
+( "name" text PRIMARY KEY
+, "count" integer NOT NULL
+);
+
 CREATE TABLE "bankAccounts" 
 ( "id" SERIAL PRIMARY KEY
 , "balance" INTEGER NOT NULL DEFAULT 0 CHECK ("balance" > 0) );
