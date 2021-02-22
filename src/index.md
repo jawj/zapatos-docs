@@ -2163,7 +2163,7 @@ Some nice-to-haves would include:
 
 ### Alternatives
 
-You may find [this excellent overview of TypeScript SQL libraries](https://gist.github.com/phiresky/9f79cd2bb018ed827e58740a82b5661c) useful.
+You may find [this excellent overview of TypeScript SQL libraries](https://phiresky.github.io/blog/2020/sql-libs-for-typescript/) useful.
 
 
 ### Licence
