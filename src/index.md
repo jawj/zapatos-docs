@@ -372,6 +372,7 @@ export interface OptionalConfig {
   warningListener: boolean | ((s: string) => void);
   customTypesTransform: 'PgMy_type' | 'my_type' | 'PgMyType' | ((s: string) => string);
   columnOptions: ColumnOptions;
+  schemaJSDoc: boolean;
 }
 
 interface SchemaRules {
@@ -473,6 +474,8 @@ You can also use `"*"` as a wildcard to match all tables. For example, perhaps y
 ```
 
 Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as the whole key — you can't use a `*` to match parts of names — and only for tables, not for columns.
+
+* `"schemaJSDoc"` is a boolean that turns JSDoc comments for each column in the generated schema on (the default) or off. JSDoc comments enable per-column VS Code pop-ups giving details of Postgres data type, default value and so on. They also make the schema file longer and less readable.
 
 
 #### Environment variables
@@ -1076,14 +1079,6 @@ It then takes, in addition, a column name (or an array thereof) or an appropriat
 
 It returns an `UpsertReturnable` or `UpsertReturnable[]`. An `UpsertReturnable` is the same as a `JSONSelectable` except that it includes one additional property, `$action`, taking the string `'INSERT'` or `'UPDATE'` so as to indicate which eventuality occurred for each row. 
 
-The optional fourth argument is an `options` object. Available options are `returning` and `extras` (see documentation for `insert`), plus `updateColumns`, `noNullUpdateColumns`, and `updateValues`. 
-
-* The `updateColumns` option allows you to specify a subset of columns (as either one name or an array of names) that are to be updated on conflict. For example, you might want to include all columns except `createdAt` in this list.
-
-* The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
-
-* The `updateValues` option allows you to specify alternative column values to be used in the `UPDATE` query branch: [see below](#updatevalues).
-
 Let's say we have a table of app subscription transactions:
 
 ```sql
@@ -1134,13 +1129,27 @@ const
 
 The same as for `insert`, an empty array provided to `upsert` is identified as a no-op, and the database will not actually be queried unless you set the `force` option on `run` to true.
 
+
+##### `upsert` options
+
+The optional fourth argument to `upsert` is an `options` object. The available options are `returning` and `extras` (see the documentation for `insert` for details) plus `updateColumns`, `noNullUpdateColumns`, `updateValues` and `reportAction`. 
+
+* The `updateColumns` option allows us to specify a subset of columns (as either one name or an array of names) that are to be updated on conflict. For example, you might want to include all columns except `createdAt` in this list.
+
+* The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+
+* The `updateValues` option allows us to specify alternative column values to be used in the `UPDATE` query branch: [see below](#updatevalues).
+
+* The `reportAction: 'suppress'` option causes the `$action` result key to be omitted, so the query returns plain `JSONSelectable` instead of `UpsertReturnable` results.
+
+
 ##### `INSERT ... ON CONFLICT ... DO NOTHING`
 
 A special case arises if you pass the empty array `[]` to the `updateColumns` option of `upsert`. 
 
 Since no columns are then to be updated in case of a conflict, an `ON CONFLICT ... DO NOTHING` query is generated instead of an `ON CONFLICT ... DO UPDATE ...` query. For better self-documenting code, an alias for the empty array is provided for this case: `doNothing`.
 
-Since nothing is returned by Postgres for any `DO NOTHING` cases, a query with `updateColumns: []` or `updateColumns: db.doNothing` may return fewer rows than you pass in. If you pass in an array of insert row values, you could get back an empty array if all rows conflict. If you pass in a single row, you'll get `undefined` back if there's a conflict. The return types will automatically reflect this.
+Since nothing is returned by Postgres for any `DO NOTHING` cases, a query with `updateColumns: []` or `updateColumns: db.doNothing` may return fewer rows than were passed in. If you pass in an array, you could get back an empty array if all rows conflict with existing rows. If you pass in values of a single row, you'll get back `undefined` if a conflict occurs (and the return types will automatically reflect this).
 
 For example:
 
@@ -2020,6 +2029,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 3.5
+
+_Minor features and fixes_: Added `upsert` option `reportAction: 'suppress'` as a workaround for [issues with `xmax`](https://github.com/jawj/zapatos/issues/74). Made schema JSDoc comments [optional](#configure-it). Sorted `UniqueIndex` union types for [stable ordering](https://github.com/jawj/zapatos/issues/76). Moved to (mostly) separate type treatments across `Selectable`, `JSONSelectable`, `Whereable` etc., enabling [proper treatment of `int8` and `Date`](https://github.com/jawj/zapatos/pull/68) in and out of `JSONSelectable`.
 
 #### 3.4
 
