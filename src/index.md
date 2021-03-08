@@ -353,7 +353,7 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
   "db": {
     "connectionString": "postgresql://localhost/example_db"
   },
-  "outDir": "./src",
+  "outDir": "./src"
 }
 ```
 
