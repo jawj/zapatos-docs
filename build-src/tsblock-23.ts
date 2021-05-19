@@ -59,7 +59,10 @@
     createdAt: db.sql`now()`,
   }, {
     returning: ['id'],
-    extras: { upperTitle: db.sql<s.books.SQL, string>`upper(${"title"})` },
+    extras: { 
+      aliasedTitle: "title",
+      upperTitle: db.sql<s.books.SQL, string | null>`upper(${"title"})`,
+    },
   }).run(pool);
 
 

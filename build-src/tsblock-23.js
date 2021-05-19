@@ -52,7 +52,10 @@ try {
         createdAt: db.sql `now()`,
     }, {
         returning: ['id'],
-        extras: { upperTitle: db.sql `upper(${"title"})` },
+        extras: {
+            aliasedTitle: "title",
+            upperTitle: db.sql `upper(${"title"})`,
+        },
     }).run(pool);
     /* original script ends */
 }

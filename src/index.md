@@ -272,7 +272,7 @@ For example, take this `bankAccounts` table:
 ```sql
 CREATE TABLE "bankAccounts" 
 ( "id" SERIAL PRIMARY KEY
-, "balance" INTEGER NOT NULL DEFAULT 0 CHECK ("balance" > 0) );
+, "balance" INTEGER NOT NULL DEFAULT 0 CHECK ("balance" >= 0) );
 ```
 
 We can use the transaction helpers like so:
@@ -979,7 +979,7 @@ The optional `options` argument has two keys.
 
 * `returning` takes an array of column names, and narrows down the returned values accordingly. This may be useful if you are inserting large objects which you prefer don't take an inefficient return trip over the wire and through the JSON parser. 
 
-* `extras` takes a map of string keys to `sql` template strings (i.e. `SQLFragments`), allowing you to compute and return other quantities alongside the table's columns. The `RunResult` type variables of those template strings matter, as they are passed through to the result type.
+* `extras` takes a map of string keys to column names and/or `sql` template strings (i.e. `SQLFragments`), allowing you to alias certain columns and/or compute and return other quantities alongside them. The `RunResult` type variable matters in the case of template strings, as it is passed through to the result type.
 
 (Note that type inference can only do the right thing with `returning` and `extras` when `strictNullChecks` are enabled).
 
@@ -1017,7 +1017,10 @@ const
     createdAt: db.sql`now()`,
   }, {
     returning: ['id'],
-    extras: { upperTitle: db.sql<s.books.SQL, string>`upper(${"title"})` },
+    extras: { 
+      aliasedTitle: "title",
+      upperTitle: db.sql<s.books.SQL, string | null>`upper(${"title"})`,
+    },
   }).run(pool);
 
 ```
@@ -1064,7 +1067,8 @@ To atomically increment the `consecutiveFailedLogins` value, we can do something
 
 ```typescript
 await db.update("emailAuthentication", { 
-  consecutiveFailedLogins: db.sql`${db.self} + 1`,  // or equivalently, ...: dc.add(1),
+  consecutiveFailedLogins: db.sql`${db.self} + 1`,  
+  // or equivalently: consecutiveFailedLogins: dc.add(1),
   lastFailedLogin: db.sql`now()`,
 }, { email: 'me@privacy.net' }).run(pool);
 ```
@@ -1149,7 +1153,7 @@ A special case arises if you pass the empty array `[]` to the `updateColumns` op
 
 Since no columns are then to be updated in case of a conflict, an `ON CONFLICT ... DO NOTHING` query is generated instead of an `ON CONFLICT ... DO UPDATE ...` query. For better self-documenting code, an alias for the empty array is provided for this case: `doNothing`.
 
-Since nothing is returned by Postgres for any `DO NOTHING` cases, a query with `updateColumns: []` or `updateColumns: db.doNothing` may return fewer rows than were passed in. If you pass in an array, you could get back an empty array if all rows conflict with existing rows. If you pass in values of a single row, you'll get back `undefined` if a conflict occurs (and the return types will automatically reflect this).
+Since nothing is returned by Postgres for any `DO NOTHING` cases, a query with `updateColumns: []` or `updateColumns: db.doNothing` may return fewer rows than were passed in. If you pass in an array, you could get back an empty array if all rows conflict with existing rows. If you pass in values of a single row, you'll get back `undefined` if a conflict occurs (and the return type will automatically reflect this).
 
 For example:
 
@@ -1334,6 +1338,8 @@ const bookTitles = await db.select('books', db.all,
 ```
 
 The return type is of course appropriately narrowed to the requested columns only, so VS Code will complain if we now try to access `bookTitles[0].authorId`, for example. (Note: this works only when `strictNullChecks` are in operation).
+
+The `columns` option does not enable column aliasing — i.e. you can't use it to do `SELECT "column" AS "aliasedColumn"` or its equivalent — but column aliasing _is_ easily achieved using the `extras` option instead.
 
 
 ##### `order`, `limit` and `offset`
@@ -1527,9 +1533,9 @@ Nevertheless, this is a handy, flexible — but still transparent and zero-abstr
 
 ##### `extras`
 
-The `extras` option allows us to include additional result keys that don't represent columns of our tables. That could be a computed quantity, such as a geographical distance via [PostGIS](https://postgis.net/). 
+The `extras` option allows us to include additional result keys that don't directly replicate the columns of our tables. That can be a computed quantity, such as a geographical distance via [PostGIS](https://postgis.net/), or it can be a simple column alias. 
 
-The option takes a mapping of property names to `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variables of those template strings are significant, as they are passed through to the result type. (The `extras` option is now also available on other query types, such as `insert`).
+As is discussed above for `insert`, the `extras` option takes a mapping of property names to column names and/or `sql` template strings (i.e. `SQLFragments`). The `RunResult` type variable of any template string is significant, since it is passed through to the result type.
 
 Let's see `extras` in use, with an example that shows too how the `lateral` option can go well beyond simply matching a foreign key to a primary key.
 
@@ -1569,8 +1575,11 @@ const
     lateral: {
       alternatives: db.select('stores', { id: dc.ne(db.parent("id")) }, {
         alias: 'nearby',
-        columns: ['name'],
-        extras: { distance },  // <-- here it is!
+        columns: ['id'],
+        extras: { 
+          distance,  // <-- i.e. distance: distance, referring to the SQLFragment just defined
+          storeName: "name",  // <-- a simple alias for the name column
+        },  
         order: { by: distance, direction: 'ASC' },
         limit: 3,
       })
@@ -2030,6 +2039,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
+#### 3.6
+
+_New feature_: The `extras` option object can now take column names as well as `SQLFragments` as its values, [enabling straightforward column aliasing](https://github.com/jawj/zapatos/issues/80) (similar to `SELECT "column" AS "aliasedColumn"`) in shortcut functions.
+
 #### 3.5
 
 _Minor features and fixes_: Added `upsert` option `reportAction: 'suppress'` as a workaround for [issues with `xmax`](https://github.com/jawj/zapatos/issues/74). Made schema JSDoc comments [optional](#configure-it). Sorted `UniqueIndex` union types for [stable ordering](https://github.com/jawj/zapatos/issues/76). Moved to (mostly) separate type treatments across `Selectable`, `JSONSelectable`, `Whereable` etc., enabling [proper treatment of `int8` and `Date`](https://github.com/jawj/zapatos/pull/68) in and out of `JSONSelectable`.
@@ -2167,11 +2180,11 @@ If you're asking for or contributing new work, my response is likely to reflect 
 
 ### What's next
 
-Some nice-to-haves would include:
-
-* **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in generated types and the shortcut functions that make use of them.
+Nice-to-haves would include:
 
 * **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](https://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
+
+* **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in generated types and the shortcut functions that make use of them.
 
 
 ### Alternatives
