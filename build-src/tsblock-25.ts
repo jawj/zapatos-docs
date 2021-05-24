@@ -9,7 +9,7 @@
             }
           },
           resultListener: (x: any, txnId?: number) => {
-            if (false || (x != null && (false || !(Array.isArray(x) && x.length === 0)))) {
+            if (false || (x != null && (true || !(Array.isArray(x) && x.length === 0)))) {
               if (txnId != null) console.log('%%txnId%:' + txnId + '%%');
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }
@@ -25,19 +25,16 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
+          try {
+          /* original script begins */
+          await db.insert("authors", []).run(pool);  // never reaches DB
+await db.insert("authors", []).run(pool, true);  // does reach DB, for same result
 
-        try {
-        /* original script begins */
-        await db.update('authors', 
-  { name: 'Stephen Hawking' },
-  { name: 'Steven Hawking' }
-).run(pool);
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
-
-        await pool.end();
-      
+          await pool.end();
+          

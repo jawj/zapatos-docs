@@ -25,19 +25,18 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const [{ random }] = await db.sql<never, [{ random: number }]>`
+          try {
+          /* original script begins */
+          const [{ random }] = await db.sql<never, [{ random: number }]>`
   SELECT random()`.run(pool);
 
 console.log(random);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

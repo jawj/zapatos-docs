@@ -25,10 +25,9 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const [accountA, accountB] = await db.insert('bankAccounts', 
+          try {
+          /* original script begins */
+          const [accountA, accountB] = await db.insert('bankAccounts', 
   [{ balance: 50 }, { balance: 50 }]).run(pool);
 
 const transferMoney = (sendingAccountId: number, receivingAccountId: number, amount: number) =>
@@ -47,11 +46,11 @@ try {
   console.log(err.message, '/', err.detail);
 }
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

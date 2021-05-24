@@ -10,25 +10,27 @@
   "license": "MIT",
   "dependencies": {
     "@types/highlight.js": "^10.1.0",
-    "@types/jsdom": "^16.2.6",
-    "@types/markdown-it": "^10.0.3",
-    "@types/pg": "^7.14.10",
-    "highlight.js": "^10.4.1",
-    "jsdom": "^16.4.0",
-    "markdown-it": "^12.0.4",
-    "monaco-editor": "^0.21.3",
-    "pg": "^8.5.1",
-    "pg-connection-string": "^2.4.0",
+    "@types/jsdom": "^16.2.10",
+    "@types/luxon": "^1.26.5",
+    "@types/markdown-it": "^12.0.1",
+    "@types/pg": "^8.6.0",
+    "highlight.js": "^10.7.2",
+    "jsdom": "^16.6.0",
+    "luxon": "^1.27.0",
+    "markdown-it": "^12.0.6",
+    "monaco-editor": "^0.24.0",
+    "pg": "^8.6.0",
+    "pg-connection-string": "^2.5.0",
     "pg-native": "^3.0.0",
-    "ts-node": "^9.1.1",
-    "typescript": "^4.2.2",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.2.4",
     "zapatos": "^3.6.0"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.16.1",
-    "@typescript-eslint/parser": "^4.16.1",
-    "eslint": "^7.21.0",
-    "eslint-config-prettier": "^6.15.0",
-    "eslint-plugin-import": "^2.22.1"
+    "@typescript-eslint/eslint-plugin": "^4.24.0",
+    "@typescript-eslint/parser": "^4.24.0",
+    "eslint": "^7.27.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.23.3"
   }
 }

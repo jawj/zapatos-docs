@@ -99,7 +99,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
             case 1:
                 _b.sent();
                 console.info('Copying Monaco editor ...');
-                child_process_1.execSync("cp -r ./node_modules/monaco-editor/min ./web/monaco");
+                child_process_1.execSync("cp -r ./node_modules/monaco-editor/min/vs ./web/monaco");
                 console.info('Bundling Zapatos types for Monaco ...');
                 recurseNodes = function (node) {
                     return fs.statSync(node).isFile() ? [node] :
@@ -107,7 +107,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                             return memo.concat(recurseNodes(path.join(node, n)));
                         }, []);
                 };
-                files = __spreadArray(__spreadArray(__spreadArray([], recurseNodes('build-src/zapatos')), recurseNodes('node_modules/zapatos/dist')), recurseNodes('node_modules/@types/pg')).filter(function (f) { return f.match(/[.]d[.]ts$/); }), all = files.reduce(function (memo, p) {
+                files = __spreadArray(__spreadArray(__spreadArray(__spreadArray([], recurseNodes('build-src/zapatos')), recurseNodes('node_modules/zapatos/dist')), recurseNodes('node_modules/@types/pg')), recurseNodes('node_modules/@types/luxon')).filter(function (f) { return f.match(/[.]d[.]ts$/); }), all = files.reduce(function (memo, p) {
                     var localPath = p
                         .replace(/^node_modules[/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/')
                         .replace(/^build-src[/]zapatos[/]/, '');
@@ -138,7 +138,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                         var _a = langPlusOptions.split(':'), lang = _a[0], options = _a.slice(1);
                         if (lang && hljs.getLanguage(lang)) {
                             try {
-                                return "<pre class=\"language-" + lang + options.map(function (o) { return ' ' + o; }) + "\"><code>" + hljs.highlight(lang, str).value + "</code></pre>";
+                                return "<pre class=\"language-" + lang + options.map(function (o) { return ' ' + o; }) + "\"><code>" + hljs.highlight(str, { language: lang }).value + "</code></pre>";
                             }
                             catch (err) {
                                 console.error('Highlighting error', err);
@@ -186,7 +186,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
                     .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
                 runnableTags.forEach(function (runnableTag, i) {
-                    var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from 'zapatos/db';\n        xyz.setConfig({\n          queryListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any, txnId?: number) => {\n            if (" + (runnableTag.className.match(/\bshownull\b/) ? true : false) + " || (x != null && (" + (runnableTag.className.match(/\bshowempty\b/) ? true : false) + " || !(Array.isArray(x) && x.length === 0)))) {\n              if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? '' : "\n          import * as db from 'zapatos/db';\n          import { conditions as dc } from 'zapatos/db';\n          import type * as s from 'zapatos/schema';\n          import pool from './pgPool';\n        ") + "\n\n        try {\n        /* original script begins */\n        " + ts + "\n        /* original script ends */\n        } catch(e) {\n          console.log(e.name + ': ' + e.message);\n          console.error('  -> error: ' + e.message);\n        }\n\n        await pool.end();\n      ";
+                    var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from 'zapatos/db';\n        xyz.setConfig({\n          queryListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any, txnId?: number) => {\n            if (" + (runnableTag.className.match(/\bshownull\b/) ? true : false) + " || (x != null && (" + (runnableTag.className.match(/\bshowempty\b/) ? true : false) + " || !(Array.isArray(x) && x.length === 0)))) {\n              if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        " + ((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? ts : "\n          import * as db from 'zapatos/db';\n          import { conditions as dc } from 'zapatos/db';\n          import type * as s from 'zapatos/schema';\n          import pool from './pgPool';\n        \n          try {\n          /* original script begins */\n          " + ts + "\n          /* original script ends */\n          } catch(e) {\n            console.log(e.name + ': ' + e.message);\n            console.error('  -> error: ' + e.message);\n          }\n\n          await pool.end();\n          ");
                     fs.writeFileSync("./build-src/tsblock-" + i + ".ts", instrumentedTs, { encoding: 'utf8' });
                 });
                 console.info('Compiling TypeScript script blocks ..');
@@ -217,15 +217,15 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                             var part = parts_1[_i];
                             var _a = part.split('%:'), type = _a[0], str = _a[1];
                             if (type === 'text') {
-                                var fmtSql = formatSQL(str), highlightSql = hljs.highlight('sql', fmtSql).value.trim();
+                                var fmtSql = formatSQL(str), highlightSql = hljs.highlight(fmtSql, { language: 'sql' }).value.trim();
                                 output += "<pre class=\"sqltext\"><code>" + highlightSql + "</code></pre>\n";
                             }
                             else if (type === 'values') {
-                                var highlightValues = hljs.highlight('json', str).value;
+                                var highlightValues = hljs.highlight(str, { language: 'json' }).value;
                                 output += "<pre class=\"sqlvalues\"><code>" + highlightValues + "</code></pre>\n";
                             }
                             else if (type === 'result') {
-                                var highlightResult = hljs.highlight('json', str).value;
+                                var highlightResult = hljs.highlight(str, { language: 'json' }).value;
                                 output += "<pre class=\"sqlresult\"><code>" + highlightResult + "</code></pre>\n";
                             }
                             else if (type === 'transaction') {
@@ -244,16 +244,17 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                         runnableTag.insertAdjacentHTML('afterend', output);
                     }
                     var script = runnableTag.textContent;
-                    runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
-                        ((script === null || script === void 0 ? void 0 : script.match(/\bdb[.]/)) ?
-                            "<span class=\"hljs-keyword\">import</span> * <span class=\"hljs-keyword\">as</span> db <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/db'</span>;\n" : '') +
-                        ((script === null || script === void 0 ? void 0 : script.match(/\bdc[.]/)) ?
-                            "<span class=\"hljs-keyword\">import</span> { conditions <span class=\"hljs-keyword\">as</span> dc } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/db'</span>;\n" : '') +
-                        ((script === null || script === void 0 ? void 0 : script.match(/\bs[.]/)) ?
-                            "<span class=\"hljs-keyword\">import type</span> * <span class=\"hljs-keyword\">as</span> s <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/schema'</span>;\n" : '') +
-                        ((script === null || script === void 0 ? void 0 : script.match(/\bpool\b/)) ?
-                            "<span class=\"hljs-keyword\">import</span> pool <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./pgPool'</span>;\n" : '') +
-                        '</code>');
+                    if (!(script === null || script === void 0 ? void 0 : script.match(/^\s*import\b/m)))
+                        runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
+                            ((script === null || script === void 0 ? void 0 : script.match(/\bdb[.]/)) ?
+                                "<span class=\"hljs-keyword\">import</span> * <span class=\"hljs-keyword\">as</span> db <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/db'</span>;\n" : '') +
+                            ((script === null || script === void 0 ? void 0 : script.match(/\bdc[.]/)) ?
+                                "<span class=\"hljs-keyword\">import</span> { conditions <span class=\"hljs-keyword\">as</span> dc } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/db'</span>;\n" : '') +
+                            ((script === null || script === void 0 ? void 0 : script.match(/\bs[.]/)) ?
+                                "<span class=\"hljs-keyword\">import type</span> * <span class=\"hljs-keyword\">as</span> s <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'zapatos/schema'</span>;\n" : '') +
+                            ((script === null || script === void 0 ? void 0 : script.match(/\bpool\b/)) ?
+                                "<span class=\"hljs-keyword\">import</span> pool <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./pgPool'</span>;\n" : '') +
+                            '</code>');
                     runnableTag.className += ' runnable';
                 });
                 console.info("Wrapping code for nicely indented line breaks ...");

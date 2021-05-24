@@ -25,19 +25,18 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const 
+          try {
+          /* original script begins */
+          const 
   title = 'Northern Lights',
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ title }}`.run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

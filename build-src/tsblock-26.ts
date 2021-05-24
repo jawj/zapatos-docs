@@ -25,20 +25,18 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
+          try {
+          /* original script begins */
+          await db.update('authors', 
+  { name: 'Stephen Hawking' },
+  { name: 'Steven Hawking' }
+).run(pool);
 
-        try {
-        /* original script begins */
-        await db.update("emailAuthentication", { 
-  consecutiveFailedLogins: db.sql`${db.self} + 1`,  
-  // or equivalently: consecutiveFailedLogins: dc.add(1),
-  lastFailedLogin: db.sql`now()`,
-}, { email: 'me@privacy.net' }).run(pool);
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
-
-        await pool.end();
-      
+          await pool.end();
+          

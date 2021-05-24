@@ -25,17 +25,16 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
+          try {
+          /* original script begins */
+          const authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>`
   SELECT * FROM ${"authors"}`.run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

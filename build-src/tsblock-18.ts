@@ -25,10 +25,9 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const 
+          try {
+          /* original script begins */
+          const 
   authorId = 12,  // from some untrusted source
   query = db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{authorId}}`,
@@ -36,11 +35,11 @@
 
 console.log(compiled);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

@@ -25,19 +25,18 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const 
+          try {
+          /* original script begins */
+          const 
   authorIds = [1, 2, 123],
   authors = await db.sql<s.authors.SQL, s.authors.Selectable[]>` 
     SELECT * FROM ${"authors"} WHERE ${"id"} IN (${db.vals(authorIds)})`.run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

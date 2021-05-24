@@ -19,58 +19,20 @@
             console.log('%%transaction%:' + x + '%%');
           },
         });
-        
-          import * as db from 'zapatos/db';
-          import { conditions as dc } from 'zapatos/db';
-          import type * as s from 'zapatos/schema';
-          import pool from './pgPool';
-        
+        import { DateTime } from 'luxon';
+import * as db from 'zapatos/db';
 
-        try {
-        /* original script begins */
-        const 
-  // insert one
-  steve = await db.insert('authors', { 
-    name: 'Steven Hawking', 
-    isLiving: false,
-  }).run(pool),
+// conversions to and from Luxon's DateTime
+export const toDateTime = db.strict<db.DateString, DateTime>(DateTime.fromISO);
+export const toDateString = db.strict((d: DateTime | Date | number) =>
+  d instanceof DateTime ? d.toISO() as db.DateString : db.toDateString(d));
 
-  // insert many
-  [time, me] = await db.insert('books', [{ 
-    authorId: steve.id, 
-    title: 'A Brief History of Time',
-    createdAt: db.sql`now()`,
-  }, { 
-    authorId: steve.id, 
-    title: 'My Brief History',
-    createdAt: db.sql`now()`,
-  }]).run(pool),
+// db.strict handles null input both for type inference and at runtime
+const dateStr = '1989-11-09T18:53:00.000+01:00' as db.DateString;
+const dateStrOrNull = Math.random() < 0.5 ? dateStr : null;
+const dt1 = toDateTime(null);  // dt1: null
+const dt2 = toDateTime(dateStr);  // dt2: DateTime
+const dt3 = toDateTime(dateStrOrNull);  // dt3: DateTime | null
+const dateStr2 = toDateString(dt2);
 
-  tags = await db.insert('tags', [
-    { bookId: time.id, tag: 'physics' },
-    { bookId: me.id, tag: 'physicist' },
-    { bookId: me.id, tag: 'autobiography' },
-  ]).run(pool),
-
-  // insert with custom return values
-  nutshell = await db.insert('books', { 
-    authorId: steve.id, 
-    title: 'The Universe in a Nutshell',
-    createdAt: db.sql`now()`,
-  }, {
-    returning: ['id'],
-    extras: { 
-      aliasedTitle: "title",
-      upperTitle: db.sql<s.books.SQL, string | null>`upper(${"title"})`,
-    },
-  }).run(pool);
-
-
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
-
-        await pool.end();
-      
+console.log({ dt1, dt2, dt3, dateStr2 });

@@ -25,21 +25,20 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const bookAuthorTags = await db.select('books', db.all, {
+          try {
+          /* original script begins */
+          const bookAuthorTags = await db.select('books', db.all, {
   lateral: {
     author: db.selectExactlyOne('authors', { id: db.parent('authorId') }),
     tags: db.select('tags', { bookId: db.parent('id') }),
   }
 }).run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

@@ -25,10 +25,9 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const
+          try {
+          /* original script begins */
+          const
   author: s.authors.Insertable = {
     name: 'Gabriel Garcia Marquez',
     isLiving: false,
@@ -38,11 +37,11 @@
       VALUES (${db.vals(author)}) RETURNING *`
     .run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

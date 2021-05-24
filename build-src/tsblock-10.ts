@@ -25,19 +25,18 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const 
+          try {
+          /* original script begins */
+          const 
   nameSubmittedByUser = 'books"; DROP TABLE "authors"; --',
   title = await db.sql<any>`
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

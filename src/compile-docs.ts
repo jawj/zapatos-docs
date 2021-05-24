@@ -56,7 +56,7 @@ void (async () => {
 
   console.info('Copying Monaco editor ...');
 
-  execSync(`cp -r ./node_modules/monaco-editor/min ./web/monaco`);
+  execSync(`cp -r ./node_modules/monaco-editor/min/vs ./web/monaco`);
 
 
   console.info('Bundling Zapatos types for Monaco ...');
@@ -70,7 +70,8 @@ void (async () => {
     files = [
       ...recurseNodes('build-src/zapatos'),
       ...recurseNodes('node_modules/zapatos/dist'),
-      ...recurseNodes('node_modules/@types/pg')
+      ...recurseNodes('node_modules/@types/pg'),
+      ...recurseNodes('node_modules/@types/luxon'),
     ].filter(f => f.match(/[.]d[.]ts$/)),
     all = files.reduce<{ [k: string]: string }>((memo, p) => {
       const localPath = p
@@ -120,7 +121,7 @@ void (async () => {
         const [lang, ...options] = langPlusOptions.split(':');
         if (lang && hljs.getLanguage(lang)) {
           try {
-            return `<pre class="language-${lang}${options.map(o => ' ' + o)}"><code>${hljs.highlight(lang, str).value}</code></pre>`;
+            return `<pre class="language-${lang}${options.map(o => ' ' + o)}"><code>${hljs.highlight(str, { language: lang }).value}</code></pre>`;
           } catch (err) {
             console.error('Highlighting error', err);
           }
@@ -243,24 +244,24 @@ void (async () => {
             console.log('%%transaction%:' + x + '%%');
           },
         });
-        ${ts?.match(/^\s*import\b/m) ? '' : `
+        ${ts?.match(/^\s*import\b/m) ? ts : `
           import * as db from 'zapatos/db';
           import { conditions as dc } from 'zapatos/db';
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
-        `}
+        
+          try {
+          /* original script begins */
+          ${ts}
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        try {
-        /* original script begins */
-        ${ts}
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
-
-        await pool.end();
-      `;
+          await pool.end();
+          `
+        }`;
 
     fs.writeFileSync(`./build-src/tsblock-${i}.ts`, instrumentedTs, { encoding: 'utf8' });
   });
@@ -304,15 +305,15 @@ void (async () => {
         if (type === 'text') {
           const
             fmtSql = formatSQL(str),
-            highlightSql = hljs.highlight('sql', fmtSql).value.trim();
+            highlightSql = hljs.highlight(fmtSql, { language: 'sql' }).value.trim();
           output += `<pre class="sqltext"><code>${highlightSql}</code></pre>\n`;
 
         } else if (type === 'values') {
-          const highlightValues = hljs.highlight('json', str).value;
+          const highlightValues = hljs.highlight(str, { language: 'json' }).value;
           output += `<pre class="sqlvalues"><code>${highlightValues}</code></pre>\n`;
 
         } else if (type === 'result') {
-          const highlightResult = hljs.highlight('json', str).value;
+          const highlightResult = hljs.highlight(str, { language: 'json' }).value;
           output += `<pre class="sqlresult"><code>${highlightResult}</code></pre>\n`;
 
         } else if (type === 'transaction') {
@@ -331,7 +332,7 @@ void (async () => {
     }
 
     const script = runnableTag.textContent;
-    runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
+    if (!script?.match(/^\s*import\b/m)) runnableTag.insertAdjacentHTML('afterbegin', '<code class="imports">' +
       (script?.match(/\bdb[.]/) ?
         `<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> db <span class="hljs-keyword">from</span> <span class="hljs-string">'zapatos/db'</span>;\n` : '') +
       (script?.match(/\bdc[.]/) ?

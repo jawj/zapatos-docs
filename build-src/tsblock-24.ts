@@ -9,7 +9,7 @@
             }
           },
           resultListener: (x: any, txnId?: number) => {
-            if (false || (x != null && (true || !(Array.isArray(x) && x.length === 0)))) {
+            if (false || (x != null && (false || !(Array.isArray(x) && x.length === 0)))) {
               if (txnId != null) console.log('%%txnId%:' + txnId + '%%');
               console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
             }
@@ -25,17 +25,51 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
+          try {
+          /* original script begins */
+          const 
+  // insert one
+  steve = await db.insert('authors', { 
+    name: 'Steven Hawking', 
+    isLiving: false,
+  }).run(pool),
 
-        try {
-        /* original script begins */
-        await db.insert("authors", []).run(pool);  // never reaches DB
-await db.insert("authors", []).run(pool, true);  // does reach DB, for same result
+  // insert many
+  [time, me] = await db.insert('books', [{ 
+    authorId: steve.id, 
+    title: 'A Brief History of Time',
+    createdAt: db.sql`now()`,
+  }, { 
+    authorId: steve.id, 
+    title: 'My Brief History',
+    createdAt: db.sql`now()`,
+  }]).run(pool),
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+  tags = await db.insert('tags', [
+    { bookId: time.id, tag: 'physics' },
+    { bookId: me.id, tag: 'physicist' },
+    { bookId: me.id, tag: 'autobiography' },
+  ]).run(pool),
 
-        await pool.end();
-      
+  // insert with custom return values
+  nutshell = await db.insert('books', { 
+    authorId: steve.id, 
+    title: 'The Universe in a Nutshell',
+    createdAt: db.sql`now()`,
+  }, {
+    returning: ['id'],
+    extras: { 
+      aliasedTitle: "title",
+      upperTitle: db.sql<s.books.SQL, string | null>`upper(${"title"})`,
+    },
+  }).run(pool);
+
+
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
+
+          await pool.end();
+          

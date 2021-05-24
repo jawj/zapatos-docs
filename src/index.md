@@ -965,9 +965,38 @@ Lateral joins of this sort are very flexible, and can be nested multiple levels 
 
 A key contribution of Zapatos is a set of simple shortcut functions that make everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries extremely easy to work with. Furthermore, the `select` shortcut can be nested in order to generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures with inputs and outputs that are still fully and automatically typed.
 
-Because the shortcuts make heavy use of Postgres's JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. The only difference between these types is that, because JSON has no native `Date` representation, columns that would have been returned as `Date` values in a `Selectable` are instead returned as ISO 8601 strings (the result of calling `toJSON()` on them) in a `JSONSelectable`.
+##### `JSONSelectable` and `DateString`
 
-Since you're using Node, it's safe to convert this string straight back to a `Date` by passing it to `new Date()` (web browsers' date parsing may vary). But since JavaScript's built-in date/time support is terrible, you're probably anyway better off using a library such as [Luxon](https://moment.github.io/luxon/) (where you would instead use `DateTime.fromISO()`);
+Because Zapatos' shortcuts make heavy use of Postgres' JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. There are two differences between these two types:
+
+* `int8` columns are returned as the template string type ``` `${number}` ``` in a `Selectable` but as plain `number`s in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON.
+
+* Since JSON has no native `Date` representation, columns returned as `Date` values in a `Selectable` are returned `DateString` values in a `JSONSelectable`. The template string type `DateString` is defined as ``` `${number}-${number}-${number}T${number}:${number}:${number}${string}` ```, which covers the subsets of ISO8601 emitted by Postgres and JavaScript.
+
+Zapatos provides three helper functions to convert between these date representations: `toDate(d: DateString | null): Date | null`, `toUnixMs(d: DateString | null): number | null`, and `toDateString(d: Date | number | null): DateString | null`.
+
+If you're using a date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own conversions returning (and inferring) null on null input. For example:
+
+```typescript
+import { DateTime } from 'luxon';
+import * as db from 'zapatos/db';
+
+// conversions to and from Luxon's DateTime
+export const toDateTime = db.strict<db.DateString, DateTime>(DateTime.fromISO);
+export const toDateString = db.strict((d: DateTime | Date | number) =>
+  d instanceof DateTime ? d.toISO() as db.DateString : db.toDateString(d));
+
+// db.strict handles null input both for type inference and at runtime
+const dateStr = '1989-11-09T18:53:00.000+01:00' as db.DateString;
+const dateStrOrNull = Math.random() < 0.5 ? dateStr : null;
+const dt1 = toDateTime(null);  // dt1: null
+const dt2 = toDateTime(dateStr);  // dt2: DateTime
+const dt3 = toDateTime(dateStrOrNull);  // dt3: DateTime | null
+const dateStr2 = toDateString(dt2);
+
+console.log({ dt1, dt2, dt3, dateStr2 });
+```
+
 
 => shortcuts.ts /* === insert === */
 
@@ -1719,7 +1748,7 @@ await db.insert('shifts', [
 The important business logic is that there must always be _at least one doctor_ on shift. Now let's say both doctors happen at the same moment to request leave for 25 December.
 
 ```typescript
-const requestLeaveForDoctorOnDay = async (doctorId: number, day: string) =>
+const requestLeaveForDoctorOnDay = async (doctorId: number, day: db.DateString) =>
   db.transaction(pool, db.IsolationLevel.Serializable, async txnClient => {
     const otherDoctorsOnShift = await db.count('shifts', {
       doctorId: db.sql`${db.self} != ${db.param(doctorId)}`,
@@ -2038,6 +2067,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 4.0
+
+__Breaking change__: `DateString`, which is the type assigned to date/time values in a `JSONSelectable`, is now a template string type rather than a basic `string`. This improves type safety, but some `string` values in existing code may need casting to `DateString` or replacing with `Date` instances. New conversion functions `toDate`, `toUnixMs` and `toDateString` are provided. You can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function.
 
 #### 3.6
 

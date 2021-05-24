@@ -25,10 +25,9 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        type authorBooksSQL = s.authors.SQL | s.books.SQL;
+          try {
+          /* original script begins */
+          type authorBooksSQL = s.authors.SQL | s.books.SQL;
 type authorBooksSelectable = s.authors.Selectable & { books: s.books.Selectable[] };
 
 const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
@@ -41,11 +40,11 @@ const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
 
 const authorBooks = await query.run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

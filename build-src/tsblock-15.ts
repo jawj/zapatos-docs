@@ -25,10 +25,9 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const 
+          try {
+          /* original script begins */
+          const 
   titleLike = 'Northern%',
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ 
@@ -36,11 +35,11 @@
       createdAt: db.sql`${db.self} > now() - INTERVAL '7 days'`,
     }}`.run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

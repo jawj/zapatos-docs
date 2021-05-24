@@ -25,10 +25,9 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        // the <const> prevents generalization to string[]
+          try {
+          /* original script begins */
+          // the <const> prevents generalization to string[]
 const bookCols = <const>['id', 'title'];
 type BookDatum = s.books.OnlyCols<typeof bookCols>;
 
@@ -36,11 +35,11 @@ const
   bookData = await db.sql<s.books.SQL, BookDatum[]>`
     SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          

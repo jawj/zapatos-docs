@@ -25,16 +25,15 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
+          try {
+          /* original script begins */
+          const [{ random }] = await db.sql`SELECT random()`.run(pool);
 
-        try {
-        /* original script begins */
-        const [{ random }] = await db.sql`SELECT random()`.run(pool);
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
-
-        await pool.end();
-      
+          await pool.end();
+          

@@ -25,19 +25,18 @@
           import type * as s from 'zapatos/schema';
           import pool from './pgPool';
         
-
-        try {
-        /* original script begins */
-        const [doug, janey] = await db.insert('authors', [
+          try {
+          /* original script begins */
+          const [doug, janey] = await db.insert('authors', [
   { name: 'Douglas Adams', isLiving: false },
   { name: 'Jane Austen', isLiving: false },
 ]).run(pool);
 
-        /* original script ends */
-        } catch(e) {
-          console.log(e.name + ': ' + e.message);
-          console.error('  -> error: ' + e.message);
-        }
+          /* original script ends */
+          } catch(e) {
+            console.log(e.name + ': ' + e.message);
+            console.error('  -> error: ' + e.message);
+          }
 
-        await pool.end();
-      
+          await pool.end();
+          
