@@ -967,15 +967,15 @@ A key contribution of Zapatos is a set of simple shortcut functions that make ev
 
 ##### `JSONSelectable` and `DateString`
 
-Because Zapatos' shortcuts make heavy use of Postgres' JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. There are two differences between these two types:
+Because the shortcuts make heavy use of Postgres' JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. There are two differences between these two types:
 
-* `int8` columns are returned as the template string type ``` `${number}` ``` in a `Selectable` but as plain `number`s in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON.
+* `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON.
 
-* Since JSON has no native `Date` representation, columns returned as `Date` values in a `Selectable` are returned `DateString` values in a `JSONSelectable`. The template string type `DateString` is defined as ``` `${number}-${number}-${number}T${number}:${number}:${number}${string}` ```, which covers the subsets of ISO8601 emitted by Postgres and JavaScript.
+* Since JSON has no native date representation, columns returned as `Date` values in a `Selectable` are returned as string values in a `JSONSelectable`. These strings take the template type `DateString`, which covers the subset of ISO8601 emitted by Postgres and JavaScript and is defined as ``` `${number}-${number}-${number}${'' | `T${number}:${number}:${number}${string}`}` ```.
 
-Zapatos provides three helper functions to convert between these date representations: `toDate(d: DateString | null): Date | null`, `toUnixMs(d: DateString | null): number | null`, and `toDateString(d: Date | number | null): DateString | null`.
+Three helper functions are provided to convert between these date representations: `toDate(d: DateString | null): Date | null`, `toUnixMs(d: DateString | null): number | null`, and `toDateString(d: Date | number | null): DateString | null`.
 
-If you're using a date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own conversions returning (and inferring) null on null input. For example:
+If you're using a date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own conversions, returning (and inferring) null on null input. For example:
 
 ```typescript
 import { DateTime } from 'luxon';
@@ -2070,7 +2070,7 @@ This change list is not comprehensive. For a complete version history, [please s
 
 #### 4.0
 
-__Breaking change__: `DateString`, which is the type assigned to date/time values in a `JSONSelectable`, is now a template string type rather than a basic `string`. This improves type safety, but some `string` values in existing code may need casting to `DateString` or replacing with `Date` instances. New conversion functions `toDate`, `toUnixMs` and `toDateString` are provided. You can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function.
+_Breaking change_: `DateString`, which is the type assigned to date/time values in a `JSONSelectable`, is now a template string type rather than a basic `string`. This improves type safety, but some `string` values in existing code may need casting to `DateString` or replacing with `Date` instances. New conversion functions `toDate`, `toUnixMs` and `toDateString` are provided. You can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function.
 
 #### 3.6
 
