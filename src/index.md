@@ -991,7 +991,7 @@ console.log({ s1, s2, s3, s4 });
 
 * `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON, and means these values could overflow `Number.MAX_SAFE_INTEGER`.
 
-* `bytea` columns are returned as `ByteArrayString`, defined as ``` `\\x{string}` ```.
+* `bytea` columns are returned as `ByteArrayString`, defined as ``` `\\x{string}` ```. A `toBuffer()` function is provided for use with these. For performance and memory reasons, this should not be used for large objects: in that case, consider something like [pg-large-object](https://www.npmjs.com/package/pg-large-object) instead.
 
 * Range types such as `numrange` also get template string types. (Unfortunately, unlike standalone time/date types, which are always returned in ISO8601 format in JSON, time/date bounds in ranges are formatted according to Postgres' current `DateStyle` setting, so can't be typed more specifically than `string`).
 
