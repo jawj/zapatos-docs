@@ -21,16 +21,24 @@ xyz.setConfig({
         console.log('%%transaction%:' + x + '%%');
     },
 });
-import { DateTime } from 'luxon';
 import * as db from 'zapatos/db';
-// conversions to and from Luxon's DateTime
-export const toDateTime = db.strict(DateTime.fromISO);
-export const toDateString = db.strict((d) => d instanceof DateTime ? d.toISO() : db.toDateString(d));
-// db.strict handles null input both for type inference and at runtime
-const dateStr = '1989-11-09T18:53:00.000+01:00';
-const dateStrOrNull = Math.random() < 0.5 ? dateStr : null;
-const dt1 = toDateTime(null); // dt1: null
-const dt2 = toDateTime(dateStr); // dt2: DateTime
-const dt3 = toDateTime(dateStrOrNull); // dt3: DateTime | null
-const dateStr2 = toDateString(dt2);
-console.log({ dt1, dt2, dt3, dateStr2 });
+import pool from './pgPool';
+try {
+    /* original script begins */
+    const d1 = db.toDate('2012-06-01T12:34:00Z'), // TimestampTzString -> Date
+    d2 = db.toDate('2012-06-01T00:00', 'local'), // TimestampString (Europe/London) -> Date
+    d3 = db.toDate('2012-06-01', 'UTC'), // DateString (UTC) -> Date
+    d4 = db.toDate(Math.random() < 0.5 ? null : '2012-10-09T02:34Z'); // TimestampTzString | null -> Date | null;
+    console.log('d1:', d1, 'd2:', d2, 'd3:', d3, 'd4:', d4);
+    const s1 = db.toString(d1, 'timestamptz'), // Date -> TimestampTzString
+    s2 = db.toString(d2, 'timestamp:local'), // Date -> TimestampString (Europe/London)
+    s3 = db.toString(d3, 'date:UTC'), // Date -> DateString (UTC)
+    s4 = db.toString(Math.random() < 0.5 ? null : d4, 'timestamptz'); // Date | null -> TimestampTzString | null
+    console.log('s1:', s1, 's2:', s2, 's3:', s3, 's4:', s4);
+    /* original script ends */
+}
+catch (e) {
+    console.log(e.name + ': ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
+await pool.end();

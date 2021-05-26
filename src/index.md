@@ -965,36 +965,55 @@ Lateral joins of this sort are very flexible, and can be nested multiple levels 
 
 A key contribution of Zapatos is a set of simple shortcut functions that make everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries extremely easy to work with. Furthermore, the `select` shortcut can be nested in order to generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures with inputs and outputs that are still fully and automatically typed.
 
-##### `JSONSelectable` and `DateString`
+##### `JSONSelectable`
 
-Because the shortcuts make heavy use of Postgres' JSON support, their return values are generally `JSONSelectable`s rather than plain `Selectable`s. There are two differences between these two types:
+The shortcuts make heavy use of Postgres' JSON support, and their return values are thus `JSONSelectable`s rather than the plain `Selectable`s you'd get back from a manual query. `JSONSelectable`s differ in that some data types that would normally be converted to native JavaScript representations by `pg` are instead returned in the string format produced by the Postgres `to_json` function. Namely:
 
-* `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON.
+* Since JSON has no native date representation, columns returned as `Date` values in a `Selectable` are returned as string values in a `JSONSelectable`. These strings are assigned appropriate template types: `DateString`, `TimeString`, `TimeTzString`, `TimestampString` and `TimestampTzString`. For example, `DateString` is defined as ``` `${number}-${number}-${number}` ```. Two helper functions, `toDate()` and `toString()`, are provided to convert between JavaScript's `Date` and some of these string representations, while maintaining nullability and forcing explicit treatment of timezones. For example:
 
-* Since JSON has no native date representation, columns returned as `Date` values in a `Selectable` are returned as string values in a `JSONSelectable`. These strings take the template type `DateString`, which covers the subset of ISO8601 emitted by Postgres and JavaScript and is defined as ``` `${number}-${number}-${number}${'' | `T${number}:${number}:${number}${string}`}` ```.
+```typescript
+const
+  d1 = db.toDate('2012-06-01T12:34:00Z'),  // TimestampTzString -> Date
+  d2 = db.toDate('2012-06-01T00:00', 'local'),  // TimestampString (Europe/London) -> Date
+  d3 = db.toDate('2012-06-01', 'UTC'),  // DateString (UTC) -> Date
+  d4 = db.toDate(Math.random() < 0.5 ? null : '2012-10-09T02:34Z') // TimestampTzString | null -> Date | null;
 
-Three helper functions are provided to convert between these date representations: `toDate(d: DateString | null): Date | null`, `toUnixMs(d: DateString | null): number | null`, and `toDateString(d: Date | number | null): DateString | null`.
+console.log('d1:', d1, 'd2:', d2, 'd3:', d3, 'd4:', d4);
 
-If you're using a date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own conversions, returning (and inferring) null on null input. For example:
+const
+  s1 = db.toString(d1, 'timestamptz'),  // Date -> TimestampTzString
+  s2 = db.toString(d2, 'timestamp:local'),  // Date -> TimestampString (Europe/London)
+  s3 = db.toString(d3, 'date:UTC'),  // Date -> DateString (UTC)
+  s4 = db.toString(Math.random() < 0.5 ? null : d4, 'timestamptz'); // Date | null -> TimestampTzString | null
+
+console.log('s1:', s1, 's2:', s2, 's3:', s3, 's4:', s4);
+```
+
+* `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON, and means these values could overflow `Number.MAX_SAFE_INTEGER`.
+
+* `bytea` columns are returned as `ByteArrayString`, defined as ``` `\\x{string}` ```.
+
+* Range types such as `numrange` also get template string types. (Unfortunately, unlike standalone time/date types, which are always returned in ISO8601 format in JSON, time/date bounds in ranges are formatted according to Postgres' current `DateStyle` setting, so can't be typed more specifically than `string`).
+
+If you're using a time/date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own time/date conversions, returning (and inferring) `null` on `null` input. For example:
 
 ```typescript
 import { DateTime } from 'luxon';
 import * as db from 'zapatos/db';
 
 // conversions to and from Luxon's DateTime
-export const toDateTime = db.strict<db.DateString, DateTime>(DateTime.fromISO);
-export const toDateString = db.strict((d: DateTime | Date | number) =>
-  d instanceof DateTime ? d.toISO() as db.DateString : db.toDateString(d));
+export const toDateTime = db.strict<db.TimestampTzString, DateTime>(DateTime.fromISO);
+export const toTsTzString = db.strict((d: DateTime) => d.toISO() as db.TimestampTzString);
 
 // db.strict handles null input both for type inference and at runtime
-const dateStr = '1989-11-09T18:53:00.000+01:00' as db.DateString;
-const dateStrOrNull = Math.random() < 0.5 ? dateStr : null;
+const tsTz = '1989-11-09T18:53:00.000+01:00' as db.TimestampTzString;
+const tsTzOrNull = Math.random() < 0.5 ? tsTz : null;
 const dt1 = toDateTime(null);  // dt1: null
-const dt2 = toDateTime(dateStr);  // dt2: DateTime
-const dt3 = toDateTime(dateStrOrNull);  // dt3: DateTime | null
-const dateStr2 = toDateString(dt2);
+const dt2 = toDateTime(tsTz);  // dt2: DateTime
+const dt3 = toDateTime(tsTzOrNull);  // dt3: DateTime | null
+const alsoTsTz = toTsTzString(dt2);
 
-console.log({ dt1, dt2, dt3, dateStr2 });
+console.log({ dt1, dt2, dt3, alsoTsTz });
 ```
 
 
@@ -2070,7 +2089,7 @@ This change list is not comprehensive. For a complete version history, [please s
 
 #### 4.0
 
-_Breaking change_: `DateString`, which is the type assigned to date/time values in a `JSONSelectable`, is now a template string type rather than a basic `string`. This improves type safety, but some `string` values in existing code may need casting to `DateString` or replacing with `Date` instances. New conversion functions `toDate`, `toUnixMs` and `toDateString` are provided. You can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function.
+_Breaking change_: Various types in `JSONSelectable`s are now assigned template string types instead of plain old `string`, including date and time types, range types, and `bytea`. For example, pg's `date` maps to a new type `DateString`, now defined as ``` `${number}-${number}-${number}` ```, and `bytea` maps to `ByteArrayString`, which is ``` `\\x${string}` ```. This improves type safety, but some `string` values in existing code may need to be cast or replaced (e.g. with JS `Date` or `Buffer` instances). For the date and time types, new conversion functions `toDate` and `toString` are provided. Or you can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function.
 
 #### 3.6
 
