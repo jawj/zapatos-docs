@@ -26,12 +26,12 @@ Wow this is amazing. [...] Exactly the kind of 'use SQL in typescript code with 
 <div class="testimonial">
 <div class="quote">
 
-Probably the most underrated #TypeScript #PostgreSQL package right now.
+There are a number of TypeScript SQL libraries out there, but I found that Zapatos hits the sweet spot.
 
 </div>
 <div class="attribution">
-
-[@andywritescode, Twitter](https://twitter.com/andywritescode/status/1265196222782070784)
+    
+[Nikola Ristić](https://risticnikola.com/tips-for-apis-typescript)
 
 </div>
 </div>
@@ -39,12 +39,25 @@ Probably the most underrated #TypeScript #PostgreSQL package right now.
 <div class="testimonial">
 <div class="quote">
 
-Zapatos is amazing. [...] I think its design is wonderful.
+Zapatos is amazing. [...] I think its design is wonderful. 
 
 </div>
 <div class="attribution">
 
 [skrebbel, HN](https://news.ycombinator.com/item?id=24367867)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
+Probably the most underrated #TypeScript #PostgreSQL package right now.
+
+</div>
+<div class="attribution">
+
+[@andywritescode, Twitter](https://twitter.com/andywritescode/status/1265196222782070784)
 
 </div>
 </div>
@@ -65,12 +78,38 @@ OK just ran the sample on my own schema, whoa, this is fire.
 <div class="testimonial">
 <div class="quote">
 
+I’m loving zapatos now.
+
+</div>
+<div class="attribution">
+    
+[moltar, HN](https://news.ycombinator.com/item?id=24115311)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
 Am I crazy for thinking this seems really good?
 
 </div>
 <div class="attribution">
 
 [@hughevans, Twitter](https://twitter.com/hughevans/status/1295914249420550144)
+
+</div>
+</div>
+
+<div class="testimonial">
+<div class="quote">
+
+Zapatos is super nice
+
+</div>
+<div class="attribution">
+    
+[nikolasburk (Prisma employee), HN](https://news.ycombinator.com/item?id=26889128)
 
 </div>
 </div>
@@ -137,9 +176,9 @@ export namespace authors {
 }
 ```
 
-The types are, I hope, reasonably self-explanatory. `authors.Selectable` is what I'll get back from a `SELECT` query on this table. `authors.Whereable` is what I can use in a `WHERE` condition: everything's optional, and I can include arbitrary SQL. `authors.Insertable` is what I can `INSERT`: it's similar to the `Selectable`, but any fields that are `NULL`able and/or have `DEFAULT` values are allowed to be missing, `NULL` or `DEFAULT`. `authors.Updatable` is what I can `UPDATE` the table with: like what I can `INSERT`, but all columns are optional: it's (roughly) a `Partial<authors.Insertable>`. 
+The type names are, I hope, reasonably self-explanatory. `authors.Selectable` is what I'll get back from a `SELECT` query on this table. `authors.Whereable` is what I can use in a `WHERE` condition: everything's optional, and I can include arbitrary SQL. `authors.Insertable` is what I can `INSERT`: it's similar to the `Selectable`, but any fields that are `NULL`able and/or have `DEFAULT` values are allowed to be missing, `NULL` or `DEFAULT`. `authors.Updatable` is what I can `UPDATE` the table with: like what I can `INSERT`, but all columns are optional: it's (roughly) a `Partial<authors.Insertable>`. 
 
-`schema.d.ts` includes a few other types that get used internally, including some handy type mappings, such as this one:
+`schema.d.ts` includes some other types that get used internally, including handy type mappings like this one:
 
 ```typescript:norun
 export type SelectableForTable<T extends Table> = {
@@ -150,9 +189,7 @@ export type SelectableForTable<T extends Table> = {
 }[T];
 ```
 
-Currently, ordinary tables and materialized views are supported (`Updatable`s and `Insertable`s are empty for materialized views). 
-
-Postgres enumerated types (e.g. `CREATE TYPE "ab" AS ENUM ('a', 'b');`) are exported appropriately (`'a' | 'b'`). A [domain type](https://www.postgresql.org/docs/current/domains.html) is initially aliased to the TypeScript equivalent of its base type, but can be customised from there. This enables sub-schemas to be defined for `json` columns, amongst other things. Other user-defined types are initially aliased to `any` on the TypeScript side, but can also be customised.
+Currently, ordinary tables and materialized views are supported. Enumerated types are catered for — e.g. `CREATE TYPE "ab" AS ENUM ('a', 'b');` becomes TypeScript type `'a' | 'b'`. [Domain types](https://www.postgresql.org/docs/current/domains.html) start out aliased to their base types, but can be customised from there. This enables sub-schemas to be defined for `json` columns, amongst other things. User-defined types can be customised too.
 
 [Tell me more about the command line tool »](#how-do-i-get-it)
 
@@ -200,11 +237,11 @@ const [doug, janey] = await db.insert('authors', [
 ]).run(pool);
 ```
 
-The `insert` shortcut accepts a single `Insertable` or an `Insertable[]` array, and correspondingly returns a single `Selectable` or a `Selectable[]` array. Since we specified `'authors'` as the first argument here, and an array as the second, input and output will be checked and auto-completed as `authors.Insertable[]` and `authors.Selectable[]` respectively.
+The `insert` shortcut accepts a single `Insertable` or an `Insertable[]` array, and correspondingly returns a single [`JSONSelectable`](#jsonselectable) or a `JSONSelectable[]` array. Since we specified `'authors'` as the first argument here, and an array as the second, input and output will be checked and auto-completed as `authors.Insertable[]` and `authors.JSONSelectable[]` respectively.
 
 _Again, click 'Explore types' to play around and check those typings._ 
 
-In addition to `insert`, there are shortcuts for `select` (and `selectOne`, `selectExactlyOne` and `count`), and for `update`, `upsert`, `delete` and `truncate`. 
+In addition to `insert`, there are shortcuts for `select` (plus `selectOne`, `selectExactlyOne` and `count`), and for `update`, `upsert`, `delete` and `truncate`. 
 
 [Tell me more about the shortcut functions »](#shortcut-functions-and-lateral-joins)
 
@@ -213,7 +250,7 @@ In addition to `insert`, there are shortcuts for `select` (and `selectOne`, `sel
 
 **Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed.**
 
-CRUD is our bread and butter, but the power of SQL is that it's _relational_ — it's in the `JOIN`s. And Postgres has some powerful JSON features that can deliver us sensibly-structured `JOIN` results with minimal post-processing (that's `json_agg`, `json_build_object`, and so on).
+CRUD is our bread and butter, but the power of SQL is in the `JOIN`s. Postgres has powerful JSON features than can deliver sensibly-structured `JOIN` results with minimal post-processing: `json_agg`, `json_build_object`, and so on. Zapatos builds on these.
 
 To demonstrate, let's say that `authors` have `books` and `books` have `tags`, adding two new tables to our simple schema:
 
@@ -231,7 +268,7 @@ CREATE TABLE "tags"
 CREATE UNIQUE INDEX "tagsUniqueIdx" ON "tags"("tag", "bookId");
 ```
 
-Now, let's say I want to show a list of books, each with its (one) author and (many) associated tags. We could knock up a manual query for this, of course, but [it gets quite hairy](#manual-joins-using-postgres-json-features). The `select` shortcut has an option called `lateral` that can nest other `select` queries and do it for us. 
+And let's say I want to show a list of books, each with its (one) author and (many) associated tags. We could knock up a manual query for this, of course, but [it gets quite hairy](#manual-joins-using-postgres-json-features). The `select` shortcut has an option called `lateral` that can nest other `select` queries and do it for us. 
 
 Let's try it:
 
@@ -257,9 +294,9 @@ We can of course extend this to deeper nesting (e.g. query each author, with the
 
 **Transaction helper functions assist in managing and retrying transactions.**
 
-Transactions are where I've found traditional ORMs like TypeORM and Sequelize probably most footgun-prone. Zapatos is always explicit about what client or pool is running your query — hence the `pool` argument in all our examples so far. 
+Transactions are where I've found traditional ORMs like TypeORM and Sequelize most footgun-prone. Zapatos is always explicit about what client or pool is running your query — hence that `pool` argument in all our examples so far. 
 
-Zapatos also offers simple transaction helper functions that handle issuing a SQL `ROLLBACK` on error, releasing the database client in a TypeScript `finally` clause (i.e. whether or not an error was thrown), and automatically retrying queries in case of serialization failures. There's one for each isolation level (`SERIALIZABLE`, `REPEATABLE READ`, and so on), and they look like this:
+Zapatos also offers simple transaction helpers that handle issuing a SQL `ROLLBACK` on error, releasing the database client in a `finally` clause, and automatically retrying queries in case of serialization failures. There's one for each isolation level (`SERIALIZABLE`, `REPEATABLE READ`, and so on), and they look like this:
 
 ```typescript:noresult
 const result = await db.serializable(pool, async txnClient => {
@@ -267,7 +304,7 @@ const result = await db.serializable(pool, async txnClient => {
 });
 ```
 
-For example, take this `bankAccounts` table:
+For instance, take this `bankAccounts` table:
 
 ```sql
 CREATE TABLE "bankAccounts" 
@@ -298,7 +335,7 @@ try {
 }
 ```
 
-Finally, it provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnClientForRepeatableRead`, you can call it with `IsolationLevel.Serializable` or `IsolationLevel.RepeatableRead` but not `IsolationLevel.ReadCommitted`.
+Finally, Zapatos provides a set of hierarchical isolation types so that, for example, if you type a `txnClient` argument to a function as `TxnClientForRepeatableRead`, you can call it with `IsolationLevel.Serializable` or `IsolationLevel.RepeatableRead` but not `IsolationLevel.ReadCommitted`.
 
 [Tell me more about the transaction functions »](#transaction)
 
@@ -313,7 +350,7 @@ I've also come to love strongly typed languages, and TypeScript in particular. V
 
 Zapatos aims to fix that.
 
-(If it interests you, there's a whole other [repository about how Zapatos came about](https://github.com/jawj/mostly-ormless)).
+If it interests you, there's a whole other [repository about how Zapatos came about](https://github.com/jawj/mostly-ormless).
 
 ### What doesn't it do?
 
@@ -356,43 +393,6 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
   },
   "outDir": "./src"
 }
-```
-
-It should be structured as follows:
-
-```typescript:norun
-export interface RequiredConfig {
-  db: pg.ClientConfig;
-}
-
-export interface OptionalConfig {
-  outDir: string;
-  outExt: string;
-  schemas: SchemaRules;
-  progressListener: boolean | ((s: string) => void);
-  warningListener: boolean | ((s: string) => void);
-  customTypesTransform: 'PgMy_type' | 'my_type' | 'PgMyType' | ((s: string) => string);
-  columnOptions: ColumnOptions;
-  schemaJSDoc: boolean;
-}
-
-interface SchemaRules {
-  [schema: string]: {
-    include: '*' | string[];
-    exclude: '*' | string[];
-  };
-}
-
-interface ColumnOptions {
-  [k: string]: {  // table name or '*'
-    [k: string]: {  // column name
-      insert?: 'auto' | 'excluded' | 'optional';
-      update?: 'auto' | 'excluded';
-    };
-  };
-}
-
-export type Config = RequiredConfig & Partial<OptionalConfig>;
 ```
 
 The available top-level keys are:
@@ -477,6 +477,43 @@ You can also use `"*"` as a wildcard to match all tables. For example, perhaps y
 Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as the whole key — you can't use a `*` to match parts of names — and only for tables, not for columns.
 
 * `"schemaJSDoc"` is a boolean that turns JSDoc comments for each column in the generated schema on (the default) or off. JSDoc comments enable per-column VS Code pop-ups giving details of Postgres data type, default value and so on. They also make the schema file longer and less readable.
+
+In summary, the expected structure is defined like so:
+
+```typescript:norun
+export interface RequiredConfig {
+  db: pg.ClientConfig;
+}
+
+export interface OptionalConfig {
+  outDir: string;
+  outExt: string;
+  schemas: SchemaRules;
+  progressListener: boolean | ((s: string) => void);
+  warningListener: boolean | ((s: string) => void);
+  customTypesTransform: 'PgMy_type' | 'my_type' | 'PgMyType' | ((s: string) => string);
+  columnOptions: ColumnOptions;
+  schemaJSDoc: boolean;
+}
+
+interface SchemaRules {
+  [schema: string]: {
+    include: '*' | string[];
+    exclude: '*' | string[];
+  };
+}
+
+interface ColumnOptions {
+  [k: string]: {  // table name or '*'
+    [k: string]: {  // column name
+      insert?: 'auto' | 'excluded' | 'optional';
+      update?: 'auto' | 'excluded';
+    };
+  };
+}
+
+export type Config = RequiredConfig & Partial<OptionalConfig>;
+```
 
 
 #### Environment variables
@@ -839,6 +876,13 @@ Within queries passed as subqueries to the `lateral` option of `select`, `select
 You can [interpolate them](#sql-template-strings) into other `sql` tagged template strings, or call/access the following properties on them:
 
 
+=> core.ts prepared = (name = `_zapatos_prepared_${preparedNameSeq++}`) => {
+
+#### `prepared(name: string): this`
+
+The `prepared` function causes a `name` property to be added to the compiled SQL query object that's passed to `pg`, and this [instructs Postgres to treat it as a prepared statement](https://node-postgres.com/features/queries#prepared-statements). You can specify a prepared statement name as the function's argument, or let it default to `"_zapatos_prepared_N"` (where N is a sequence number). This name appears in the Postgres logs.
+
+
 => core.ts run = async (queryable: Queryable, force = false): Promise<RunResult> => {
 
 #### `async run(queryable: Queryable, force = false): Promise<RunResult>`
@@ -966,56 +1010,7 @@ Lateral joins of this sort are very flexible, and can be nested multiple levels 
 
 A key contribution of Zapatos is a set of simple shortcut functions that make everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries extremely easy to work with. Furthermore, the `select` shortcut can be nested in order to generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures with inputs and outputs that are still fully and automatically typed.
 
-##### `JSONSelectable`
-
-The shortcuts make heavy use of Postgres' JSON support, and their return values are thus `JSONSelectable`s rather than the plain `Selectable`s you'd get back from a manual query. `JSONSelectable`s differ in that some data types that would normally be converted to native JavaScript representations by `pg` are instead returned in the string format produced by the Postgres `to_json` function. Namely:
-
-* Since JSON has no native date representation, columns returned as `Date` values in a `Selectable` are returned as string values in a `JSONSelectable`. These strings are assigned appropriate template types: `DateString`, `TimeString`, `TimeTzString`, `TimestampString` and `TimestampTzString`. For example, `DateString` is defined as ``` `${number}-${number}-${number}` ```. Two helper functions, `toDate()` and `toString()`, are provided to convert between JavaScript's `Date` and some of these string representations, while maintaining nullability and forcing explicit treatment of timezones. For example:
-
-```typescript
-const
-  d1 = db.toDate('2012-06-01T12:34:00Z'),  // TimestampTzString -> Date
-  d2 = db.toDate('2012-06-01T00:00', 'local'),  // TimestampString (Europe/London) -> Date
-  d3 = db.toDate('2012-06-01', 'UTC'),  // DateString (UTC) -> Date
-  d4 = db.toDate(Math.random() < 0.5 ? null : '2012-10-09T02:34Z') // TimestampTzString | null -> Date | null;
-
-console.log({ d1, d2, d3, d4 });
-
-const
-  s1 = db.toString(d1, 'timestamptz'),  // Date -> TimestampTzString
-  s2 = db.toString(d2, 'timestamp:local'),  // Date -> TimestampString (Europe/London)
-  s3 = db.toString(d3, 'date:UTC'),  // Date -> DateString (UTC)
-  s4 = db.toString(Math.random() < 0.5 ? null : d4, 'timestamptz'); // Date | null -> TimestampTzString | null
-
-console.log({ s1, s2, s3, s4 });
-```
-
-* `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON, and means these values could overflow `Number.MAX_SAFE_INTEGER`.
-
-* `bytea` columns are returned as `ByteArrayString`, defined as ``` `\\x{string}` ```. A `toBuffer()` function is provided for use with these. For performance and memory reasons, this should not be used for large objects: in that case, consider something like [pg-large-object](https://www.npmjs.com/package/pg-large-object) instead.
-
-* Range types such as `numrange` also get template string types. (Unfortunately, unlike standalone time/date types, which are always returned in ISO8601 format in JSON, time/date bounds in ranges are formatted according to Postgres' current `DateStyle` setting, so can't be typed more specifically than `string`).
-
-If you're using a time/date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own time/date conversions, returning (and inferring) `null` on `null` input. For example:
-
-```typescript
-import { DateTime } from 'luxon';
-import * as db from 'zapatos/db';
-
-// conversions to and from Luxon's DateTime
-export const toDateTime = db.strict<db.TimestampTzString, DateTime>(DateTime.fromISO);
-export const toTsTzString = db.strict((d: DateTime) => d.toISO() as db.TimestampTzString);
-
-// db.strict handles null input both for type inference and at runtime
-const tsTz = '1989-11-09T18:53:00.000+01:00' as db.TimestampTzString;
-const tsTzOrNull = Math.random() < 0.5 ? tsTz : null;
-const dt1 = toDateTime(null);  // dt1: null
-const dt2 = toDateTime(tsTz);  // dt2: DateTime
-const dt3 = toDateTime(tsTzOrNull);  // dt3: DateTime | null
-const alsoTsTz = toTsTzString(dt2);
-
-console.log({ dt1, dt2, dt3, alsoTsTz });
-```
+The shortcut functions make heavy use of Postgres' JSON support, and their return values are thus [`JSONSelectable`](#jsonselectable)s rather than the plain `Selectable`s you'd get back from a manual query.
 
 
 => shortcuts.ts /* === insert === */
@@ -1699,6 +1694,61 @@ const authors2 = await db.select("authors", db.all, {
   lock: { for: "UPDATE", of: "authors", wait: "NOWAIT" } 
 }).run(pool);
 ```
+
+
+#### `JSONSelectable`
+
+Since the shortcut functions build on Postgres' JSON support, their return values are typed `JSONSelectable` rather than the `Selectable` you'd get back from a manual query (this would not in fact be a hard requirement for all shortcuts, but in the interests of consistency it does apply to all of them).
+
+`JSONSelectable`s differ from `Selectable`s in that some data types that would normally be converted to native JavaScript representations by `pg` are instead returned in the string format produced by the Postgres `to_json` function. Namely:
+
+* Since JSON has no native date representation, columns returned as `Date` values in a `Selectable` are returned as string values in a `JSONSelectable`. These strings are assigned appropriate template types: `DateString`, `TimeString`, `TimeTzString`, `TimestampString` and `TimestampTzString`. For example, `DateString` is defined as ``` `${number}-${number}-${number}` ```. Two helper functions, `toDate()` and `toString()`, are provided to convert between JavaScript's `Date` and some of these string representations, while maintaining nullability and forcing explicit treatment of timezones. For example:
+
+```typescript
+const
+  d1 = db.toDate('2012-06-01T12:34:00Z'),  // TimestampTzString -> Date
+  d2 = db.toDate('2012-06-01T00:00', 'local'),  // TimestampString (Europe/London) -> Date
+  d3 = db.toDate('2012-06-01', 'UTC'),  // DateString (UTC) -> Date
+  d4 = db.toDate(Math.random() < 0.5 ? null : '2012-10-09T02:34Z') // TimestampTzString | null -> Date | null;
+
+console.log({ d1, d2, d3, d4 });
+
+const
+  s1 = db.toString(d1, 'timestamptz'),  // Date -> TimestampTzString
+  s2 = db.toString(d2, 'timestamp:local'),  // Date -> TimestampString (Europe/London)
+  s3 = db.toString(d3, 'date:UTC'),  // Date -> DateString (UTC)
+  s4 = db.toString(Math.random() < 0.5 ? null : d4, 'timestamptz'); // Date | null -> TimestampTzString | null
+
+console.log({ s1, s2, s3, s4 });
+```
+
+* `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON, and means these values could overflow `Number.MAX_SAFE_INTEGER`.
+
+* `bytea` columns are returned as `ByteArrayString`, defined as ``` `\\x{string}` ```. A `toBuffer()` function is provided for use with these. For performance and memory reasons, this should not be used for large objects: in that case, consider something like [pg-large-object](https://www.npmjs.com/package/pg-large-object) instead.
+
+* Range types such as `numrange` also get template string types. (Unfortunately, unlike standalone time/date types, which are always returned in ISO8601 format in JSON, time/date bounds in ranges are formatted according to Postgres' current `DateStyle` setting, so can't be typed more specifically than `string`).
+
+If you're using a time/date library such as [Luxon](https://moment.github.io/luxon/) or [Moment](https://momentjs.com/), use Zapatos' `strict` function to roll your own time/date conversions, returning (and inferring) `null` on `null` input. For example:
+
+```typescript
+import { DateTime } from 'luxon';
+import * as db from 'zapatos/db';
+
+// conversions to and from Luxon's DateTime
+export const toDateTime = db.strict<db.TimestampTzString, DateTime>(DateTime.fromISO);
+export const toTsTzString = db.strict((d: DateTime) => d.toISO() as db.TimestampTzString);
+
+// db.strict handles null input both for type inference and at runtime
+const tsTz = '1989-11-09T18:53:00.000+01:00' as db.TimestampTzString;
+const tsTzOrNull = Math.random() < 0.5 ? tsTz : null;
+const dt1 = toDateTime(null);  // dt1: null
+const dt2 = toDateTime(tsTz);  // dt2: DateTime
+const dt3 = toDateTime(tsTzOrNull);  // dt3: DateTime | null
+const alsoTsTz = toTsTzString(dt2);
+
+console.log({ dt1, dt2, dt3, alsoTsTz });
+```
+
 
 
 => transaction.ts export async function transaction<T, M extends IsolationLevel>(

@@ -25,16 +25,38 @@ import * as db from 'zapatos/db';
 import pool from './pgPool';
 try {
     /* original script begins */
-    const d1 = db.toDate('2012-06-01T12:34:00Z'), // TimestampTzString -> Date
-    d2 = db.toDate('2012-06-01T00:00', 'local'), // TimestampString (Europe/London) -> Date
-    d3 = db.toDate('2012-06-01', 'UTC'), // DateString (UTC) -> Date
-    d4 = db.toDate(Math.random() < 0.5 ? null : '2012-10-09T02:34Z'); // TimestampTzString | null -> Date | null;
-    console.log({ d1, d2, d3, d4 });
-    const s1 = db.toString(d1, 'timestamptz'), // Date -> TimestampTzString
-    s2 = db.toString(d2, 'timestamp:local'), // Date -> TimestampString (Europe/London)
-    s3 = db.toString(d3, 'date:UTC'), // Date -> DateString (UTC)
-    s4 = db.toString(Math.random() < 0.5 ? null : d4, 'timestamptz'); // Date | null -> TimestampTzString | null
-    console.log({ s1, s2, s3, s4 });
+    const 
+    // insert one
+    steve = await db.insert('authors', {
+        name: 'Steven Hawking',
+        isLiving: false,
+    }).run(pool), 
+    // insert many
+    [time, me] = await db.insert('books', [{
+            authorId: steve.id,
+            title: 'A Brief History of Time',
+            createdAt: db.sql `now()`,
+        }, {
+            authorId: steve.id,
+            title: 'My Brief History',
+            createdAt: db.sql `now()`,
+        }]).run(pool), tags = await db.insert('tags', [
+        { bookId: time.id, tag: 'physics' },
+        { bookId: me.id, tag: 'physicist' },
+        { bookId: me.id, tag: 'autobiography' },
+    ]).run(pool), 
+    // insert with custom return values
+    nutshell = await db.insert('books', {
+        authorId: steve.id,
+        title: 'The Universe in a Nutshell',
+        createdAt: db.sql `now()`,
+    }, {
+        returning: ['id'],
+        extras: {
+            aliasedTitle: "title",
+            upperTitle: db.sql `upper(${"title"})`,
+        },
+    }).run(pool);
     /* original script ends */
 }
 catch (e) {

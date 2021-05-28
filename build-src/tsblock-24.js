@@ -9,7 +9,7 @@ xyz.setConfig({
         }
     },
     resultListener: (x, txnId) => {
-        if (false || (x != null && (false || !(Array.isArray(x) && x.length === 0)))) {
+        if (false || (x != null && (true || !(Array.isArray(x) && x.length === 0)))) {
             if (txnId != null)
                 console.log('%%txnId%:' + txnId + '%%');
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
@@ -21,16 +21,16 @@ xyz.setConfig({
         console.log('%%transaction%:' + x + '%%');
     },
 });
-import { DateTime } from 'luxon';
 import * as db from 'zapatos/db';
-// conversions to and from Luxon's DateTime
-export const toDateTime = db.strict(DateTime.fromISO);
-export const toTsTzString = db.strict((d) => d.toISO());
-// db.strict handles null input both for type inference and at runtime
-const tsTz = '1989-11-09T18:53:00.000+01:00';
-const tsTzOrNull = Math.random() < 0.5 ? tsTz : null;
-const dt1 = toDateTime(null); // dt1: null
-const dt2 = toDateTime(tsTz); // dt2: DateTime
-const dt3 = toDateTime(tsTzOrNull); // dt3: DateTime | null
-const alsoTsTz = toTsTzString(dt2);
-console.log({ dt1, dt2, dt3, alsoTsTz });
+import pool from './pgPool';
+try {
+    /* original script begins */
+    await db.insert("authors", []).run(pool); // never reaches DB
+    await db.insert("authors", []).run(pool, true); // does reach DB, for same result
+    /* original script ends */
+}
+catch (e) {
+    console.log(e.name + ': ' + e.message);
+    console.error('  -> error: ' + e.message);
+}
+await pool.end();

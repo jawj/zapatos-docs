@@ -9,7 +9,7 @@ xyz.setConfig({
         }
     },
     resultListener: (x, txnId) => {
-        if (false || (x != null && (true || !(Array.isArray(x) && x.length === 0)))) {
+        if (false || (x != null && (false || !(Array.isArray(x) && x.length === 0)))) {
             if (txnId != null)
                 console.log('%%txnId%:' + txnId + '%%');
             console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');
@@ -25,8 +25,11 @@ import * as db from 'zapatos/db';
 import pool from './pgPool';
 try {
     /* original script begins */
-    await db.insert("authors", []).run(pool); // never reaches DB
-    await db.insert("authors", []).run(pool, true); // does reach DB, for same result
+    await db.update("emailAuthentication", {
+        consecutiveFailedLogins: db.sql `${db.self} + 1`,
+        // or equivalently: consecutiveFailedLogins: dc.add(1),
+        lastFailedLogin: db.sql `now()`,
+    }, { email: 'me@privacy.net' }).run(pool);
     /* original script ends */
 }
 catch (e) {
