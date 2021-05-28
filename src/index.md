@@ -311,8 +311,9 @@ I like SQL, and Postgres especially. In my experience, abstractions that obscure
 
 I've also come to love strongly typed languages, and TypeScript in particular. VS Code's type checking and autocomplete speed development, prevent bugs, and simplify refactoring. Especially when they _just happen_, they bring joy. But, traditionally, talking to the database is a place where they really don't _just happen_.
 
-Zapatos aims to minimise the misery of abstraction, intensify the pleasures of type inference, and represent a credible alternative to traditional ORMs.
+Zapatos aims to fix that.
 
+(If it interests you, there's a whole other [repository about how Zapatos came about](https://github.com/jawj/mostly-ormless)).
 
 ### What doesn't it do?
 
