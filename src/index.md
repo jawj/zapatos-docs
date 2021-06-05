@@ -23,6 +23,7 @@ Wow this is amazing. [...] Exactly the kind of 'use SQL in typescript code with 
 </div>
 </div>
 
+
 <div class="testimonial">
 <div class="quote">
 
@@ -35,6 +36,7 @@ There are a number of TypeScript SQL libraries out there, but I found that Zapat
 
 </div>
 </div>
+
 
 <div class="testimonial">
 <div class="quote">
@@ -49,6 +51,7 @@ Zapatos is amazing. [...] I think its design is wonderful.
 </div>
 </div>
 
+
 <div class="testimonial">
 <div class="quote">
 
@@ -61,6 +64,7 @@ Probably the most underrated #TypeScript #PostgreSQL package right now.
 
 </div>
 </div>
+
 
 <div class="testimonial">
 <div class="quote">
@@ -75,6 +79,7 @@ OK just ran the sample on my own schema, whoa, this is fire.
 </div>
 </div>
 
+
 <div class="testimonial">
 <div class="quote">
 
@@ -87,6 +92,7 @@ I’m loving zapatos now.
 
 </div>
 </div>
+
 
 <div class="testimonial">
 <div class="quote">
@@ -101,6 +107,7 @@ Am I crazy for thinking this seems really good?
 </div>
 </div>
 
+
 <div class="testimonial">
 <div class="quote">
 
@@ -113,6 +120,7 @@ Zapatos is super nice
 
 </div>
 </div>
+
 
 </div></div>
 
@@ -423,7 +431,7 @@ If not specified, the default value for `"schemas"` includes all tables in the `
 "schemas": {
   "public": {
     "include": "*",
-    "exclude: []
+    "exclude": []
   }
 }
 ```
