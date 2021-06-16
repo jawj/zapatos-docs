@@ -1278,7 +1278,9 @@ For instance:
 await db.truncate('bankAccounts').run(pool);
 ```
 
-One context in which this may be useful is in emptying a testing database at the start of each test run.
+One context in which this may be useful is in emptying a testing database at the start of each test run. 
+
+First, we list all our tables. Zapatos provides some [utility types](#utility-types) such as `AllBaseTables`, to help ensure that we don't forget any:
 
 ```typescript:noresult
 const allTables: s.AllBaseTables = [
@@ -1302,9 +1304,7 @@ const allTables: s.AllBaseTables = [
 ];
 ```
 
-(As seen above, Zapatos provides some [utility types](#utility-types) to help ensure that you've listed all your tables or views, including `AllBaseTables`).
-
-You can then empty the database like so:
+We can then empty the database like so:
 
 ```typescript:norun
 // *** DON'T DO THIS IN PRODUCTION! ***
