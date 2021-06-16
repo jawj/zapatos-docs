@@ -1278,10 +1278,10 @@ For instance:
 await db.truncate('bankAccounts').run(pool);
 ```
 
-One context in which this may be useful is in emptying a testing database at the start of each test run. Zapatos provides an `AllTables` type to help you ensure that you've listed all your tables:
+One context in which this may be useful is in emptying a testing database at the start of each test run.
 
 ```typescript:noresult
-const allTables: s.AllTables = [
+const allTables: s.AllBaseTables = [
   'appleTransactions', 
   'arrays',
   'authors', 
@@ -1302,14 +1302,14 @@ const allTables: s.AllTables = [
 ];
 ```
 
+(As seen above, Zapatos provides some [utility types](#utility-types) to help ensure that you've listed all your tables or views, including `AllBaseTables`).
+
 You can then empty the database like so:
 
 ```typescript:norun
 // *** DON'T DO THIS IN PRODUCTION! ***
 await db.truncate(allTables, 'CASCADE').run(pool);
 ```
-
-There is also, along similar lines, an `AllMaterializedViews` type.
 
 
 => shortcuts.ts /* === select === */
@@ -2032,6 +2032,17 @@ console.log(alice, bob, cathy);
 ```
 
 
+### Utility types
+
+Zapatos provides a few over-arching types designed to help you comprehensively enumerate the objects in your database. All of these are literal string array types, in alphabetical order — e.g. `["myTable1", "myTable2", "myTable3"]` — and are as follows:
+
+* `AllBaseTables`: ordinary tables, originating from `CREATE TABLE`
+* `AllForeignTables`: foreign tables, originating from `CREATE FOREIGN TABLE`
+* `AllViews`: ordinary views, deriving from `CREATE VIEW`
+* `AllMaterializedViews`: materialized views, deriving from `CREATE MATERIALIZED VIEW`
+* `AllTablesAndViews`: all of the above combined
+
+
 ### Run-time configuration
 
 There are a few configuration options you can set at runtime:
@@ -2145,6 +2156,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 5.0
+
+_Breaking change_: The `AllTables` type (which somewhat arbitrarily included tables, foreign tables, and views, but not materialized views) is gone. In its place you'll a variety of more and less specific [utility types](#utility-types). Also, `Updatable` and `Insertable` interfaces for tables and views that aren't writable are now `{ [key: string]: never }` instead of `{}`.
 
 #### 4.0
 
