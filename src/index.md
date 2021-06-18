@@ -197,7 +197,7 @@ export type SelectableForTable<T extends Table> = {
 }[T];
 ```
 
-Currently, ordinary tables and materialized views are supported. Enumerated types are catered for — e.g. `CREATE TYPE "ab" AS ENUM ('a', 'b');` becomes TypeScript type `'a' | 'b'`. [Domain types](https://www.postgresql.org/docs/current/domains.html) start out aliased to their base types, but can be customised from there. This enables sub-schemas to be defined for `json` columns, amongst other things. User-defined types can be customised too.
+Zapatos supports tables, foreign tables, views and materialized views. It understands enumerated types: `CREATE TYPE "size" AS ENUM ('big', 'small');` comes to TypeScript as `'big' | 'small'`. And it lets you define the TypeScript treatment of [domain types](https://www.postgresql.org/docs/current/domains.html) and user-defined types too.
 
 [Tell me more about the command line tool »](#how-do-i-get-it)
 
@@ -2042,6 +2042,17 @@ Zapatos provides a few over-arching types designed to help you comprehensively e
 * `AllMaterializedViews`: materialized views, deriving from `CREATE MATERIALIZED VIEW`
 * `AllTablesAndViews`: all of the above combined
 
+It also provides a number of type mappings allowing types to be accessed by table name, which are heavily used by the shortcut functions:
+
+* `SelectableForTable<Table>`
+* `JSONSelectableForTable<Table>`
+* `WhereableForTable<Table>`
+* `InsertableForTable<Table>`
+* `UpdatableForTable<Table>`
+* `UniqueIndexForTable<Table>`
+* `ColumnForTable<Table>`
+* `SQLForTable<Table>`
+
 
 ### Run-time configuration
 
@@ -2163,7 +2174,11 @@ _Breaking change_: The `AllTables` type (which somewhat arbitrarily included tab
 
 #### 4.0
 
-_Breaking change_: Various types in `JSONSelectable`s are now assigned template string types instead of plain old `string`, including date and time types, range types, and `bytea`. For example, pg's `date` maps to a new type `DateString`, now defined as ``` `${number}-${number}-${number}` ```, and `bytea` maps to `ByteArrayString`, which is ``` `\\x${string}` ```. This improves type safety, but some `string` values in existing code may need to be cast or replaced (e.g. with JS `Date` or `Buffer` instances). For the date and time types, new conversion functions `toDate` and `toString` are provided. Or you can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function.
+_Breaking change_: Various types in `JSONSelectable`s are now assigned template string types instead of plain old `string`, including date and time types, range types, and `bytea`. For example, pg's `date` maps to a new type `DateString`, now defined as ``` `${number}-${number}-${number}` ```, and `bytea` maps to `ByteArrayString`, which is ``` `\\x${string}` ```. 
+
+This improves type safety, but some `string` values in existing code may need to be cast or replaced (e.g. with JS `Date` or `Buffer` instances). For the date and time types, new conversion functions `toDate` and `toString` are provided. Or you can roll your own conversions for date libraries such as Luxon and Moment with help from the new `strict` function. 
+
+TypeScript 4.1 is now required, and 4.3 is recommended.
 
 #### 3.6
 
@@ -2306,9 +2321,13 @@ If you're asking for or contributing new work, my response is likely to reflect 
 
 ### What's next
 
-Nice-to-haves would include:
+The roadmap includes:
 
 * **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](https://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
+
+* **Alternative install mechanism.** Older versions of Zapatos copied key source files into your source tree instead of using ambient type declarations. Not everyone liked that approach, but it did enable some advanced use-cases, such as interfacing with multiple databases. This approach is likely to return as a configurable option.
+
+More speculative nice-to-haves would include:
 
 * **More complete typing of `lateral` queries.**  It would be great to make use of foreign key relationships and suchlike in generated types and the shortcut functions that make use of them.
 
