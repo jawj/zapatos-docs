@@ -422,7 +422,7 @@ The available top-level keys are:
 Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if and only if** all of your table names are unique across all schemas. To make this work, you'll need to set something like this: 
 
 ```sql
-ALTER DATABASE "mydb" SET "search_path" TO "$user", "public", "additionalSchema1", "additionalSchema2";`
+ALTER DATABASE "mydb" SET "search_path" TO "$user", "public", "additionalSchema1", "additionalSchema2";
 ```
 
 If not specified, the default value for `"schemas"` includes all tables in the `public` schema, i.e.:
