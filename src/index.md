@@ -384,6 +384,8 @@ Finally, it won't tell you how to structure your code: Zapatos doesn't deal in t
 
 First: check your `tsconfig.json`. You need `"strictNullChecks": true` or `"strict": true` (which implies `"strictNullChecks": true`). Without `strictNullChecks`, some things just won't work — namely, the `lateral`, `extras`, `returning` and `columns` options to the shortcut functions.
 
+Since TypeScript 4.4, it's [also a good idea to set `"exactOptionalPropertyTypes": true`](https://github.com/jawj/zapatos/issues/97).
+
 Then install Zapatos with `npm`:
 
 ```bash
