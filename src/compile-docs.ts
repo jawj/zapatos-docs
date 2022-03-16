@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as z from 'zapatos/generate';
 import MarkdownIt = require('markdown-it');
 import { execSync } from 'child_process';
-import * as hljs from 'highlight.js';
+import hljs from 'highlight.js';
 import { JSDOM } from 'jsdom';
 import * as pgcs from 'pg-connection-string';
 import * as http from 'http';
@@ -254,7 +254,7 @@ void (async () => {
           /* original script begins */
           ${ts}
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

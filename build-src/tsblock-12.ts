@@ -36,7 +36,7 @@ const
     SELECT ${db.cols(bookCols)} FROM ${"books"}`.run(pool);
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

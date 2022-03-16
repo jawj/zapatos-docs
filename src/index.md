@@ -83,12 +83,12 @@ OK just ran the sample on my own schema, whoa, this is fire.
 <div class="testimonial">
 <div class="quote">
 
-I’m loving zapatos now.
+[I've] tried every ORM there is in the JS/TypeScript land. And I’ve settled on Zapatos, which [...] is a breath of fresh air and is a delight to use.
 
 </div>
 <div class="attribution">
     
-[moltar, HN](https://news.ycombinator.com/item?id=24115311)
+[moltar, HN](https://news.ycombinator.com/item?id=27556821)
 
 </div>
 </div>
@@ -338,7 +338,7 @@ const transferMoney = (sendingAccountId: number, receivingAccountId: number, amo
 
 try {
   const [[updatedAccountA], [updatedAccountB]] = await transferMoney(accountA.id, accountB.id, 60);
-} catch(err) {
+} catch(err: any) {
   console.log(err.message, '/', err.detail);
 }
 ```
@@ -350,7 +350,7 @@ Finally, Zapatos provides a set of hierarchical isolation types so that, for exa
 
 ### Why does it do those things?
 
-It is a truth universally acknowledged that [ORMs aren't very good](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). 
+It is a truth universally acknowledged that [ORMs aren't very good](https://en.wikipedia.org/wiki/Object-relational_impedance_mismatch). JavaScript and TypeScript ORMs are perhaps even worse than the average. One Zapatos user [described a popular TypeScript ORM](https://news.ycombinator.com/item?id=27556821) as "full of broken magic under the hood", which nicely captures what originally motivated me to write this library.
 
 I like SQL, and Postgres especially. In my experience, abstractions that obscure the underlying SQL, or that prioritise ease of switching to another database tomorrow over effective use of _this_ database _today_, are a source of misery.
 
@@ -1345,7 +1345,7 @@ try {
   const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
   // ... do something with this author ...
 
-} catch (err) {
+} catch (err: any) {
   if (err instanceof db.NotExactlyOneError) console.log(`${err.name}: ${err.message}`);
   else throw err;
 }
@@ -1915,7 +1915,7 @@ const transferMoney = (sendingAccountId: number, receivingAccountId: number, amo
 // single transfer, as before (but passing in `pool`)
 try {
   await transferMoney(accountA.id, accountB.id, 60, pool);
-} catch (err) {
+} catch (err: any) {
   console.log(err.message, '/', err.detail);
 }
 
@@ -1925,7 +1925,7 @@ try {
     transferMoney(accountA.id, accountB.id, 40, txnClient),
     transferMoney(accountA.id, accountC.id, 40, txnClient)
   ]));
-} catch (err) {
+} catch (err: any) {
   console.log(err.message, '/', err.detail);
 }
 
@@ -1961,7 +1961,7 @@ As one example, the `transaction` helper uses this function to catch serializati
 try {
   /* start transaction, run queries, commit */
 
-} catch (err) {
+} catch (err: any) {
   await sql`ROLLBACK`.run(txnClient);
   if (isDatabaseError(err, "TransactionRollback_SerializationFailure", "TransactionRollback_DeadlockDetected")) {
     /* wait a bit, then have another go */
@@ -1998,7 +1998,7 @@ async function createUser(friendlyName: string) {
       await db.sql`SAVEPOINT start`.run(txnClient);
       user = await db.insert('users', { friendlyName }).run(txnClient);
 
-    } catch (err) {
+    } catch (err: any) {
       if (!db.isDatabaseError(err, 'DataException_SequenceGeneratorLimitExceeded')) throw err;
       
       await db.sql`ROLLBACK TO start`.run(txnClient);

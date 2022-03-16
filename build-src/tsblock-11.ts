@@ -37,7 +37,7 @@
     VALUES (${db.vals(author)}) RETURNING *`.run(pool);
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

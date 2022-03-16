@@ -36,7 +36,7 @@
 console.log(compiled);
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

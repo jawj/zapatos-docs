@@ -33,7 +33,7 @@
     SELECT * FROM ${nameSubmittedByUser} LIMIT 1`.run(pool);  // NEVER do this!
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

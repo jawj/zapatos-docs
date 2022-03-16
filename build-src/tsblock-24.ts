@@ -31,7 +31,7 @@
 await db.insert("authors", []).run(pool, true);  // does reach DB, for same result
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

@@ -31,7 +31,7 @@
   SELECT "title" FROM "books" LIMIT 1`.run(pool);  // no, don't do this
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

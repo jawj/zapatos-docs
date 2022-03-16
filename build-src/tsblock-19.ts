@@ -37,7 +37,7 @@ const dbNow = await dbNowQuery().run(pool);
 // dbNow is a Date: the result you can toggle below has come via JSON.stringify
 
           /* original script ends */
-          } catch(e) {
+          } catch(e: any) {
             console.log(e.name + ': ' + e.message);
             console.error('  -> error: ' + e.message);
           }

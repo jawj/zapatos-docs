@@ -10,5 +10,6 @@
       "DOM"
     ],
     "strict": true,
+    "exactOptionalPropertyTypes": true
   },
 }
