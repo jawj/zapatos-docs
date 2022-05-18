@@ -135,7 +135,7 @@ To achieve this aim, Zapatos does these five things:
 
 * **Everyday CRUD** &nbsp; Shortcut functions produce everyday [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) queries with no fuss and no surprises, fully and automatically typed. [Show me »](#everyday-crud)
 
-* **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [LATERAL JOIN](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
+* **JOINs as nested JSON** &nbsp; Nested shortcut calls generate [`LATERAL JOIN`](https://www.postgresql.org/docs/12/queries-table-expressions.html#id-1.5.6.6.5.10.2) queries, resulting in arbitrarily complex nested JSON structures, still fully and automatically typed. [Show me »](#joins-as-nested-json)
 
 * **Transactions** &nbsp; Transaction helper functions assist in managing and retrying transactions. [Show me »](#transactions)
 
@@ -249,7 +249,7 @@ The `insert` shortcut accepts a single `Insertable` or an `Insertable[]` array, 
 
 _Again, click 'Explore types' to play around and check those typings._ 
 
-In addition to `insert`, there are shortcuts for `select` (plus `selectOne`, `selectExactlyOne` and `count`), and for `update`, `upsert`, `delete` and `truncate`. 
+In addition to `insert`, there are shortcuts for `select` (plus `selectOne`, `selectExactlyOne`, and simple aggregates such as `count` and `sum`), and for `update`, `upsert`, `delete` and `truncate`. 
 
 [Tell me more about the shortcut functions »](#shortcut-functions-and-lateral-joins)
 
@@ -419,13 +419,7 @@ The available top-level keys are:
 
 * `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively define your own transformation function.
 
-* `"schemas"` is an object that lets you define schemas and tables (and materialized views) to include and exclude. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the values `"*"` (for all tables in schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list.
-
-Note that schemas are not properly supported by Zapatos, since they are not included in the output types, but they can be made to work by using the Postgres [search path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH) **if and only if** all of your table names are unique across all schemas. To make this work, you'll need to set something like this: 
-
-```sql
-ALTER DATABASE "mydb" SET "search_path" TO "$user", "public", "additionalSchema1", "additionalSchema2";
-```
+* `"schemas"` is an object that lets you define the schemas, and the tables and views within schemas, for which types will be generated. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the value `"*"` (for all tables in the schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list. Thanks to generous sponsorship by [Seam](https://www.getseam.com/), schemas are [properly supported](https://github.com/jawj/zapatos/issues/3#issuecomment-1126933350) (via namespacing of types) as of version 6.
 
 If not specified, the default value for `"schemas"` includes all tables in the `public` schema, i.e.:
 
@@ -455,9 +449,9 @@ If you use PostGIS, you'll likely want to exclude its system tables:
 }
 ```
 
-* `"columnOptions"` is an object mapping options to named columns of named (or all) tables. Currently, you can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or to force column keys to be optional in `Insertable` types, using the option `"insert": "optional"`.
+* `"unprefixedSchema"` determines which schema's objects don't need to be prefixed with their schema name (so that you can specify table `myTable` rather than `public.myTable`, for example). It should be set to the first schema listed in your Postgres `search_path` that actually exists in the database. Usually, that's `"public"`, which is the option's default value. `"unprefixedSchema"` can also be set to `null`, in which case all objects will be prefixed. That's necessary if any of your schemas shares its name with any tables in the `public` schema.
 
-This supports use cases where columns are set using triggers. 
+* `"columnOptions"` is an object mapping options to named columns of named (or all) tables. Currently, you can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or to force column keys to be optional in `Insertable` types, using the option `"insert": "optional"`. This supports use cases where columns are set using triggers. 
 
 For example, say you have a `BEFORE INSERT` trigger on your `customers` table that can guess a default value for the `gender` column based on the value of the `title` column (though note: [don't do that](https://design-system.service.gov.uk/patterns/gender-or-sex/)). In this case, the `gender` column is actually optional on insert, even if it's `NOT NULL` with no default, because the trigger provides a default value. You can tell Zapatos about that like so:
 
@@ -499,6 +493,7 @@ export interface OptionalConfig {
   outDir: string;
   outExt: string;
   schemas: SchemaRules;
+  unprefixedSchema: string | null;
   progressListener: boolean | ((s: string) => void);
   warningListener: boolean | ((s: string) => void);
   customTypesTransform: 'PgMy_type' | 'my_type' | 'PgMyType' | ((s: string) => string);
@@ -830,7 +825,7 @@ The `Default` symbol simply compiles to the SQL `DEFAULT` keyword. This may be u
 
 `sql` template strings (resulting in `SQLFragment`s) can be interpolated within other `sql` template strings (`SQLFragment`s). This provides flexibility in building queries programmatically.
 
-For example, the [`select` shortcut](#select-selectone-selectexactlyone-and-count) makes extensive use of nested `sql` templates to build its queries:
+For example, the [`select` shortcut](#select-selectone-and-selectexactlyone) makes extensive use of nested `sql` templates to build its queries:
  
 ```typescript:norun
 const
@@ -851,7 +846,7 @@ const
 
 Items in an interpolated array are treated just the same as if they had been interpolated directly. This, again, can be useful for building queries programmatically.
 
-To take the [`select` shortcut](#select-selectone-selectexactlyone-and-count) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
+To take the [`select` shortcut](#select-selectone-and-selectexactlyone) as our example again, an interpolated array is used to generate `LATERAL JOIN` query elements from the `lateral` option, like so:
 
 ```typescript:norun
 const
@@ -874,9 +869,13 @@ Note that a useful idiom also seen here is the use of the empty array (`[]`) to 
 The `raw` function returns `DangerousRawString` wrapper instances. This represents an escape hatch, enabling us to interpolate arbitrary strings into queries in contexts where the `param` wrapper is unsuitable (such as when we're interpolating basic SQL syntax elements). **If you pass user-controlled data to this function you will open yourself up to SQL injection attacks.**
 
 
-#### `parent(columnName: string): ParentColumn`
+#### `parent(columnName?: string): ParentColumn`
 
-Within queries passed as subqueries to the `lateral` option of `select`, `selectOne` or `selectExactlyOne`, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query. For details, see the [documentation for the `lateral` option](#lateral-and-alias).
+Within queries passed as subqueries to the `lateral` option of `select` and related queries, the `parent()` wrapper can be used to refer to a column of the table that's the subject of the immediately containing query (the 'parent' table).
+
+To refer to a column of the parent table by name, pass a `string` argument. If the column of the parent table has the same name as the column with which it's being joined, no argument is required.
+
+For usage details, see the [documentation for the `lateral` option](#lateral-and-alias).
 
 
 ### `SQLFragment`
@@ -903,7 +902,7 @@ Taking that one step at a time:
 
 1. First, [the `compile` function](#compile-sqlquery) is called, recursively compiling this `SQLFragment` and its interpolated values into a `{ text: '', values: [] }` query that can be passed straight to the `pg` module. If a `queryListener` function [has been configured](#run-time-configuration), it is called with the query as its argument now.
 
-2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as a `pg.Pool` or `pg.ClientBase` (this definition covers the `TxnClient` provided by the [`transaction` helper function](#transaction)).
+2. Next, the compiled SQL query is executed against the supplied `Queryable`, which is defined as a `pg.Pool` or `pg.ClientBase` (this definition also covers the `TxnClient` provided by the [`transaction` helper function](#transaction)).
 
 3. Finally, the result returned from `pg` is fed through this `SQLFragment`'s [`runResultTransform()`](#runresulttransform-qr-pgqueryresult--any) function, whose default implementation simply returns the `rows` property of the result. If a `resultListener` function [has been configured](#run-time-configuration), it is called with the transformed result as its argument now.
 
@@ -1013,7 +1012,7 @@ const query = db.sql<authorBooksSQL, authorBooksSelectable[]>`
 const authorBooks = await query.run(pool);
 ```
 
-Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select-selectone-selectexactlyone-and-count) and its [`lateral` option](#lateral-and-alias) can make this much less painful.
+Lateral joins of this sort are very flexible, and can be nested multiple levels deep — but can quickly become quite hairy in that case. The [`select` shortcut function](#select-selectone-and-selectexactlyone) and its [`lateral` option](#lateral-and-alias) can make this much less painful.
 
 
 ### Shortcut functions and lateral joins
@@ -1316,15 +1315,13 @@ await db.truncate(allTables, 'CASCADE').run(pool);
 
 => shortcuts.ts /* === select === */
 
-#### `select`, `selectOne`, `selectExactlyOne` and `count`
+#### `select`, `selectOne`, and `selectExactlyOne`
 
 The `select` shortcut function, in its basic form, takes a `Table` name and some `WHERE` conditions, and returns a `SQLFragment<JSONSelectable[]>`. Those `WHERE` conditions can be the symbol `all` (meaning: no conditions), a `SQLFragment` from a `sql` template string, or the appropriate `Whereable` for the target table (recall that [a `Whereable` can itself contain `SQLFragment` values](#whereable)).
 
-The `selectOne` function does the same except it gives us a `SQLFragment<JSONSelectable | undefined>`, promising _only a single object_ (or `undefined`) when run. 
+`selectOne` does the same, except that it gives us a `SQLFragment<JSONSelectable | undefined>`, promising _only a single object_ (or `undefined`) when run. 
 
-The `selectExactlyOne` function does the same as `selectOne` but eliminates the `undefined` option (giving `SQLFragment<JSONSelectable>`), because it will instead throw an error (with a helpful `query` property) if it doesn't find a row.
-
-The `count` function, finally, generates a query to count matching rows, and thus returns a `SQLFragment<number>`.
+`selectExactlyOne` function does the same as `selectOne`, except that it eliminates the `undefined` case (to give: `SQLFragment<JSONSelectable>`). Instead, it will throw an error (with a helpful `query` property) if it doesn't find a row.
 
 In use, they look like this:
 
@@ -1342,7 +1339,7 @@ const oneAuthor = await db.selectOne('authors', { id: 1000 }).run(pool);
 ```
 ```typescript
 // selectExactlyOne, Whereable
-// for a more useful example, see the section on `lateral`, below
+// (for a more useful example, see the section on `lateral`, below)
 try {
   const exactlyOneAuthor = await db.selectExactlyOne('authors', { id: 999 }).run(pool);
   // ... do something with this author ...
@@ -1353,10 +1350,6 @@ try {
 }
 ```
 ```typescript
-// count
-const numberOfAuthors = await db.count('authors', db.all).run(pool);
-```
-```typescript
 // select, Whereable with embedded SQLFragment
 const recentAuthorBooks = await db.select('books', { 
   authorId: 1001,
@@ -1364,10 +1357,10 @@ const recentAuthorBooks = await db.select('books', {
 }).run(pool);
 ```
 ```typescript
-// select, Whereables with conditions helper
+// select, Whereables with conditions helpers
 const alsoRecentAuthorBooks = await db.select('books', {
   authorId: 1001,
-  createdAt: dc.gt(db.sql`now() - INTERVAL '7 days'`),
+  createdAt: dc.after(dc.fromNow(-7, 'days')),
 }).run(pool);
 ```
 ```typescript
@@ -1420,7 +1413,7 @@ const [lastButOneBook] = await db.select('books', db.all, {
 
 I used destructuring assignment here (`const [lastButOneBook] = /* ... */;`) to account for the fact that I know this query is only going to return one response. Unfortunately, destructuring is just syntactic sugar for indexing, and indexing in TypeScript [doesn't reflect that the result may be undefined](https://github.com/Microsoft/TypeScript/issues/13778) unless you have [`--noUncheckedIndexedAccess`](https://devblogs.microsoft.com/typescript/announcing-typescript-4-1/#no-unchecked-indexed-access) turned on. That means that `lastButOneBook` is now typed as a `JSONSelectable`, but it could actually be `undefined`, and that could lead to errors down the line.
 
-To work around this, we can use the `selectOne` function instead, which turns the example above into the following:
+To fix this, we can use the `selectOne` function instead, which turns the example above into the following:
 
 ```typescript
 const lastButOneBook = await db.selectOne('books', db.all, {
@@ -1436,7 +1429,7 @@ The `{ limit: 1 }` option is now applied automatically. And the return type foll
 
 Earlier we put together [some big `LATERAL` joins of authors and books](#manual-joins-using-postgres-json-features). This was a powerful and satisfying application of Postgres' JSON support ... but also a bit of an eyesore, heavy on both punctuation and manually constructed and applied types.
 
-We can improve on this. Since `SQLFragments` are already designed to contain other `SQLFragments`, it's a pretty small leap to enable `select`/`selectOne`/`count` calls to be nested inside other `select`/`selectOne` calls in order to significantly simplify this kind of `LATERAL` join query.
+We can improve on this. Since `SQLFragments` are already designed to contain other `SQLFragments`, it's a pretty small leap to enable `select` calls to be nested inside other `select` calls in order to significantly simplify this kind of `LATERAL` join query.
 
 We achieve this with an additional `options` key, `lateral`. This `lateral` key takes either a single nested query shortcut, or an object that maps one or more property names to query shortcuts. 
 
@@ -1471,13 +1464,13 @@ const authorsBooksTags = await db.select('authors', db.all, {
 }).run(pool);
 ```
 
-You'll note the use of the `parent` function to refer to a join column in the table of the containing query. This is simply a convenience: in the join of books to authors above, we could just as well formulate the `Whereable` as:
+You'll note the use of the `parent` function to refer to a join column in the table of the containing query. This is a simple convenience: in the join of books to authors above, we could just as well formulate the `Whereable` as:
 
 ```typescript:norun
 { authorId: sql`${"authors"}.${"id"}` }
 ```
 
-We can also nest `count` calls, of course. And we can join a table to itself, though in this case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity.
+We can also nest [aggregate calls such as `count`](#count-avg-sum-min-and-max). And we can join a table to itself, though in that case we _must_ remember to use the `alias` option to define an alternative table name, resolving ambiguity for Postgres.
 
 Take this new, self-referencing table:
 
@@ -1520,9 +1513,9 @@ As usual, this is fully typed. If, for example, you were to forget that `directR
 
 ###### `lateral` pass-through
 
-As already mentioned, the `lateral` key can also take a single nested query shortcut. In this case, the result of the lateral query is promoted and passed directly through as the result of the parent query. This can be helpful when working with many-to-many relationships between tables.
+As previously mentioned, the `lateral` key can also take a single nested query shortcut. In this case, the result of the lateral query is promoted and passed directly through as the result of the parent query. This can be helpful when working with many-to-many relationships between tables.
 
-For instance, let's say we've got two tables, `photos` and `subjects`, where `subjects` holds data on the people who appear in the photos. This is a many-to-many relationship, since a photo can have many subjects and a subject can be in multiple photos. We model it with a third table, `subjectPhotos`.
+For instance, let's say we've got two tables, `photos` and `subjects`, where `subjects` holds data on the people who appear in the photos. This is a many-to-many relationship, since a photo can have many subjects and a subject can be in many photos. We model it with a third table, `subjectPhotos`.
 
 Here are the tables:
 
@@ -1567,16 +1560,18 @@ And now query for all photos with their subjects:
 ```typescript
 const photos = await db.select('photos', db.all, {
   lateral: {
-    subjects: db.select('subjectPhotos', { photoId: db.parent('photoId') }, {
-      lateral: db.selectExactlyOne('subjects', { subjectId: db.parent('subjectId') })
+    subjects: db.select('subjectPhotos', { photoId: db.parent() }, {
+      lateral: db.selectExactlyOne('subjects', { subjectId: db.parent() })
     })
   }
 }).run(pool);
 ```
 
-Note that the `subjects` subquery is passed directly to the `lateral` option of the `subjectPhotos` query, and its result is therefore passed straight through, effectively overwriting the `subjectPhotos` query result. That's fine, since the `subjectPhotos` table effectively contains only noise here, in the form of duplicate copies of the `photoId` and `subjectId` primary keys.
+Note that the `subjects` subquery is passed directly to the `lateral` option of the `subjectPhotos` query, and its result is therefore passed straight through, effectively overwriting the `subjectPhotos` query result. That's fine, since the intermediate `subjectPhotos` results would be effectively just noise here, in the form of duplicate copies of the `photoId` and `subjectId` primary keys.
 
-As seen here, when you pass a nested query directly to the `lateral` option of a parent query, nothing else is returned from that parent query. For this reason, specifying `columns` or `extras` on the parent query would have no effect, and trying to do so will give you a type error.
+Note also that when a lateral join matches on the same column name in the parent and child tables, you can omit that column name from the call to `parent()`. In other words, `{ columnName: db.parent() }` is equivalent to `{ columnName: db.parent('columnName') }`.
+
+When you pass a nested query directly to the `lateral` option of a parent query, nothing else is returned from that parent query. For this reason, specifying `columns` or `extras` on the parent query would have no effect, and trying to do so will give you a type error.
 
 ###### Limitations
 
@@ -1706,6 +1701,19 @@ const authors2 = await db.select("authors", db.all, {
 ```
 
 
+=> shortcuts.ts /* === count, sum, avg === */
+
+#### `count`, `avg`, `sum`, `min` and `max`
+
+The `count`, `avg`, `sum`, `min` and `max` functions generate `SELECT` queries that apply the relevant aggregate to matching rows, and so each return a `SQLFragment<number>`.
+
+They're used in a very similar way to `select`, like this:
+
+```typescript
+const numberOfAuthors = await db.count('authors', db.all).run(pool);
+```
+
+
 #### `JSONSelectable`
 
 Since the shortcut functions build on Postgres' JSON support, their return values are typed `JSONSelectable` rather than the `Selectable` you'd get back from a manual query (this would not in fact be a hard requirement for all shortcuts, but in the interests of consistency it does apply to all of them).
@@ -1778,19 +1786,19 @@ export enum IsolationLevel {
   SerializableRODeferrable = "SERIALIZABLE, READ ONLY, DEFERRABLE"
 }
 export async function transaction<T, M extends IsolationLevel>(
-  txnClientOrPool: pg.Pool | TxnClient<IsolationSatisfying<M>>,
+  txnClientOrQueryable: Queryable | TxnClient<IsolationSatisfying<M>>,
   isolationLevel: M,
   callback: (client: TxnClient<IsolationSatisfying<M>>) => Promise<T>
 ): Promise<T>
 ```
 
-The `transaction` helper takes a `pg.Pool` instance, an isolation mode, and an `async` callback function (it can also take a `TxnClient` instead of a `pg.Pool`, but [we'll cover that later](#transaction-sharing)). It then proceeds as follows:
+The `transaction` helper takes a `pg.Pool` or already-connected `pg.Client` instance, an isolation mode, and an `async` callback function (it can also take an existing `TxnClient` instead, but [we'll cover that later](#transaction-sharing)). It then proceeds as follows:
 
 * Issue a `BEGIN TRANSACTION`.
-* Call the callback, passing to it a database client to use in place of a `pg.Pool`.
+* Call the callback, passing it a database client (checked out from the pool, if that's what was given).
 * If a serialization error is thrown, try again after a [configurable](#run-time-configuration) random delay, a [configurable](#run-time-configuration) number of times.
-* If any other error is thrown, issue a `ROLLBACK`, release the database client, and re-throw the error.
-* Otherwise `COMMIT` the transaction, release the database client, and return the callback's result.
+* If any other error is thrown, issue a `ROLLBACK`, release the database client (if it's one it checked out earlier), and re-throw the error.
+* Otherwise `COMMIT` the transaction, release the database client (if it's one it checked out earlier), and return the callback's result.
 
 As is implied above, for `REPEATABLE READ` or `SYNCHRONIZED` isolation modes the callback could be called several times. It's therefore important that it doesn't have any non-database-related side-effects (i.e. don't, say, bill your customer's credit card from this function).
 
@@ -1851,7 +1859,7 @@ console.log(`Leave booked for:
   Brian – ${leaveBookedForBrian}`);
 ```
 
-Expanding the results, we see that one of the requests is retried and then fails — as it must to retain one doctor on shift — thanks to the `SERIALIZABLE` isolation (`REPEATABLE READ`, which is one isolation level weaker, wouldn't help).
+Expanding the results, we see that one of the requests is retried and then fails — as it must to retain one doctor on shift — thanks to the `SERIALIZABLE` isolation. `REPEATABLE READ`, which is one isolation level weaker, wouldn't help here.
 
 
 #### Transaction isolation shortcuts
@@ -1894,7 +1902,7 @@ Recall the transaction example we began with: a [money transfer between two bank
 
 But what if we want to combine some other operations within the same database transaction? Say we want to make two transfers, A to B and A to C, or have both fail. The `transferMoney` function we originally wrote uses a transaction helper to `BEGIN` and `COMMIT` its own transaction every time, so we can't just call it twice.
 
-For this reason, the `transaction` function — and its isolation-level shortcuts — can be passed either a `pg.Pool`, in which case they manage a transaction as decribed above, or an existing `TxnClient`. If they're passed an existing `TxnClient`, they do no more than call the provided callback function with the provided client on the spot.
+For this reason, the `transaction` function — and its isolation-level shortcuts — can be passed either a plain `pg.Pool`/`pg.Client`, in which case they manage a transaction as decribed above, or an existing `TxnClient`. If they're passed an existing `TxnClient`, they do no more than call the provided callback function with the provided client on the spot.
 
 Let's see how this helps. We'll modify the `transferMoney` function to take a pool or transaction client as its last argument, and pass that straight to the `serializable` transaction function. (Note that we _could_ give this last argument a default value of `pool`, but I find that way it's too easy to accidentally issue queries outside of transactions). 
 
@@ -1997,13 +2005,13 @@ async function createUser(friendlyName: string) {
   return db.serializable(pool, async txnClient => {
     let user;
     try {
-      await db.sql`SAVEPOINT start`.run(txnClient);
+      await db.sql`SAVEPOINT "start"`.run(txnClient);
       user = await db.insert('users', { friendlyName }).run(txnClient);
 
     } catch (err: any) {
       if (!db.isDatabaseError(err, 'DataException_SequenceGeneratorLimitExceeded')) throw err;
       
-      await db.sql`ROLLBACK TO start`.run(txnClient);
+      await db.sql`ROLLBACK TO "start"`.run(txnClient);
       const ipOctet = await getFirstFreeIpOctet(txnClient);
       if (!ipOctet) return null;
 
@@ -2036,15 +2044,20 @@ console.log(alice, bob, cathy);
 
 ### Utility types
 
-Zapatos provides a few over-arching types designed to help you comprehensively enumerate the objects in your database. All of these are literal string array types, in alphabetical order — e.g. `["myTable1", "myTable2", "myTable3"]` — and are as follows:
+Zapatos provides a few over-arching types designed to help you comprehensively enumerate the objects in your database. All of these are literal string array types, in alphabetical order — e.g. `["myTable1", "myTable2", "myTable3", "otherSchema.myTable1"]` — and are as follows:
 
+* `AllSchemas`: schema names
 * `AllBaseTables`: ordinary tables, originating from `CREATE TABLE`
 * `AllForeignTables`: foreign tables, originating from `CREATE FOREIGN TABLE`
 * `AllViews`: ordinary views, deriving from `CREATE VIEW`
 * `AllMaterializedViews`: materialized views, deriving from `CREATE MATERIALIZED VIEW`
 * `AllTablesAndViews`: all of the above combined
 
-It also provides a number of type mappings allowing types to be accessed by table name, which are heavily used by the shortcut functions:
+These global types list all relevant objects across all schemas. Schema-specific namespaced variants are also available (except, of course, in the case of `AllSchemas`).
+
+For example, all ordinary tables in the `public` schema are listed in `public.AllBaseTables` (this name is prefixed irrespective of the value of the `"unprefixedSchema"` config option). Or all views in a custom schema might be found under `myOtherSchema.AllViews`.
+
+Zapatos also provides a number of type mappings allowing types to be accessed by table name, which are heavily used by the shortcut functions:
 
 * `SelectableForTable<Table>`
 * `JSONSelectableForTable<Table>`
@@ -2170,6 +2183,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
+#### 6.0
+
+_Breaking change (if you use schemas)_: Thanks to generous sponsorship from [Seam](https://www.getseam.com), Zapatos now supports schemas properly, prefixing the schema to table and enum names as necessary in the generated types. If you make use of Postgres schemas outside of the default `public`, you'll need to add schema names in the appropriate places (TypeScript errors should show you where).
+
 #### 5.0
 
 _Breaking change_: The `AllTables` type (which somewhat arbitrarily included tables, foreign tables, and views, but not materialized views) is gone. In its place you'll a variety of more and less specific [utility types](#utility-types). Also, `Updatable` and `Insertable` interfaces for tables and views that aren't writable are now `{ [key: string]: never }` instead of `{}`.
@@ -2289,7 +2306,7 @@ const
 
 const query1a = db.select('books', { createdAt: db.sql`${db.self} >= ${db.param(date)}` });
 // can be rewritten as
-const query1b = db.select('books', { createdAt: dc.gte(date) });
+const query1b = db.select('books', { createdAt: dc.after(date) });
 
 const query2a = db.select('books', { authorId: db.sql`${db.self} IN (${db.vals(authorIds)})` });
 // can be rewritten as
@@ -2314,11 +2331,18 @@ This document is created from a [separate repository](https://github.com/jawj/za
 
 If you're asking for or contributing new work, my response is likely to reflect these principles:
 
-**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix bugs or improve readability or consistency without any major trade-offs. I'll also do my best to act on clear, minimal test cases that demonstrate unambiguous bugs.
+**Correct, consistent, comprehensible.**  I'm pretty likely to accept pull requests that fix bugs or improve readability or consistency without any major trade-offs. I'll also do my best to respond with timely fixes to clear, minimal test cases that demonstrate unambiguous bugs.
 
-**Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address niche use-cases or to eke out minor performance gains that are almost certainly swamped by network and database latencies. 
+**Small is beautiful.**  I'm less likely to accept pull requests for features that significantly complicate the code base either to address niche use-cases or to eke out minor performance gains that are likely swamped by network and database latencies. 
 
-**Scratching my own itch.**  I'm unlikely to put a lot of my own effort into features I don't currently need ... unless we're talking about paid consultancy, which I'm more than happy to discuss.
+**Scratching my own itch.**  I'm unlikely to put a lot of free effort into new features I don't currently need.
+
+**Sponsorship or consultancy.** If you'd like to discuss [sponsoring work on the project](https://github.com/sponsors/jawj), or possible consultancy, please [get in touch](http://mackerron.com).
+
+
+### Sponsors
+
+Many thanks to [Seam](https://www.getseam.com) for sponsoring proper multi-schema support.
 
 
 ### What's next
@@ -2327,7 +2351,7 @@ The roadmap includes:
 
 * **Tests.**  The proprietary server API that's the original consumer of this library, over at [Psychological Technologies](https://www.psyt.co.uk), has a test suite that exercises most of the code base at least a little. Nevertheless, a proper test suite is still kind of indispensable. It should test not just returned values but also inferred types — which is a little fiddly.
 
-* **Alternative install mechanism.** Older versions of Zapatos copied key source files into your source tree instead of using ambient type declarations. Not everyone liked that approach, but it did enable some advanced use-cases, such as interfacing with multiple databases. This approach is likely to return as a configurable option.
+* **Alternative install mechanism.** Older versions of Zapatos copied key source files into your source tree instead of using ambient type declarations. Not everyone liked that approach, but it did enable some advanced use-cases, such as interfacing with multiple databases. This approach may return as a configurable option.
 
 More speculative nice-to-haves would include:
 
@@ -2343,7 +2367,7 @@ You may find [this excellent overview of TypeScript SQL libraries](https://phire
 
 This software is released under the [MIT licence](https://opensource.org/licenses/mit-license.php).
 
-Copyright (C) 2020 — 2021 George MacKerron
+Copyright (C) 2020 — 2022 George MacKerron
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
