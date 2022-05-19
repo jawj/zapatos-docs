@@ -32,7 +32,7 @@
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ 
       title: dc.like(titleLike),
-      createdAt: dc.gt(db.sql`now() - INTERVAL '7 days'`),
+      createdAt: dc.after(dc.fromNow(-7, 'days')),
     }}`.run(pool);
 
           /* original script ends */

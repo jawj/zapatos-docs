@@ -29,6 +29,7 @@ try {
         consecutiveFailedLogins: db.sql `${db.self} + 1`,
         // or equivalently: consecutiveFailedLogins: dc.add(1),
         lastFailedLogin: db.sql `now()`,
+        // or equivalently: lastFailedLogin: dc.now,
     }, { email: 'me@privacy.net' }).run(pool);
     /* original script ends */
 }

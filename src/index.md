@@ -449,7 +449,7 @@ If you use PostGIS, you'll likely want to exclude its system tables:
 }
 ```
 
-* `"unprefixedSchema"` determines which schema's objects don't need to be prefixed with their schema name (so that you can specify table `myTable` rather than `public.myTable`, for example). It should be set to the first schema listed in your Postgres `search_path` that actually exists in the database. Usually, that's `"public"`, which is the option's default value. `"unprefixedSchema"` can also be set to `null`, in which case all objects will be prefixed. That's necessary if any of your schemas shares its name with any tables in the `public` schema.
+* `"unprefixedSchema"` determines which schema's objects don't need to be prefixed with their schema name (so that you can specify table `myTable` rather than `public.myTable`, for example). It should be set to the first schema listed in your Postgres `search_path` that actually exists in the database. Usually, that's `"public"`, which is the option's default value. `"unprefixedSchema"` can also be set to `null`, in which case all objects will be prefixed. That's necessary if any schema shares its name with any table in the `public` schema.
 
 * `"columnOptions"` is an object mapping options to named columns of named (or all) tables. Currently, you can use it to manually exclude column keys from the `Insertable` and `Updatable` types, using the options `"insert": "excluded"` and `"update": "excluded"`, or to force column keys to be optional in `Insertable` types, using the option `"insert": "optional"`. This supports use cases where columns are set using triggers. 
 
@@ -465,7 +465,9 @@ For example, say you have a `BEFORE INSERT` trigger on your `customers` table th
 }
 ```
 
-You can also use `"*"` as a wildcard to match all tables. For example, perhaps you've set up the appropriate triggers to keep `updatedAt` columns up to date throughout your database. Then you might choose to exclude all your `updatedAt` columns from the `Insertable` and `Updatable` types for all tables as follows:
+Note that tables outside the `public` schema (or whichever schema you set for `"unprefixedSchema"`) should be schema-prefixed here, as usual — e.g. `"columnOptions": { "someSchema.someTable": /* ... */ } }`.
+
+You can also use `"*"` as a wildcard to match all tables in all schemas. For example, perhaps you've set up the appropriate triggers to keep `updatedAt` columns up to date throughout your database. Then you might choose to exclude all your `updatedAt` columns from the `Insertable` and `Updatable` types for all tables as follows:
 
 ```json
 "columnOptions": {
@@ -478,7 +480,7 @@ You can also use `"*"` as a wildcard to match all tables. For example, perhaps y
 }
 ```
 
-Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as the whole key — you can't use a `*` to match parts of names — and only for tables, not for columns.
+Wildcard table options have lower precedence than named table options. The default values, should you want to restore them for named tables, are `"insert": "auto"` and `"update": "auto"`. Note that `"*"` is only supported as the whole key — you can't use a `*` to match parts of schema or table names — and isn't supported for column names.
 
 * `"schemaJSDoc"` is a boolean that turns JSDoc comments for each column in the generated schema on (the default) or off. JSDoc comments enable per-column VS Code pop-ups giving details of Postgres data type, default value and so on. They also make the schema file longer and less readable.
 
@@ -674,7 +676,7 @@ In this case, the `random` variable is of course still a `number`, but it is typ
 
 The strings that can be directly interpolated into a `sql` template string are defined by its `Interpolations` type variable, [as noted above](#sql-tagged-template-strings). Typically, this will limit them to the names of tables and columns.
 
-Interpolated strings are passed through to the raw SQL query double-quoted, to preserve capitalisation and neutralise SQL keywords, but otherwise unchanged. 
+Interpolated strings are passed through to the raw SQL query double-quoted, to preserve capitalisation and neutralise SQL keywords. For example, `myTable` becomes `"myTable"`, and `mySchema.myTable` becomes `"mySchema"."myTable"`.
 
 It's highly preferable to use interpolated string literals for table and column names rather than just writing those values in the query itself, in order to benefit from auto-completion and (ongoing) type-checking.
 
@@ -694,7 +696,7 @@ const title = await db.sql`
 
 — even if the two produce the same result right now.
 
-More critically, **never never never** override the type-checking so as to write:
+More critically, **never never never** explicitly override type-checking so as to write:
 
 ```typescript
 const 
@@ -780,7 +782,7 @@ const
  
 Finally, there's a set of helper functions you can use to create appropriate `SQLFragment`s like these for use as `Whereable` values. The advantages are: (1) there's slighly less to type, and (2) you get type-checking on their arguments (so you're not tempted to compare incomparable things). 
 
-They're exported under `conditions` on the main object, and the full set can be seen in [conditions.ts](https://github.com/jawj/zapatos/blob/master/src/db/conditions.ts). Using two of them, we'd rewrite the above example as:
+They're exported under `conditions` on the main object, and the full set can be seen in [conditions.ts](https://github.com/jawj/zapatos/blob/master/src/db/conditions.ts). Using some of these, we could rewrite the above example as:
 
 ```typescript
 const 
@@ -788,7 +790,7 @@ const
   books = await db.sql<s.books.SQL, s.books.Selectable[]>`
     SELECT * FROM ${"books"} WHERE ${{ 
       title: dc.like(titleLike),
-      createdAt: dc.gt(db.sql`now() - INTERVAL '7 days'`),
+      createdAt: dc.after(dc.fromNow(-7, 'days')),
     }}`.run(pool);
 ```
 
@@ -1123,6 +1125,7 @@ await db.update("emailAuthentication", {
   consecutiveFailedLogins: db.sql`${db.self} + 1`,  
   // or equivalently: consecutiveFailedLogins: dc.add(1),
   lastFailedLogin: db.sql`now()`,
+  // or equivalently: lastFailedLogin: dc.now,
 }, { email: 'me@privacy.net' }).run(pool);
 ```
 
@@ -2185,7 +2188,7 @@ This change list is not comprehensive. For a complete version history, [please s
 
 #### 6.0
 
-_Breaking change (if you use schemas)_: Thanks to generous sponsorship from [Seam](https://www.getseam.com), Zapatos now supports schemas properly, prefixing the schema to table and enum names as necessary in the generated types. If you make use of Postgres schemas outside of the default `public`, you'll need to add schema names in the appropriate places (TypeScript errors should show you where).
+_Breaking change (if you use schemas)_: Thanks to generous sponsorship from [Seam](https://www.getseam.com), Zapatos now supports schemas properly, prefixing the schema to table and enum names as necessary in the generated types. If you make use of Postgres schemas outside of the default `public` schema, you'll need to add schema names in the appropriate places (TypeScript errors should show you where).
 
 #### 5.0
 
