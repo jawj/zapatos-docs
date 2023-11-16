@@ -22,7 +22,7 @@ xyz.setConfig({
     },
 });
 import * as db from 'zapatos/db';
-import pool from './pgPool';
+import pool from './pgPool.js';
 try {
     /* original script begins */
     const title = 'Pride and Prejudice', books = await db.sql `

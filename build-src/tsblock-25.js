@@ -22,7 +22,7 @@ xyz.setConfig({
     },
 });
 import * as db from 'zapatos/db';
-import pool from './pgPool';
+import pool from './pgPool.js';
 try {
     /* original script begins */
     await db.update('authors', { name: 'Stephen Hawking' }, { name: 'Steven Hawking' }).run(pool);

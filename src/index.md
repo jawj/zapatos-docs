@@ -2186,6 +2186,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
 
+#### 6.2
+
+Return type for certain embedded `SQLFragments` [now matches the `null` actually returned](https://github.com/jawj/zapatos/pull/150) (previously typed as `undefined`). Fix for [`and` and `or` types](https://github.com/jawj/zapatos/issues/161). Corrected `package.json` key order. Exporting `mapWithSeparator`.
+
 #### 6.0
 
 _Breaking change (if you use schemas)_: Thanks to generous sponsorship from [Seam](https://www.getseam.com), Zapatos now supports schemas properly, prefixing the schema to table and enum names as necessary in the generated types. If you make use of Postgres schemas outside of the default `public` schema, you'll need to add schema names in the appropriate places (TypeScript errors should show you where).
@@ -2370,7 +2374,7 @@ You may find [this excellent overview of TypeScript SQL libraries](https://phire
 
 This software is released under the [MIT licence](https://opensource.org/licenses/mit-license.php).
 
-Copyright (C) 2020 — 2022 George MacKerron
+Copyright (C) 2020 — 2023 George MacKerron
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

@@ -22,7 +22,7 @@ xyz.setConfig({
     },
 });
 import * as db from 'zapatos/db';
-import pool from './pgPool';
+import pool from './pgPool.js';
 try {
     const query = db.sql `
   SELECT ${"authors"}.*, bq.* 

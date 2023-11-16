@@ -145,7 +145,9 @@ void (async () => {
         <script src="monaco/vs/loader.js"></script>
         <script src="zapatos-bundle.js"></script>
         <!-- fonts -->
-        <link rel="stylesheet" href="https://use.typekit.net/mdb7zvi.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700&display=swap" rel="stylesheet">
         <!-- octocat -->
         <style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
         <!-- custom -->
@@ -248,7 +250,7 @@ void (async () => {
           import * as db from 'zapatos/db';
           import { conditions as dc } from 'zapatos/db';
           import type * as s from 'zapatos/schema';
-          import pool from './pgPool';
+          import pool from './pgPool.js';
         
           try {
           /* original script begins */
@@ -293,7 +295,7 @@ void (async () => {
     console.info(`- Running script block ${i} ...`);
 
     const
-      stdout = execSync(`node --harmony-top-level-await --experimental-specifier-resolution=node tsblock-${i}.js`,
+      stdout = execSync(`node tsblock-${i}.js`,
         { cwd: './build-src', encoding: 'utf8', env: dbEnv }),
       parts = stdout.split(/%{2,}/);
 

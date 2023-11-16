@@ -23,7 +23,7 @@ xyz.setConfig({
 });
 import * as db from 'zapatos/db';
 import { conditions as dc } from 'zapatos/db';
-import pool from './pgPool';
+import pool from './pgPool.js';
 try {
     /* original script begins */
     const titleLike = 'Northern%', books = await db.sql `

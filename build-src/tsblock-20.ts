@@ -23,7 +23,7 @@
           import * as db from 'zapatos/db';
           import { conditions as dc } from 'zapatos/db';
           import type * as s from 'zapatos/schema';
-          import pool from './pgPool';
+          import pool from './pgPool.js';
         
           try {
           /* original script begins */

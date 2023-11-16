@@ -22,7 +22,7 @@ xyz.setConfig({
     },
 });
 import * as db from 'zapatos/db';
-import pool from './pgPool';
+import pool from './pgPool.js';
 try {
     /* original script begins */
     const [accountA, accountB] = await db.insert('bankAccounts', [{ balance: 50 }, { balance: 50 }]).run(pool);
