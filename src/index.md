@@ -405,9 +405,9 @@ Add a top-level file `zapatosconfig.json` to your project. Here's an example:
 }
 ```
 
-The available top-level keys are:
+These are available top-level keys, all of which are optional:
 
-* `"db"` gives Postgres connection details **and is the only required key**. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting/#Programmatic) to `new pg.Pool(/* ... */)` here.
+* `"db"` gives Postgres connection details. You can provide [anything that you'd pass](https://node-postgres.com/features/connecting/#Programmatic) to `new pg.Pool(/* ... */)` here.
 
 * `"outDir"` defines where your `zapatos` folder will be created, relative to the project root. If not specified, it defaults to the project root, i.e. `"."`.
 
@@ -484,14 +484,13 @@ Wildcard table options have lower precedence than named table options. The defau
 
 * `"schemaJSDoc"` is a boolean that turns JSDoc comments for each column in the generated schema on (the default) or off. JSDoc comments enable per-column VS Code pop-ups giving details of Postgres data type, default value and so on. They also make the schema file longer and less readable.
 
+* `"customJSONParsingForLargeNumbers"` is a boolean that changes the types for `bigint`/`int8` and `numeric`/`decimal` values to reflect the use of [custom JSON parsing to maintain precision](#custom-json-parsing-for-bigint-and-numeric).
+
 In summary, the expected structure is defined like so:
 
 ```typescript:norun
-export interface RequiredConfig {
-  db: pg.ClientConfig;
-}
-
 export interface OptionalConfig {
+  db: pg.ClientConfig;
   outDir: string;
   outExt: string;
   schemas: SchemaRules;
@@ -501,6 +500,7 @@ export interface OptionalConfig {
   customTypesTransform: 'PgMy_type' | 'my_type' | 'PgMyType' | ((s: string) => string);
   columnOptions: ColumnOptions;
   schemaJSDoc: boolean;
+  customJSONParsingForLargeNumbers: boolean;
 }
 
 interface SchemaRules {
@@ -518,8 +518,6 @@ interface ColumnOptions {
     };
   };
 }
-
-export type Config = RequiredConfig & Partial<OptionalConfig>;
 ```
 
 
@@ -1288,15 +1286,17 @@ First, we list all our tables. Zapatos provides some [utility types](#utility-ty
 
 ```typescript:noresult
 const allTables: s.AllBaseTables = [
-  'appleTransactions', 
+  'appleTransactions',
   'arrays',
-  'authors', 
-  'bankAccounts', 
-  'books', 
+  'authors',
+  'bankAccounts',
+  'bigints',
+  'books',
   'doctors',
-  'emailAuthentication', 
-  'employees', 
+  'emailAuthentication',
+  'employees',
   'nameCounts',
+  'numerics',
   'photos',
   'shifts',
   'stores',
@@ -1304,7 +1304,7 @@ const allTables: s.AllBaseTables = [
   'subjects',
   'tags',
   'usedVoucherCodes',
-  'users'
+  'users',
 ];
 ```
 
@@ -1743,7 +1743,7 @@ const
 console.log({ s1, s2, s3, s4 });
 ```
 
-* `int8` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This reflects how Postgres natively converts `int8` to JSON, and means these values could overflow `Number.MAX_SAFE_INTEGER`.
+* `bigint`/`int8` and `numeric`/`decimal` columns are returned as string values (of template string type ``` `${number}` ```) in a `Selectable`, but as numbers in a `JSONSelectable`. This point is discussed in the next section.
 
 * `bytea` columns are returned as `ByteArrayString`, defined as ``` `\\x{string}` ```. A `toBuffer()` function is provided for use with these. For performance and memory reasons, this should not be used for large objects: in that case, consider something like [pg-large-object](https://www.npmjs.com/package/pg-large-object) instead.
 
@@ -1770,7 +1770,57 @@ const alsoTsTz = toTsTzString(dt2);
 console.log({ dt1, dt2, dt3, alsoTsTz });
 ```
 
+##### Custom JSON parsing for `bigint` and `numeric`
 
+All numeric values are returned as ordinary number literals in Postgres' JSON types. That means `bigint`/`int8` values could exceed `Number.MAX_SAFE_INTEGER` (and might become different integers in the process), while `numeric`/`decimal` values could overflow `Number.MAX_VALUE` or lose precision. I've written about this issue in more detail [elsewhere](https://neon.tech/blog/parsing-json-from-postgres-in-js).
+
+For this reason, if your database includes any `bigint`/`int8` or `numeric`/`decimal` columns, a warning will be printed at schema-generation time (since Zapatos version 6.3).
+
+To address this issue:
+
+* Set `"customJSONParsingForLargeNumbers": true` in the schema-generation config in `zapatosconfig.json`. This switches the TypeScript types for these columns in `JSONSelectable`s from `number` to ``` number | `${number}` ```. It also suppresses the warning.
+
+* Be sure to call `db.enableCustomJSONParsingForLargeNumbers(pg)` in your code before running any queries. This switches node-postgres JSON parsing to use the [json-custom-numbers](https://github.com/jawj/json-custom-numbers) package, and return as strings any values that aren't representable as a JS number.
+
+When using these `string | number` values in code, you will likely want to convert integers to [`BigInt`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) and decimals to a third-party decimal format such as [big.js](https://github.com/MikeMcl/big.js) at the earliest opportunity. For example:
+
+```typescript
+import * as db from 'zapatos/db';
+import pool from './pgPool.js';
+import pg from 'pg';
+import Big from 'big.js';
+
+db.enableCustomJSONParsingForLargeNumbers(pg);
+
+// bigints
+
+const bigints = await db.select("bigints", db.all, 
+  { order: { by: "bigintValue", direction: "ASC" } }).run(pool);
+
+for (const { bigintValue: raw } of bigints) {  // raw is number | `${number}`
+  const number = Number(raw);  // don't do this: may get a different integer
+  const bigint = BigInt(raw);  // do this instead
+
+  console.log('raw:', raw, '/ as Number:', number, '/ as BigInt:', bigint);
+
+  // Note that numbers above `Number.MAX_SAFE_INTEGER` are still returned as
+  // numbers *if* that doesn't change them. For example, 9007199254740995 is
+  // returned as a string (because it would become 9007199254740996), but
+  // 9007199254740996 is safely returned as an ordinary number.
+}
+
+// numerics
+
+const numerics = await db.select("numerics", db.all, 
+  { order: { by: "numericValue", direction: "ASC" } }).run(pool);
+
+for (const { numericValue: raw } of numerics) {  // raw is number | `${number}`
+  const number = Number(raw);  // don't do this: may overflow or lose precision
+  const bigdec = Big(raw);  // do this instead
+
+  console.log('raw', raw, '/ as Number', number, '/ as Big', bigdec);
+}
+```
 
 => transaction.ts export async function transaction<T, M extends IsolationLevel>(
 
@@ -2185,6 +2235,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 6.3
+
+Added [support for large and precise numbers](#custom-json-parsing-for-bigint-and-numeric) — `bigint` and `numeric`/`decimal` — returned as JSON.
 
 #### 6.2
 

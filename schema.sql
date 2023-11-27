@@ -154,3 +154,21 @@ INSERT INTO "tags" VALUES ('adventure', 1004);
 INSERT INTO "emailAuthentication" VALUES ('me@privacy.net');
 
 INSERT INTO "appleTransactions" VALUES ('PROD', '123456', 123, 'X');
+
+CREATE TABLE "bigints" (
+  "bigintValue" bigint NOT NULL
+);
+
+CREATE TABLE "numerics" (
+  "numericValue" numeric NOT NULL
+);
+
+INSERT INTO "bigints" VALUES (9007199254740991);
+INSERT INTO "bigints" VALUES (9007199254740992);
+INSERT INTO "bigints" VALUES (9007199254740993);
+
+INSERT INTO "numerics" VALUES (1.2345678901234566);
+INSERT INTO "numerics" VALUES (1.2345678901234567);
+INSERT INTO "numerics" VALUES (1.7e+308);
+INSERT INTO "numerics" VALUES (1.8e+308);
+

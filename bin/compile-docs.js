@@ -97,7 +97,8 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                                 "spatial_ref_sys"
                             ]
                         }
-                    }
+                    },
+                    customJSONParsingForLargeNumbers: true,
                 };
                 return [4 /*yield*/, z.generate(zapCfg)];
             case 1:
@@ -111,7 +112,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                             return memo.concat(recurseNodes(path.join(node, n)));
                         }, []);
                 };
-                files = __spreadArray(__spreadArray(__spreadArray(__spreadArray([], recurseNodes('build-src/zapatos'), true), recurseNodes('node_modules/zapatos/dist'), true), recurseNodes('node_modules/@types/pg'), true), recurseNodes('node_modules/@types/luxon'), true).filter(function (f) { return f.match(/[.]d[.]ts$/); }), all = files.reduce(function (memo, p) {
+                files = __spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray([], recurseNodes('build-src/zapatos'), true), recurseNodes('node_modules/zapatos/dist'), true), recurseNodes('node_modules/@types/pg'), true), recurseNodes('node_modules/@types/luxon'), true), recurseNodes('node_modules/@types/big.js'), true).filter(function (f) { return f.match(/[.]d[.]ts$/); }), all = files.reduce(function (memo, p) {
                     var localPath = p
                         .replace(/^node_modules[/]zapatos[/]dist[/]/, 'node_modules/@types/zapatos/')
                         .replace(/^build-src[/]zapatos[/]/, '');

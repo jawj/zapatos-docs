@@ -49,7 +49,8 @@ void (async () => {
           "spatial_ref_sys"
         ]
       }
-    }
+    },
+    customJSONParsingForLargeNumbers: true,
   };
   await z.generate(zapCfg);
 
@@ -72,6 +73,7 @@ void (async () => {
       ...recurseNodes('node_modules/zapatos/dist'),
       ...recurseNodes('node_modules/@types/pg'),
       ...recurseNodes('node_modules/@types/luxon'),
+      ...recurseNodes('node_modules/@types/big.js'),
     ].filter(f => f.match(/[.]d[.]ts$/)),
     all = files.reduce<{ [k: string]: string }>((memo, p) => {
       const localPath = p
