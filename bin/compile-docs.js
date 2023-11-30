@@ -64,10 +64,8 @@ var child_process_1 = require("child_process");
 var highlight_js_1 = require("highlight.js");
 var jsdom_1 = require("jsdom");
 var pgcs = require("pg-connection-string");
-var http = require("http");
-var https = require("https");
 void (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var tmpdb, dbURL, dbEnv, _a, host, port, user, password, connOpts, zapCfg, recurseNodes, files, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, runnableTags, pgFmtArgs, formatSQL;
+    var tmpdb, dbURL, dbEnv, _a, host, port, user, password, connOpts, zapCfg, recurseNodes, files, all, rawSrc, src, md, htmlContent, html, dom, document, maxIdLength, content, headings, headingMap, links, _i, links_1, link, href, res, runnableTags, pgFmtArgs, formatSQL;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -169,24 +167,30 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                         id += '-' + headingMap[id];
                     heading.id = id;
                 });
-                console.log('Checking links ...');
-                links = content.querySelectorAll('a');
-                links.forEach(function (link) {
-                    var href = link.getAttribute('href');
-                    if (!href)
-                        return;
-                    if (href.charAt(0) === '#') {
-                        if (!content.querySelector(href))
-                            console.error(" => No link target \"".concat(href, "\""));
-                    }
-                    else {
-                        var lib = href.match(/^https:/) ? https : http;
-                        lib.get(href, function (res) {
-                            if (res.statusCode !== 200)
-                                console.error("*** HTTP status ".concat(res.statusCode, " for link target ").concat(href, " ***"));
-                        });
-                    }
-                });
+                links = Array.from(new Set(Array.from(content.querySelectorAll('a'))));
+                console.log("Checking ".concat(links.length, " unique links ..."));
+                _i = 0, links_1 = links;
+                _b.label = 2;
+            case 2:
+                if (!(_i < links_1.length)) return [3 /*break*/, 6];
+                link = links_1[_i];
+                href = link.getAttribute('href');
+                if (!href)
+                    return [3 /*break*/, 5];
+                if (!(href.charAt(0) === '#')) return [3 /*break*/, 3];
+                if (!content.querySelector(href))
+                    console.error(" => No link target \"".concat(href, "\""));
+                return [3 /*break*/, 5];
+            case 3: return [4 /*yield*/, fetch(href)];
+            case 4:
+                res = _b.sent();
+                if (res.status !== 200)
+                    console.error("*** HTTP status ".concat(res.status, " for link target ").concat(href, " ***"));
+                _b.label = 5;
+            case 5:
+                _i++;
+                return [3 /*break*/, 2];
+            case 6:
                 console.info('Collecting TypeScript scripts ..');
                 runnableTags = Array.from(content.querySelectorAll('.language-typescript'))
                     .filter(function (ts) { return !ts.className.match(/\bnorun\b/); });
@@ -194,7 +198,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                     var ts = runnableTag.textContent, instrumentedTs = "\n        import * as xyz from 'zapatos/db';\n        xyz.setConfig({\n          queryListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%text%:' + x.text + '%%');\n            if (x.values.length) {\n              console.log('%%values%:[' + x.values.map((v: any) => JSON.stringify(v)).join(', ') + ']%%');\n            }\n          },\n          resultListener: (x: any, txnId?: number) => {\n            if (".concat(runnableTag.className.match(/\bshownull\b/) ? true : false, " || (x != null && (").concat(runnableTag.className.match(/\bshowempty\b/) ? true : false, " || !(Array.isArray(x) && x.length === 0)))) {\n              if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n              console.log('%%result%:' + JSON.stringify(x, null, 2) + '%%');\n            }\n          },\n          transactionListener: (x: any, txnId?: number) => {\n            if (txnId != null) console.log('%%txnId%:' + txnId + '%%');\n            console.log('%%transaction%:' + x + '%%');\n          },\n        });\n        ").concat((ts === null || ts === void 0 ? void 0 : ts.match(/^\s*import\b/m)) ? ts : "\n          import * as db from 'zapatos/db';\n          import { conditions as dc } from 'zapatos/db';\n          import type * as s from 'zapatos/schema';\n          import pool from './pgPool.js';\n        \n          try {\n          /* original script begins */\n          ".concat(ts, "\n          /* original script ends */\n          } catch(e: any) {\n            console.log(e.name + ': ' + e.message);\n            console.error('  -> error: ' + e.message);\n          }\n\n          await pool.end();\n          "));
                     fs.writeFileSync("./build-src/tsblock-".concat(i, ".ts"), instrumentedTs, { encoding: 'utf8' });
                 });
-                console.info('Compiling TypeScript script blocks ..');
+                console.info('Compiling TypeScript script blocks ...');
                 try {
                     (0, child_process_1.execSync)('tsc', { cwd: './build-src', encoding: 'utf8' });
                 }

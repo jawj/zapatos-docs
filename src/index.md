@@ -419,7 +419,7 @@ These are available top-level keys, all of which are optional:
 
 * `"customTypesTransform"` is a string that determines how user-defined Postgres type names are mapped to TypeScript type names. Your options are `"my_type"`, `"PgMyType"` or `"PgMy_type"`, each representing how a Postgres type named `my_type` will be transformed. The default (for reasons of backward-compatibility rather than superiority) is `"PgMy_type"`. If you [generate your schema programmatically](#programmatic-generation), you can alternatively define your own transformation function.
 
-* `"schemas"` is an object that lets you define the schemas, and the tables and views within schemas, for which types will be generated. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the value `"*"` (for all tables in the schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list. Thanks to generous sponsorship by [Seam](https://www.getseam.com/), schemas are [properly supported](https://github.com/jawj/zapatos/issues/3#issuecomment-1126933350) (via namespacing of types) as of version 6.
+* `"schemas"` is an object that lets you define the schemas, and the tables and views within schemas, for which types will be generated. Each key is a schema name, and each value is an object with keys `"include"` and `"exclude"`. Those keys can take the value `"*"` (for all tables in the schema) or an array of table names. The `"exclude"` list takes precedence over the `"include"` list. Thanks to generous sponsorship by [Seam](https://www.seam.co/), schemas are [properly supported](https://github.com/jawj/zapatos/issues/3#issuecomment-1126933350) (via namespacing of types) as of version 6.
 
 If not specified, the default value for `"schemas"` includes all tables in the `public` schema, i.e.:
 
@@ -1780,15 +1780,19 @@ To address this issue:
 
 * Set `"customJSONParsingForLargeNumbers": true` in the schema-generation config in `zapatosconfig.json`. This switches the TypeScript types for these columns in `JSONSelectable`s from `number` to ``` number | `${number}` ```. It also suppresses the warning.
 
-* Be sure to call `db.enableCustomJSONParsingForLargeNumbers(pg)` in your code before running any queries. This switches node-postgres JSON parsing to use the [json-custom-numbers](https://github.com/jawj/json-custom-numbers) package, and return as strings any values that aren't representable as a JS number.
+* Be sure to call `db.enableCustomJSONParsingForLargeNumbers(pg)` in your code before running any queries. This switches node-postgres's JSON parsing to use the [json-custom-numbers](https://github.com/jawj/json-custom-numbers) package, and return as strings any values that aren't representable as a JS number.
 
-When using these `string | number` values in code, you will likely want to convert integers to [`BigInt`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) and decimals to a third-party decimal format such as [big.js](https://github.com/MikeMcl/big.js) at the earliest opportunity. For example:
+When using these ``` number | `${number}` ``` values in code, you will likely want to convert integers to [`BigInt`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) and decimals to a third-party decimal format such as [big.js](https://github.com/MikeMcl/big.js) at the earliest opportunity. 
+
+Here's an example:
 
 ```typescript
 import * as db from 'zapatos/db';
 import pool from './pgPool.js';
 import pg from 'pg';
-import Big from 'big.js';
+import Big from 'big.js';  // third-party arbitrary-precision library
+
+// note: set `"customJSONParsingForLargeNumbers": true` in zapatosconfig.json
 
 db.enableCustomJSONParsingForLargeNumbers(pg);
 
@@ -1798,15 +1802,16 @@ const bigints = await db.select("bigints", db.all,
   { order: { by: "bigintValue", direction: "ASC" } }).run(pool);
 
 for (const { bigintValue: raw } of bigints) {  // raw is number | `${number}`
-  const number = Number(raw);  // don't do this: may get a different integer
+  const number = Number(raw);  // DON'T do this: may become a different integer
   const bigint = BigInt(raw);  // do this instead
 
   console.log('raw:', raw, '/ as Number:', number, '/ as BigInt:', bigint);
 
   // Note that numbers above `Number.MAX_SAFE_INTEGER` are still returned as
-  // numbers *if* that doesn't change them. For example, 9007199254740995 is
-  // returned as a string (because it would become 9007199254740996), but
-  // 9007199254740996 is safely returned as an ordinary number.
+  // numbers *if* that doesn't change them. For example, 9007199254740993 is
+  // returned as a string (because it would become 9007199254740992), but
+  // 9007199254740992 is safely returned as an ordinary number, even though
+  // it's `Number.MAX_SAFE_INTEGER + 1`.
 }
 
 // numerics
@@ -1815,11 +1820,13 @@ const numerics = await db.select("numerics", db.all,
   { order: { by: "numericValue", direction: "ASC" } }).run(pool);
 
 for (const { numericValue: raw } of numerics) {  // raw is number | `${number}`
-  const number = Number(raw);  // don't do this: may overflow or lose precision
+  const number = Number(raw);  // DON'T do this: may overflow or lose precision
   const bigdec = Big(raw);  // do this instead
 
-  console.log('raw', raw, '/ as Number', number, '/ as Big', bigdec);
+  console.log('raw:', raw, '/ as Number:', number, '/ as Big:', bigdec);
 }
+
+await pool.end();
 ```
 
 => transaction.ts export async function transaction<T, M extends IsolationLevel>(
@@ -2246,7 +2253,7 @@ Return type for certain embedded `SQLFragments` [now matches the `null` actually
 
 #### 6.0
 
-_Breaking change (if you use schemas)_: Thanks to generous sponsorship from [Seam](https://www.getseam.com), Zapatos now supports schemas properly, prefixing the schema to table and enum names as necessary in the generated types. If you make use of Postgres schemas outside of the default `public` schema, you'll need to add schema names in the appropriate places (TypeScript errors should show you where).
+_Breaking change (if you use schemas)_: Thanks to generous sponsorship from [Seam](https://www.seam.co), Zapatos now supports schemas properly, prefixing the schema to table and enum names as necessary in the generated types. If you make use of Postgres schemas outside of the default `public` schema, you'll need to add schema names in the appropriate places (TypeScript errors should show you where).
 
 #### 5.0
 
@@ -2403,7 +2410,7 @@ If you're asking for or contributing new work, my response is likely to reflect 
 
 ### Sponsors
 
-Many thanks to [Seam](https://www.getseam.com) for sponsoring proper multi-schema support.
+Many thanks to [Seam](https://www.seam.co) for sponsoring proper multi-schema support.
 
 
 ### What's next

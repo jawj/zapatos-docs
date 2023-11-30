@@ -7,9 +7,6 @@ import { execSync } from 'child_process';
 import hljs from 'highlight.js';
 import { JSDOM } from 'jsdom';
 import * as pgcs from 'pg-connection-string';
-import * as http from 'http';
-import * as https from 'https';
-
 
 void (async () => {
 
@@ -201,22 +198,21 @@ void (async () => {
   });
 
 
-  console.log('Checking links ...');
+  const links = Array.from(new Set(Array.from(content!.querySelectorAll('a'))));  // unique
+  console.log(`Checking ${links.length} unique links ...`);
 
-  const links = content!.querySelectorAll('a');
-  links.forEach(link => {
+  for (const link of links) {
     const href = link.getAttribute('href');
-    if (!href) return;
+    if (!href) continue;
     if (href.charAt(0) === '#') {
       if (!content!.querySelector(href)) console.error(` => No link target "${href}"`);
+      continue;
 
     } else {
-      const lib = href.match(/^https:/) ? https : http;
-      lib.get(href, res => {  // you'd think a HEAD request would do, but HN 405s them
-        if (res.statusCode !== 200) console.error(`*** HTTP status ${res.statusCode} for link target ${href} ***`);
-      });
+      const res = await fetch(href);
+      if (res.status !== 200) console.error(`*** HTTP status ${res.status} for link target ${href} ***`);
     }
-  });
+  }
 
 
   console.info('Collecting TypeScript scripts ..');
@@ -271,7 +267,7 @@ void (async () => {
   });
 
 
-  console.info('Compiling TypeScript script blocks ..');
+  console.info('Compiling TypeScript script blocks ...');
 
   try {
     execSync('tsc', { cwd: './build-src', encoding: 'utf8' });
