@@ -386,7 +386,7 @@ void (async () => {
   fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
 
 
-  console.info('Dropping temporary DB...');
+  console.info('Dropping temporary DB ...');
 
   execSync(`dropdb${connOpts} ${tmpdb}`);
 
