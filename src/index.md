@@ -535,7 +535,7 @@ This is likely most useful for the database connection details. For example, on 
 
 #### ESLint / tslint
 
-A general configuration suggestion: set up [ESLint](https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid various `Promise`-related pitfalls.
+A general configuration suggestion: set up [ESLint](https://typescript-eslint.io/getting-started/) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid various `Promise`-related pitfalls.
 
 
 ### Generate your schema

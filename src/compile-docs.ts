@@ -389,5 +389,8 @@ void (async () => {
   console.info('Dropping temporary DB...');
 
   execSync(`dropdb${connOpts} ${tmpdb}`);
+
+
+  console.info('Done.');
 })();
 
