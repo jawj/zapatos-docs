@@ -292,7 +292,7 @@ void (function () { return __awaiter(void 0, void 0, void 0, function () {
                 });
                 console.info("Writing HTML ...");
                 fs.writeFileSync('./web/index.html', dom.serialize(), { encoding: 'utf8' });
-                console.info('Dropping temporary DB...');
+                console.info('Dropping temporary DB ...');
                 (0, child_process_1.execSync)("dropdb".concat(connOpts, " ").concat(tmpdb));
                 console.info('Done.');
                 return [2 /*return*/];

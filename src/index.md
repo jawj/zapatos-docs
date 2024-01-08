@@ -1860,7 +1860,7 @@ The `transaction` helper takes a `pg.Pool` or already-connected `pg.Client` inst
 * If any other error is thrown, issue a `ROLLBACK`, release the database client (if it's one it checked out earlier), and re-throw the error.
 * Otherwise `COMMIT` the transaction, release the database client (if it's one it checked out earlier), and return the callback's result.
 
-As is implied above, for `REPEATABLE READ` or `SYNCHRONIZED` isolation modes the callback could be called several times. It's therefore important that it doesn't have any non-database-related side-effects (i.e. don't, say, bill your customer's credit card from this function).
+As is implied above, for `REPEATABLE READ` or `SERIALIZABLE` isolation modes the callback could be called several times. It's therefore important that it doesn't have any non-database-related side-effects (i.e. don't, say, bill your customer's credit card from this function).
 
 We already saw [one `transaction` example](#transactions). Here's another, adapted from [CockroachDB's write-up on `SERIALIZABLE`](https://www.cockroachlabs.com/docs/stable/demo-serializable.html).
 
