@@ -535,7 +535,7 @@ This is likely most useful for the database connection details. For example, on 
 
 #### ESLint / tslint
 
-A general configuration suggestion: set up [ESLint](https://typescript-eslint.io/getting-started/) with the rules [`@typescript-eslint/await-thenable`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/await-thenable.md) and [`@typescript-eslint/no-floating-promises`](https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-floating-promises.md) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid various `Promise`-related pitfalls.
+A general configuration suggestion: set up [ESLint](https://typescript-eslint.io/getting-started/) with the rules [`@typescript-eslint/await-thenable`](https://typescript-eslint.io/rules/await-thenable/) and [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/) (or the now-deprecated [tslint](https://palantir.github.io/tslint/) with [`no-floating-promises`](https://palantir.github.io/tslint/rules/no-floating-promises/) and [`await-promise`](https://palantir.github.io/tslint/rules/await-promise/)) to avoid various `Promise`-related pitfalls.
 
 
 ### Generate your schema
@@ -1194,7 +1194,7 @@ The optional fourth argument to `upsert` is an `options` object. The available o
 
 * The `updateColumns` option allows us to specify a subset of columns (as either one name or an array of names) that are to be updated on conflict. For example, you might want to include all columns except `createdAt` in this list.
 
-* The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken.
+* The `noNullUpdateColumns` option takes a column name or array of column names which are not to be overwritten with `NULL` in the case that the `UPDATE` branch is taken. It can also take the special value `db.all` to indicate that no column should ever be overwritten with `NULL`.
 
 * The `updateValues` option allows us to specify alternative column values to be used in the `UPDATE` query branch: [see below](#updatevalues).
 
@@ -2242,6 +2242,10 @@ For example, when working with recent PostGIS, casting `geometry` values to JSON
 ### Changes
 
 This change list is not comprehensive. For a complete version history, [please see the commit list](https://github.com/jawj/zapatos/commits/master).
+
+#### 6.6
+
+Changed `db.count(...)` (and other aggregates) to return `count(*)` instead of `count("table_or_alias".*)` for greatly improved performance. Prevented checking for `pg.native` in the transaction helper from causing `pg.native` to be loaded.
 
 #### 6.3
 

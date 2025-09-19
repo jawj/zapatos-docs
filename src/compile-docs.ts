@@ -209,6 +209,7 @@ void (async () => {
       continue;
 
     } else {
+      console.log(href);
       const res = await fetch(href);
       if (res.status !== 200) console.error(`*** HTTP status ${res.status} for link target ${href} ***`);
     }
